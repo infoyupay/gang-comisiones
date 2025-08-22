@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+CAUTION: Do not modify this file unless you know what you are doing.
+ Unexpected results may occur if the code is changed deliberately.
+-->
+<dbmodel pgmodeler-ver="1.2.0-beta1" use-changelog="false" author="Infoyupay SACS - David Vidal" max-obj-count="8"
+	 gen-disabled-objs-code="false" show-sys-schemas-rects="true"
+	 last-position="-6,282" last-zoom="1" scene-rect="-20,0,3274.8,2268.8"
+	 default-schema="public"
+	 layers="Default layer"
+	 active-layers="0"
+	 layer-name-colors="#000000"
+	 layer-rect-colors="#b4b4b4"
+	 show-layer-names="false" show-layer-rects="false">
+<database name="gangcomision_db" is-template="false" allow-conns="true">
+</database>
+
+<schema name="public" layers="0" fill-color="#e1e1e1" name-color="#000000" sql-disabled="true">
+</schema>
+
+<sequence name="sq_user_id" cycle="false" start="1" increment="1" min-value="0" max-value="9223372036854775807" cache="1">
+	<schema name="public"/>
+</sequence>
+
+<usertype name="user_role" configuration="enumeration">
+	<schema name="public"/>
+	<enumeration label="ROOT"/>
+	<enumeration label="ADMIN"/>
+	<enumeration label="CASHIER"/>
+</usertype>
+
+<table name="user" layers="0" collapse-mode="2" max-obj-count="6" z-value="0">
+	<schema name="public"/>
+	<position x="60" y="500"/>
+	<column name="id" not-null="true" sequence="public.sq_user_id">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="username" not-null="true">
+		<type name="varchar" length="0"/>
+	</column>
+	<column name="password_hash" not-null="true">
+		<type name="varchar" length="0"/>
+	</column>
+	<column name="role" not-null="true">
+		<type name="public.user_role" length="0"/>
+	</column>
+	<column name="active" not-null="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<constraint name="uq_user_username" type="uq-constr" table="public.&quot;user&quot;">
+		<columns names="username" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="user_pk" type="pk-constr" table="public.&quot;user&quot;">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="chk_user_username_nonempty" type="ck-constr" table="public.&quot;user&quot;">
+			<expression> <![CDATA[char_length(username) > 0]]> </expression>
+	</constraint>
+	<constraint name="chk_user_passwordhash_nonempty" type="ck-constr" table="public.&quot;user&quot;">
+			<expression> <![CDATA[char_length(password_hash) > 0]]> </expression>
+	</constraint>
+</table>
+
+<sequence name="sq_bank_id" cycle="false" start="1" increment="1" min-value="0" max-value="2147483647" cache="1">
+	<schema name="public"/>
+</sequence>
+
+<table name="bank" layers="0" collapse-mode="2" max-obj-count="3" z-value="0">
+	<schema name="public"/>
+	<position x="300" y="40"/>
+	<column name="id" not-null="true" sequence="public.sq_bank_id">
+		<type name="integer" length="0"/>
+	</column>
+	<column name="name" not-null="true">
+		<type name="varchar" length="0"/>
+	</column>
+	<column name="active" not-null="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<constraint name="bank_pk" type="pk-constr" table="public.bank">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="chk_bank_name_nonempty" type="ck-constr" table="public.bank">
+			<expression> <![CDATA[char_length(name) > 0]]> </expression>
+	</constraint>
+</table>
+
+<sequence name="sq_concept_id" cycle="false" start="1" increment="1" min-value="0" max-value="9223372036854775807" cache="1">
+	<schema name="public"/>
+</sequence>
+
+<usertype name="concept_type" configuration="enumeration">
+	<schema name="public"/>
+	<enumeration label="FIXED"/>
+	<enumeration label="RATE"/>
+</usertype>
+
+<table name="concept" layers="0" collapse-mode="2" max-obj-count="6" z-value="0">
+	<schema name="public"/>
+	<position x="500" y="40"/>
+	<column name="id" not-null="true" sequence="public.sq_concept_id">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="name" not-null="true">
+		<type name="varchar" length="0"/>
+	</column>
+	<column name="type" not-null="true">
+		<type name="public.concept_type" length="0"/>
+	</column>
+	<column name="value" not-null="true">
+		<type name="decimal" length="6" precision="4"/>
+	</column>
+	<column name="active" not-null="true">
+		<type name="boolean" length="0"/>
+	</column>
+	<constraint name="concept_pk" type="pk-constr" table="public.concept">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="chk_concept_name_nonempty" type="ck-constr" table="public.concept">
+			<expression> <![CDATA[char_length(name) > 0]]> </expression>
+	</constraint>
+	<constraint name="chk_concept_value_valid" type="ck-constr" table="public.concept">
+			<expression> <![CDATA[(type = 'FIXED' AND value >= 0) OR (type = 'RATE' AND value BETWEEN 0 AND 1)]]> </expression>
+	</constraint>
+</table>
+
+<sequence name="sq_transaction_id" cycle="false" start="1" increment="1" min-value="0" max-value="9223372036854775807" cache="1">
+	<schema name="public"/>
+</sequence>
+
+<usertype name="transaction_status" configuration="enumeration">
+	<schema name="public"/>
+	<enumeration label="REGISTERED"/>
+	<enumeration label="REVERSION_REQUESTED"/>
+</usertype>
+
+<table name="transaction" layers="0" collapse-mode="2" max-obj-count="9" z-value="0">
+	<schema name="public"/>
+	<position x="540" y="300"/>
+	<column name="id" not-null="true" sequence="public.sq_transaction_id">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="amount" not-null="true">
+		<type name="decimal" length="14" precision="2"/>
+	</column>
+	<column name="commission" not-null="true">
+		<type name="decimal" length="14" precision="2"/>
+	</column>
+	<column name="moment" not-null="true" default-value="CURRENT_TIMESTAMP">
+		<type name="timestamptz" length="0" precision="3"/>
+	</column>
+	<column name="status" not-null="true">
+		<type name="public.transaction_status" length="0"/>
+	</column>
+	<constraint name="transaction_pk" type="pk-constr" table="public.transaction">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="chk_transaction_amount_positive" type="ck-constr" table="public.transaction">
+			<expression> <![CDATA[amount > 0]]> </expression>
+	</constraint>
+	<constraint name="chk_transaction_commission_nonnegative" type="ck-constr" table="public.transaction">
+			<expression> <![CDATA[commission >= 0]]> </expression>
+	</constraint>
+
+	<customidxs object-type="column">
+		<object name="bank" index="1"/>
+		<object name="cashier" index="3"/>
+		<object name="concept" index="2"/>
+	</customidxs>
+	<customidxs object-type="constraint">
+		<object name="bank_fk" index="1"/>
+		<object name="concept_fk" index="2"/>
+		<object name="user_fk" index="0"/>
+	</customidxs></table>
+
+<relationship name="transaction_by_user" type="rel1n" layers="0"
+	 src-col-pattern="cashier"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#17a5ae"
+	 src-table="public.&quot;user&quot;"
+	 dst-table="public.transaction"
+	 src-required="true" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<relationship name="bank_has_many_transaction" type="rel1n" layers="0"
+	 src-col-pattern="{st}"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#b89d66"
+	 src-table="public.bank"
+	 dst-table="public.transaction"
+	 src-required="true" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<relationship name="concept_has_many_transaction" type="rel1n" layers="0"
+	 src-col-pattern="{st}"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#528cda"
+	 src-table="public.concept"
+	 dst-table="public.transaction"
+	 src-required="true" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<usertype name="reversal_request_status" configuration="enumeration">
+	<schema name="public"/>
+	<enumeration label="PENDING"/>
+	<enumeration label="APPROVED"/>
+	<enumeration label="REJECTED"/>
+</usertype>
+
+<sequence name="sq_reversal_id" cycle="false" start="1" increment="1" min-value="0" max-value="9223372036854775807" cache="1">
+	<schema name="public"/>
+</sequence>
+
+<table name="reversal_request" layers="0" collapse-mode="2" max-obj-count="10" z-value="0">
+	<schema name="public"/>
+	<position x="0" y="160"/>
+	<column name="id" not-null="true" sequence="public.sq_reversal_id">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="message" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="request_stamp" not-null="true" default-value="CURRENT_TIMESTAMP">
+		<type name="timestamptz" length="0" precision="3"/>
+	</column>
+	<column name="answer">
+		<type name="text" length="0"/>
+	</column>
+	<column name="answer_stamp">
+		<type name="timestamptz" length="0"/>
+	</column>
+	<column name="status" not-null="true">
+		<type name="public.reversal_request_status" length="0"/>
+	</column>
+	<constraint name="reversal_request_pk" type="pk-constr" table="public.reversal_request">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="chk_reversal_message_nonempty" type="ck-constr" table="public.reversal_request">
+			<expression> <![CDATA[char_length(message) > 0]]> </expression>
+	</constraint>
+
+	<customidxs object-type="column">
+		<object name="evaluated_by" index="8"/>
+		<object name="requested_by" index="5"/>
+		<object name="transaction" index="1"/>
+	</customidxs>
+	<customidxs object-type="constraint">
+		<object name="reversal_request_uq" index="4"/>
+		<object name="transaction_fk" index="3"/>
+		<object name="user_fk" index="1"/>
+		<object name="user_fk1" index="2"/>
+	</customidxs></table>
+
+<relationship name="request_has_owner" type="rel1n" layers="0"
+	 src-col-pattern="requested_by"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#e1c81b"
+	 src-table="public.&quot;user&quot;"
+	 dst-table="public.reversal_request"
+	 src-required="true" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<relationship name="request_has_evaluator" type="rel1n" layers="0"
+	 src-col-pattern="evaluated_by"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#af1c64"
+	 src-table="public.&quot;user&quot;"
+	 dst-table="public.reversal_request"
+	 src-required="false" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<relationship name="reversal_request_has_one_transaction" type="rel11" layers="0"
+	 src-col-pattern="transaction"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#6826f2"
+	 src-table="public.transaction"
+	 dst-table="public.reversal_request"
+	 src-required="true" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<sequence name="sq_audit_log_id" cycle="false" start="1" increment="1" min-value="0" max-value="9223372036854775807" cache="1">
+	<schema name="public"/>
+</sequence>
+
+<table name="audit_log" layers="0" collapse-mode="2" max-obj-count="9" z-value="0">
+	<schema name="public"/>
+	<position x="540" y="500"/>
+	<column name="id" not-null="true" sequence="public.sq_audit_log_id">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="event_stamp" not-null="true" default-value="CURRENT_TIMESTAMP">
+		<type name="timestamptz" length="0" precision="3"/>
+	</column>
+	<column name="action" not-null="true">
+		<type name="varchar" length="0"/>
+	</column>
+	<column name="entity">
+		<type name="varchar" length="0"/>
+	</column>
+	<column name="entity_id">
+		<type name="bigint" length="0"/>
+	</column>
+	<column name="details">
+		<type name="text" length="0"/>
+	</column>
+	<column name="computer_name" not-null="true">
+		<type name="varchar" length="0"/>
+	</column>
+	<constraint name="audit_log_pk" type="pk-constr" table="public.audit_log">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="chk_audit_action_nonempty" type="ck-constr" table="public.audit_log">
+			<expression> <![CDATA[char_length(action) > 0]]> </expression>
+	</constraint>
+	<constraint name="chk_audit_computername_nonempty" type="ck-constr" table="public.audit_log">
+			<expression> <![CDATA[char_length(computer_name) > 0]]> </expression>
+	</constraint>
+
+	<customidxs object-type="column">
+		<object name="user_id" index="2"/>
+	</customidxs>
+	<customidxs object-type="constraint">
+		<object name="user_fk" index="1"/>
+	</customidxs></table>
+
+<relationship name="user_has_many_audit_log" type="rel1n" layers="0"
+	 src-col-pattern="{st}_id"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#0f3e53"
+	 src-table="public.&quot;user&quot;"
+	 dst-table="public.audit_log"
+	 src-required="true" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<index name="idx_transaction_bank" table="public.transaction"
+	 concurrent="false" unique="false" fast-update="false" buffering="false" nulls-not-distinct="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="bank"/>
+		</idxelement>
+</index>
+
+<index name="idx_transaction_date" table="public.transaction"
+	 concurrent="false" unique="false" fast-update="false" buffering="false" nulls-not-distinct="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="moment"/>
+		</idxelement>
+</index>
+
+<index name="idx_transaction_cashier" table="public.transaction"
+	 concurrent="false" unique="false" fast-update="false" buffering="false" nulls-not-distinct="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="cashier"/>
+		</idxelement>
+</index>
+
+<index name="idx_transaction_bank_date" table="public.transaction"
+	 concurrent="false" unique="false" fast-update="false" buffering="false" nulls-not-distinct="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="bank"/>
+		</idxelement>
+		<idxelement use-sorting="true" nulls-first="false" asc-order="false">
+			<column name="moment"/>
+		</idxelement>
+</index>
+
+<index name="idx_audit_user" table="public.audit_log"
+	 concurrent="false" unique="false" fast-update="false" buffering="false" nulls-not-distinct="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="false">
+			<column name="user_id"/>
+		</idxelement>
+</index>
+
+<index name="idx_audit_event_stamp" table="public.audit_log"
+	 concurrent="false" unique="false" fast-update="false" buffering="false" nulls-not-distinct="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="true" nulls-first="false" asc-order="false">
+			<column name="event_stamp"/>
+		</idxelement>
+</index>
+
+<index name="idx_audit_user_date" table="public.audit_log"
+	 concurrent="false" unique="false" fast-update="false" buffering="false" nulls-not-distinct="false"
+	 index-type="btree" factor="0">
+		<idxelement use-sorting="true" nulls-first="false" asc-order="true">
+			<column name="user_id"/>
+		</idxelement>
+		<idxelement use-sorting="true" nulls-first="false" asc-order="false">
+			<column name="event_stamp"/>
+		</idxelement>
+</index>
+
+</dbmodel>
