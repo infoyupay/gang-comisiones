@@ -13,6 +13,9 @@ CREATE DATABASE gangcomision_db;
 -- ddl-end --
 
 
+SET check_function_bodies = false;
+-- ddl-end --
+
 SET search_path TO pg_catalog,public;
 -- ddl-end --
 
@@ -123,7 +126,7 @@ CREATE SEQUENCE public.sq_transaction_id
 -- object: public.transaction_status | type: TYPE --
 -- DROP TYPE IF EXISTS public.transaction_status CASCADE;
 CREATE TYPE public.transaction_status AS
-ENUM ('REGISTERED','REVERSION_REQUESTED');
+ENUM ('REGISTERED','REVERSION_REQUESTED','REVERSED');
 -- ddl-end --
 
 -- object: public.transaction | type: TABLE --
@@ -187,12 +190,12 @@ CREATE SEQUENCE public.sq_reversal_id
 -- DROP TABLE IF EXISTS public.reversal_request CASCADE;
 CREATE TABLE public.reversal_request (
 	id bigint NOT NULL DEFAULT nextval('public.sq_reversal_id'::regclass),
-	transaction_id bigint NOT NULL,
+	transaction bigint NOT NULL,
 	message text NOT NULL,
 	request_stamp timestamptz(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	answer text,
-	answer_stamp timestamptz,
 	requested_by bigint NOT NULL,
+	answer_stamp timestamptz,
 	status public.reversal_request_status NOT NULL,
 	evaluated_by bigint,
 	CONSTRAINT reversal_request_pk PRIMARY KEY (id),
@@ -216,14 +219,14 @@ ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- object: transaction_fk | type: CONSTRAINT --
 -- ALTER TABLE public.reversal_request DROP CONSTRAINT IF EXISTS transaction_fk CASCADE;
-ALTER TABLE public.reversal_request ADD CONSTRAINT transaction_fk FOREIGN KEY (transaction_id)
+ALTER TABLE public.reversal_request ADD CONSTRAINT transaction_fk FOREIGN KEY (transaction)
 REFERENCES public.transaction (id) MATCH FULL
 ON DELETE RESTRICT ON UPDATE CASCADE;
 -- ddl-end --
 
 -- object: reversal_request_uq | type: CONSTRAINT --
 -- ALTER TABLE public.reversal_request DROP CONSTRAINT IF EXISTS reversal_request_uq CASCADE;
-ALTER TABLE public.reversal_request ADD CONSTRAINT reversal_request_uq UNIQUE (transaction_id);
+ALTER TABLE public.reversal_request ADD CONSTRAINT reversal_request_uq UNIQUE (transaction);
 -- ddl-end --
 
 -- object: public.sq_audit_log_id | type: SEQUENCE --
@@ -326,6 +329,69 @@ USING btree
 	user_id ASC NULLS LAST,
 	event_stamp DESC NULLS LAST
 );
+-- ddl-end --
+
+-- object: public.global_config | type: TABLE --
+-- DROP TABLE IF EXISTS public.global_config CASCADE;
+CREATE TABLE public.global_config (
+	id smallint NOT NULL DEFAULT 1,
+	ruc varchar(11) NOT NULL,
+	legal_name varchar(255) NOT NULL,
+	business_name varchar(100) NOT NULL,
+	address text NOT NULL,
+	announcement varchar(80),
+	updated_at timestamptz(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_by bigint NOT NULL,
+	updated_from varchar(100) NOT NULL,
+	CONSTRAINT global_config_pk PRIMARY KEY (id),
+	CONSTRAINT chk_id_one CHECK (id = 1),
+	CONSTRAINT chk_ruc_digits CHECK (ruc ~ '^[0-9]{11}$'),
+	CONSTRAINT chk_legal_name_nonempty CHECK (char_length(legal_name) > 0),
+	CONSTRAINT chk_business_name_nonempty CHECK (char_length(business_name) > 0),
+	CONSTRAINT chk_address_nonempty CHECK (char_length(address) > 0),
+	CONSTRAINT chk_announcement_no_newline CHECK (announcement !~ '[\r\n]')
+);
+-- ddl-end --
+
+-- object: user_fk | type: CONSTRAINT --
+-- ALTER TABLE public.global_config DROP CONSTRAINT IF EXISTS user_fk CASCADE;
+ALTER TABLE public.global_config ADD CONSTRAINT user_fk FOREIGN KEY (updated_by)
+REFERENCES public."user" (id) MATCH FULL
+ON DELETE RESTRICT ON UPDATE CASCADE;
+-- ddl-end --
+
+-- object: global_config_uq | type: CONSTRAINT --
+-- ALTER TABLE public.global_config DROP CONSTRAINT IF EXISTS global_config_uq CASCADE;
+ALTER TABLE public.global_config ADD CONSTRAINT global_config_uq UNIQUE (updated_by);
+-- ddl-end --
+
+-- object: public.update_global_config_timestamp | type: FUNCTION --
+-- DROP FUNCTION IF EXISTS public.update_global_config_timestamp() CASCADE;
+CREATE OR REPLACE FUNCTION public.update_global_config_timestamp ()
+	RETURNS trigger
+	LANGUAGE plpgsql
+	VOLATILE 
+	CALLED ON NULL INPUT
+	SECURITY INVOKER
+	PARALLEL UNSAFE
+	COST 1
+	AS 
+$function$
+BEGIN
+  NEW.updated_at := CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+
+$function$;
+-- ddl-end --
+
+-- object: trg_global_config_updated | type: TRIGGER --
+-- DROP TRIGGER IF EXISTS trg_global_config_updated ON public.global_config CASCADE;
+CREATE OR REPLACE TRIGGER trg_global_config_updated
+	BEFORE UPDATE
+	ON public.global_config
+	FOR EACH ROW
+	EXECUTE PROCEDURE public.update_global_config_timestamp();
 -- ddl-end --
 
 

@@ -3,9 +3,9 @@
 CAUTION: Do not modify this file unless you know what you are doing.
  Unexpected results may occur if the code is changed deliberately.
 -->
-<dbmodel pgmodeler-ver="1.2.0-beta1" use-changelog="false" author="Infoyupay SACS - David Vidal" max-obj-count="8"
+<dbmodel pgmodeler-ver="1.2.0-beta1" use-changelog="false" author="Infoyupay SACS - David Vidal" max-obj-count="9"
 	 gen-disabled-objs-code="false" show-sys-schemas-rects="true"
-	 last-position="-6,282" last-zoom="1" scene-rect="-20,0,3274.8,2268.8"
+	 last-position="-20,601" last-zoom="1" scene-rect="-20,0,3274.8,2268.8"
 	 default-schema="public"
 	 layers="Default layer"
 	 active-layers="0"
@@ -132,6 +132,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<schema name="public"/>
 	<enumeration label="REGISTERED"/>
 	<enumeration label="REVERSION_REQUESTED"/>
+	<enumeration label="REVERSED"/>
 </usertype>
 
 <table name="transaction" layers="0" collapse-mode="2" max-obj-count="9" z-value="0">
@@ -414,5 +415,101 @@ CAUTION: Do not modify this file unless you know what you are doing.
 			<column name="event_stamp"/>
 		</idxelement>
 </index>
+
+<table name="global_config" layers="0" collapse-mode="2" max-obj-count="10" z-value="0">
+	<schema name="public"/>
+	<position x="240" y="720"/>
+	<column name="id" not-null="true" default-value="1">
+		<type name="smallint" length="0"/>
+	</column>
+	<column name="ruc" not-null="true">
+		<type name="varchar" length="11"/>
+	</column>
+	<column name="legal_name" not-null="true">
+		<type name="varchar" length="255"/>
+	</column>
+	<column name="business_name" not-null="true">
+		<type name="varchar" length="100"/>
+	</column>
+	<column name="address" not-null="true">
+		<type name="text" length="0"/>
+	</column>
+	<column name="announcement">
+		<type name="varchar" length="80"/>
+	</column>
+	<column name="updated_at" not-null="true" default-value="CURRENT_TIMESTAMP">
+		<type name="timestamptz" length="0" precision="3"/>
+	</column>
+	<column name="updated_from" not-null="true">
+		<type name="varchar" length="100"/>
+	</column>
+	<constraint name="global_config_pk" type="pk-constr" table="public.global_config">
+		<columns names="id" ref-type="src-columns"/>
+	</constraint>
+	<constraint name="chk_id_one" type="ck-constr" table="public.global_config">
+			<expression> <![CDATA[id = 1]]> </expression>
+	</constraint>
+	<constraint name="chk_ruc_digits" type="ck-constr" table="public.global_config">
+			<expression> <![CDATA[ruc ~ '^[0-9]{11}$']]> </expression>
+	</constraint>
+	<constraint name="chk_legal_name_nonempty" type="ck-constr" table="public.global_config">
+			<expression> <![CDATA[char_length(legal_name) > 0]]> </expression>
+	</constraint>
+	<constraint name="chk_business_name_nonempty" type="ck-constr" table="public.global_config">
+			<expression> <![CDATA[char_length(business_name) > 0]]> </expression>
+	</constraint>
+	<constraint name="chk_address_nonempty" type="ck-constr" table="public.global_config">
+			<expression> <![CDATA[char_length(address) > 0]]> </expression>
+	</constraint>
+	<constraint name="chk_announcement_no_newline" type="ck-constr" table="public.global_config">
+			<expression> <![CDATA[announcement !~ '[\r\n]']]> </expression>
+	</constraint>
+
+	<customidxs object-type="column">
+		<object name="updated_by" index="7"/>
+	</customidxs>
+	<customidxs object-type="constraint">
+		<object name="global_config_uq" index="2"/>
+		<object name="user_fk" index="1"/>
+	</customidxs></table>
+
+<relationship name="global_config_has_one_user" type="rel11" layers="0"
+	 src-col-pattern="updated_by"
+	 pk-pattern="{dt}_pk" uq-pattern="{dt}_uq"
+	 src-fk-pattern="{st}_fk"
+	 fk-idx-pattern="{st}_idx"
+	 custom-color="#62939d"
+	 src-table="public.&quot;user&quot;"
+	 dst-table="public.global_config"
+	 src-required="true" dst-required="false"
+	upd-action="CASCADE"
+	del-action="RESTRICT"/>
+
+<function name="update_global_config_timestamp"
+		window-func="false"
+		returns-setof="false"
+		behavior-type="CALLED ON NULL INPUT"
+		function-type="VOLATILE"
+		security-type="SECURITY INVOKER"
+		parallel-type="PARALLEL UNSAFE"
+		execution-cost="1"
+		row-amount="0">
+	<schema name="public"/>
+	<language name="plpgsql"/>
+	<return-type>
+	<type name="trigger" length="0"/>
+	</return-type>
+	<definition> <![CDATA[BEGIN
+  NEW.updated_at := CURRENT_TIMESTAMP;
+  RETURN NEW;
+END;
+]]> </definition>
+</function>
+
+<trigger name="trg_global_config_updated" firing-type="BEFORE" per-line="true" constraint="false"
+	 ins-event="false" del-event="false" upd-event="true" trunc-event="false"
+	 table="public.global_config">
+		<function signature="public.update_global_config_timestamp()"/>
+</trigger>
 
 </dbmodel>
