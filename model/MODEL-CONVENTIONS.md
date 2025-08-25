@@ -68,6 +68,37 @@ Field example:
 private Boolean active;
 ```
 
+### 📖 Documenting fields with default value
+
+When a **domain model** entity has a attribute with default value
+(`default`at DB or initialized in the class field), the Javadoc shall **explain
+the business or security reason** that justifies such decision.
+
+**Recomended example**
+
+```java
+/**
+  * Represents the status of the User entity within the system.
+  * This field is mapped to the "active" column in the "user" table
+  * and is defined as not allowing null values in the database.
+  * <br/>
+  * <b>Default value:</b> {@code false}. This ensures that any newly
+  * inserted user is inactive by default, which prevents unauthorized
+  * or incorrectly inserted users from having immediate access to the
+  * system without explicit activation.
+  */
+  @Column(name = "active", nullable = false)
+  @Setter
+  private Boolean active = false;
+```
+
+**Styling notes**
+- Use a separated paragraph with `<b>Default value:</b>` to highlight it.
+- Explain in a single phrase the value (`true`/`false`, `"UNKNOWN"`, `0`, etc).
+- Justify why the default value (e.g. security, consistency, data integrity).
+- Don't use this block if the default value has no business motivation (e.g. if
+it is purely technical or transient).
+
 ---
 
 ## 5. Equals & HashCode
