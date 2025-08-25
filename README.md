@@ -67,3 +67,7 @@ cd gang-comisiones
 
 # Run (while developing).
 ./gradlew run
+```
+
+## Developer Documentation
+See [Model Conventions](model/MODEL-CONVENTIONS.md) for details on how domain entities are structured.
