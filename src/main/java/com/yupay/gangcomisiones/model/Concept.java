@@ -113,7 +113,7 @@ public class Concept {
      */
     @Column(name = "active", nullable = false)
     @Setter
-    private Boolean active = false;
+    private Boolean active;
 
     @Override
     @Contract(pure = true, value = "null -> false")

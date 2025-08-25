@@ -1,12 +1,10 @@
-import java.util.Locale
-
 plugins {
     //Base java plugin
     java
     //Runnable apps plugin.
     application
     //JPMS (module-info) support.
-    id("org.javamodularity.moduleplugin") version "1.8.15"
+    //id("org.javamodularity.moduleplugin") version "1.8.15"
     //Improve javafx support.
     id("org.openjfx.javafxplugin") version "0.1.0"
     //Generate native images with jlink.
@@ -55,7 +53,7 @@ dependencies {
 
     //JUnit 5 for testing.
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    testImplementation("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
 
     //Jakarta JPA and EclipseLink
     // https://mvnrepository.com/artifact/jakarta.persistence/jakarta.persistence-api

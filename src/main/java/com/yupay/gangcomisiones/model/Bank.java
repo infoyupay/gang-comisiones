@@ -73,7 +73,7 @@ public class Bank {
      */
     @Setter
     @Column(name = "active", nullable = false)
-    private Boolean active = false;
+    private Boolean active;
 
     @Override
     @Contract(pure = true, value = "null -> false")
