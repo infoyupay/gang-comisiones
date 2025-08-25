@@ -49,6 +49,8 @@ dependencies {
     implementation("org.postgresql:postgresql:42.7.7")
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     implementation("org.slf4j:slf4j-api:2.0.17")
+    // https://mvnrepository.com/artifact/org.jetbrains/annotations
+    implementation("org.jetbrains:annotations:26.0.2")
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
     runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
     // https://mvnrepository.com/artifact/org.projectlombok/lombok

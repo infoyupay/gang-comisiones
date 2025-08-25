@@ -13,7 +13,22 @@ module com.yupay.gangcomisiones {
     requires javafx.controls;
     requires javafx.fxml;
     requires net.synedra.validatorfx;
+
+    /*==================================*
+     * Persistence - JDBC dependencies. *
+     *==================================*/
     requires jakarta.persistence;
+    requires java.sql;
+    requires org.postgresql.jdbc;
+
+    /*======================*
+     * Code analysis tools. *
+     *======================*/
+    requires org.jetbrains.annotations;
+
+    /*========================================*
+     * Boilerplate and code generation tools. *
+     *========================================*/
     requires static lombok;
 
     /*==================*
