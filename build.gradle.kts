@@ -18,8 +18,6 @@ version = "1.0-SNAPSHOT"
 repositories {
     mavenCentral()
 }
-//Version variables
-val junitVersion = "5.12.1"
 
 java {
     toolchain {
@@ -51,9 +49,18 @@ dependencies {
         exclude(group = "org.openjfx")//avoid javafx conflicts.
     }
 
-    //JUnit 5 for testing.
-    testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
-    testImplementation("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
+    // Import JUnit BOM (aligning Platform and Jupiter versions)
+    testImplementation(platform("org.junit:junit-bom:5.13.4"))
+
+    // JUnit Jupiter API + Params to write tests.
+    testImplementation("org.junit.jupiter:junit-jupiter-api")
+    testImplementation("org.junit.jupiter:junit-jupiter-params")
+
+    // Jupiter engine to run tests.
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+
+    // JUnit Platform launcher (needed with Gradle 7/8)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     //Jakarta JPA and EclipseLink
     // https://mvnrepository.com/artifact/jakarta.persistence/jakarta.persistence-api
@@ -69,7 +76,7 @@ dependencies {
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     implementation("org.slf4j:slf4j-api:2.0.17")
     // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-    runtimeOnly("ch.qos.logback:logback-classic:1.5.18")
+    implementation("ch.qos.logback:logback-classic:1.5.18")
 
     //Jetbrains annotations (@NotNull, @Contract)
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
