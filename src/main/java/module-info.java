@@ -21,6 +21,13 @@ module com.yupay.gangcomisiones {
     requires java.sql;
     requires org.postgresql.jdbc;
 
+    /*====================*
+     * Logging libraries. *
+     *====================*/
+    requires org.slf4j;
+    requires ch.qos.logback.classic;
+    requires ch.qos.logback.core;
+
     /*======================*
      * Code analysis tools. *
      *======================*/
