@@ -4,4 +4,9 @@
     <option name="reLastEntityCreationPackage" value="src/main/java/com/yupay/gangcomisiones/model" />
     <option name="reverseEngineeringLastDbConnectionId" value="d4dbcda8-7234-4821-8835-f9a73e86d3a0" />
   </component>
+  <component name="PersistenceUnitSettings">
+    <persistence-units>
+      <persistence-unit moduleName="gang-comisiones.main" name="GangComisionesPU" framework="JPA" ormUnit="gang-comisiones.main:GangComisiones" />
+    </persistence-units>
+  </component>
 </project>

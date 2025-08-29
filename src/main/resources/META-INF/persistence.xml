@@ -21,7 +21,7 @@
              xmlns="https://jakarta.ee/xml/ns/persistence"
              xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
              version="3.2">
-    <persistence-unit name="GangComisiones">
+    <persistence-unit name="GangComisionesPU">
         <provider>org.eclipse.persistence.jpa.PersistenceProvider</provider>
         <!-- Entities -->
         <class>com.yupay.gangcomisiones.model.AuditLog</class>
