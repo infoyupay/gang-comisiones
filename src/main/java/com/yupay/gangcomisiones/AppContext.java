@@ -140,18 +140,26 @@ public final class AppContext {
      * This is safe to call at runtime; it will replace the global instance.
      *
      * @param jpaProperties the path to .properties file.
+     * @return the new instance (restarted).
      */
-    public static synchronized void restart(Path jpaProperties) {
-        shutdown();
-        INSTANCE.set(new AppContext(jpaProperties));
+    public static synchronized @NotNull AppContext restart(Path jpaProperties) {
+        AppContext old = INSTANCE.getAndSet(null);
+        if (old == null) {
+            throw new AppContextException("Cannot restart AppContext because it was not initialized.");
+        }
+        AppContext.shutdown(old);
+        AppContext fresh = new AppContext(jpaProperties);
+        INSTANCE.set(fresh);
+        return fresh;
     }
 
     /**
-     * Gracefully shuts down the current context (if any).
-     * Called from Application.stop() or the JVM shutdown hook.
+     * Gracefully shuts down the given context, closing and freeing all
+     * asociated resources.
+     *
+     * @param ctx the app context to shutdown.
      */
-    public static synchronized void shutdown() {
-        AppContext ctx = INSTANCE.getAndSet(null);
+    private static void shutdown(AppContext ctx) {
         if (ctx == null) return;
 
         if (ctx.emf != null) {
@@ -165,11 +173,9 @@ public final class AppContext {
         }
 
         shutdownExecutor(ctx.jdbcExecutor, "JDBC");
-
         shutdownExecutor(ctx.taskExecutor, "Task");
 
         LOG.info("AppContext shutdown completed.");
-
     }
 
     /**
@@ -219,6 +225,15 @@ public final class AppContext {
             throw new AppContextException("Unable to load JPA properties from: " + jpaProperties, e);
         }
         return Persistence.createEntityManagerFactory("gang-comisiones", props);
+    }
+
+    /**
+     * Gracefully shuts down the global context (if any).
+     * Called from Application.stop() or the JVM shutdown hook.
+     */
+    public static synchronized void shutdown() {
+        AppContext ctx = INSTANCE.getAndSet(null);
+        shutdown(ctx);
     }
 
     /**
