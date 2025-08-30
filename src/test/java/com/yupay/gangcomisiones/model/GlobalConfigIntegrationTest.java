@@ -20,9 +20,13 @@
 package com.yupay.gangcomisiones.model;
 
 
-import com.yupay.gangcomisiones.DummyHelpers;
-import jakarta.persistence.*;
-import org.junit.jupiter.api.*;
+import com.yupay.gangcomisiones.AppContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.PersistenceException;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -35,37 +39,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author InfoYupay SACS
  * @version 1.0
  */
-class GlobalConfigIntegrationTest {
+class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
 
-    private static EntityManagerFactory emf;
     private EntityManager em;
-
-    /**
-     * Initialize the EntityManagerFactory.
-     */
-    @BeforeAll
-    static void init() {
-        emf = Persistence.createEntityManagerFactory(
-                "GangComisionesPU",
-                DummyHelpers.readDummyJpaProperties());
-    }
-
-    /**
-     * Shutdown the EntityManagerFactory.
-     */
-    @AfterAll
-    static void shutdown() {
-        if (emf != null) {
-            emf.close();
-        }
-    }
 
     /**
      * Initialize the EntityManager.
      */
     @BeforeEach
     void setup() {
-        em = emf.createEntityManager();
+        em = ctx.getEntityManagerFactory().createEntityManager();
     }
 
     /**

@@ -38,38 +38,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  * @author InfoYupay SACS
  * @version 1.0
  */
-class UserIntegrationTest {
-    /**
-     * The path to dummy-jpa.properties
-     */
-    private static final Path DUMMY_PATH = DummyHelpers.getDummyJpaProperties();
-
-    /**
-     * Initializes logging before all tests.
-     */
-    @BeforeAll
-    static void initLogging() {
-        LogConfig.initLogging();
-    }
-
-    /**
-     * Resets the application context before each test.
-     */
-    @BeforeEach
-    void reset() {
-        try {
-            AppContext.restart(DUMMY_PATH);
-        } catch (AppContextException _) {
-            // ignore
-        }
-    }
-
+class UserIntegrationTest extends AbstractPostgreIntegrationTest{
     /**
      * Tests persisting and querying a user.
      */
     @Test
     void testPersistAndQueryUser() {
-        AppContext ctx = AppContext.getInstance(DUMMY_PATH);
         EntityManager em = ctx.getEntityManagerFactory().createEntityManager();
 
         em.getTransaction().begin();
