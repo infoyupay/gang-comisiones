@@ -21,6 +21,7 @@ package com.yupay.gangcomisiones.model;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.intellij.lang.annotations.Pattern;
 import org.jetbrains.annotations.Contract;
 
 import java.time.OffsetDateTime;
@@ -71,6 +72,7 @@ public class GlobalConfig {
      */
     @Setter
     @Column(name = "ruc", nullable = false, length = 11)
+    @Pattern("\\d{11}")
     private String ruc;
 
     /**

@@ -19,11 +19,16 @@
 
 package com.yupay.gangcomisiones;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Properties;
 
 /**
  * Utility helper for retrieving test resources as {@link Path}.
@@ -60,5 +65,32 @@ public class DummyHelpers {
      */
     public static @NotNull Path getDummyJpaProperties() {
         return getDummyPathFromResource("dummy-jpa.properties");
+    }
+
+    /**
+     * Reads properties from a dummy file.
+     *
+     * @param dummyPath the path to the dummy file.
+     * @return a {@link Properties} object containing the properties.
+     */
+    @Contract(pure = true, value = "_->new")
+    public static @NotNull Properties readPropertiesFromDummyPath(Path dummyPath) {
+        Properties properties = new Properties();
+        try (var inputStream = Files.newInputStream(dummyPath)) {
+            properties.load(inputStream);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Error reading properties from " + dummyPath, e);
+        }
+        return properties;
+    }
+
+    /**
+     * Reads properties from the dummy JPA properties file for integration tests.
+     *
+     * @return a {@link Properties} object containing the properties.
+     */
+    @Contract(" -> new")
+    public static @NotNull Properties readDummyJpaProperties() {
+        return readPropertiesFromDummyPath(getDummyJpaProperties());
     }
 }
