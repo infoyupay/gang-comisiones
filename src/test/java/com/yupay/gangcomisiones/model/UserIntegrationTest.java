@@ -1,0 +1,91 @@
+/*
+ * gang-comisiones
+ * COPYLEFT 2025
+ * Ingenieria Informatica Yupay SACS
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ *  with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.yupay.gangcomisiones.model;
+
+import com.yupay.gangcomisiones.AppContext;
+import com.yupay.gangcomisiones.DummyHelpers;
+import com.yupay.gangcomisiones.exceptions.AppContextException;
+import com.yupay.gangcomisiones.logging.LogConfig;
+import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+/**
+ * Integration test class for entity {@link User}.
+ *
+ * @author InfoYupay SACS
+ * @version 1.0
+ */
+class UserIntegrationTest {
+    /**
+     * The path to dummy-jpa.properties
+     */
+    private static final Path DUMMY_PATH = DummyHelpers.getDummyJpaProperties();
+
+    /**
+     * Initializes logging before all tests.
+     */
+    @BeforeAll
+    static void initLogging() {
+        LogConfig.initLogging();
+    }
+
+    /**
+     * Resets the application context before each test.
+     */
+    @BeforeEach
+    void reset() {
+        try {
+            AppContext.restart(DUMMY_PATH);
+        } catch (AppContextException _) {
+            // ignore
+        }
+    }
+
+    /**
+     * Tests persisting and querying a user.
+     */
+    @Test
+    void testPersistAndQueryUser() {
+        AppContext ctx = AppContext.getInstance(DUMMY_PATH);
+        EntityManager em = ctx.getEntityManagerFactory().createEntityManager();
+
+        em.getTransaction().begin();
+        User user = new User();
+        user.setUsername("admin");
+        user.setPasswordHash("hash123");
+        user.setRole(UserRole.ROOT);   // enum
+        user.setActive(true);
+        em.persist(user);
+        em.getTransaction().commit();
+
+        User found = em.find(User.class, user.getId());
+        assertNotNull(found);
+        assertEquals("admin", found.getUsername());
+        assertEquals(UserRole.ROOT, found.getRole());
+
+        em.close();
+    }
+}

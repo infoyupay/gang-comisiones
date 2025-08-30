@@ -91,6 +91,7 @@ public class User {
      * @see UserRole
      */
     @Column(name = "role", columnDefinition = "user_role not null")
+    @Enumerated(EnumType.STRING)
     @Setter
     private UserRole role;
 
