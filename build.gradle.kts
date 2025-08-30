@@ -68,10 +68,6 @@ dependencies {
     // https://mvnrepository.com/artifact/org.eclipse.persistence/eclipselink
     implementation("org.eclipse.persistence:eclipselink:4.0.7")
 
-    //H2 for testing
-    // https://mvnrepository.com/artifact/com.h2database/h2
-    testImplementation("com.h2database:h2:2.3.232")
-
     //PostgreSQL driver.
     // https://mvnrepository.com/artifact/org.postgresql/postgresql
     implementation("org.postgresql:postgresql:42.7.7")
