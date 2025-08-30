@@ -35,6 +35,7 @@ import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -55,6 +56,14 @@ public final class AppContext {
      * Single thread-safe instance.
      */
     private static final AtomicReference<AppContext> INSTANCE = new AtomicReference<>();
+    /**
+     * Flag indicating whether the shutdown hook responsible for
+     * gracefully shutting down the application context has been registered.
+     *
+     * @implNote This flag will be migrated to StableValue (JEP 502) once
+     * it becomes production-ready in a future JDK release.
+     */
+    private static final AtomicBoolean shutdownHookRegistered = new AtomicBoolean(false);
     /**
      * Timeout to await for executor services termination on shutdown.
      */
@@ -91,7 +100,10 @@ public final class AppContext {
             t.setDaemon(true);
             return t;
         });
-        this.taskExecutor = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("AppContext-Task-", 0).factory());
+        this.taskExecutor = Executors.newThreadPerTaskExecutor(Thread
+                .ofVirtual()
+                .name("AppContext-Task-", 0)
+                .factory());
     }
 
     /**
@@ -109,8 +121,16 @@ public final class AppContext {
                 // Lost the race, discard the one we just created
                 ctx = INSTANCE.get();
             } else {
-                // First time initialization: install shutdown hook once
-                Runtime.getRuntime().addShutdownHook(SHUTDOWN_HOOK);
+                //Just if the shutdown hook has not been registered yet
+                if (shutdownHookRegistered
+                        .compareAndSet(false, true)) { // ✅ atomic
+                    try {
+                        //Try to register.
+                        Runtime.getRuntime().addShutdownHook(SHUTDOWN_HOOK);
+                    } catch (IllegalStateException _) {
+                        // JVM is already shutting down, ignore.
+                    }
+                }
             }
         }
         return ctx;
@@ -224,7 +244,7 @@ public final class AppContext {
         } catch (IOException e) {
             throw new AppContextException("Unable to load JPA properties from: " + jpaProperties, e);
         }
-        return Persistence.createEntityManagerFactory("gang-comisiones", props);
+        return Persistence.createEntityManagerFactory("GangComisionesPU", props);
     }
 
     /**
