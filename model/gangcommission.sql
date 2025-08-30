@@ -9,7 +9,7 @@
 
 -- object: gangcomision_db | type: DATABASE --
 -- DROP DATABASE IF EXISTS gangcomision_db;
-CREATE DATABASE gangcomision_db;
+-- CREATE DATABASE gangcomision_test_db;
 -- ddl-end --
 
 
