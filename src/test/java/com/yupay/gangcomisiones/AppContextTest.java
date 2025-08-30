@@ -25,9 +25,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,18 +40,7 @@ class AppContextTest {
     /**
      * Path to Dummy-jpa
      */
-    private static final Path DUMMY_PATH;
-
-    //Creates the dummy path to point to dummy-jpa.properties
-    static {
-        try {
-            DUMMY_PATH = Path.of(Objects.requireNonNull(
-                            AppContextTest.class.getResource("dummy-jpa.properties"))
-                    .toURI());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private static final Path DUMMY_PATH = DummyHelpers.getDummyJpaProperties();
 
     /**
      * Initializes logging for the test class.
