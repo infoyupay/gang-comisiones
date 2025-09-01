@@ -24,6 +24,8 @@ import com.yupay.gangcomisiones.DummyHelpers;
 import com.yupay.gangcomisiones.logging.LogConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for integration tests using local real PostgreSQL.
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 public abstract class AbstractPostgreIntegrationTest {
 
     protected static AppContext ctx;
+    protected static Logger LOGGER;
 
     /**
      * Initialize the application context and logging configuration.
@@ -41,6 +44,7 @@ public abstract class AbstractPostgreIntegrationTest {
     @BeforeAll
     static void init() {
         LogConfig.initLogging();
+        LOGGER = LoggerFactory.getLogger(AbstractPostgreIntegrationTest.class);
         ctx = AppContext.getInstance(DummyHelpers.getDummyJpaProperties());
     }
 
