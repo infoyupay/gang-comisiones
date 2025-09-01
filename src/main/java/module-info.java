@@ -17,6 +17,7 @@ module com.yupay.gangcomisiones {
     /*==================================*
      * Persistence - JDBC dependencies. *
      *==================================*/
+    requires eclipselink;
     requires jakarta.persistence;
     requires java.sql;
     requires org.postgresql.jdbc;
