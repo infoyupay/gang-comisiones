@@ -19,9 +19,15 @@
 
 package com.yupay.gangcomisiones.model;
 
+import com.yupay.gangcomisiones.security.PasswordUtil;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.Objects;
 
@@ -33,9 +39,7 @@ import java.util.Objects;
  * @author InfoYupay SACS
  * @version 1.0
  */
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "\"user\"", schema = "public")
 public class User {
@@ -57,7 +61,6 @@ public class User {
     @Column(name = "id", nullable = false)
     @Getter
     private Long id;
-
     /**
      * Represents the username of the User entity. This username
      * is the way users identify themselves within the system.
@@ -66,7 +69,6 @@ public class User {
     @Setter
     @Getter
     private String username;
-
     /**
      * Represents the hashed password of the User entity.
      * This field is used to securely store the user's password
@@ -76,7 +78,6 @@ public class User {
      */
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
-
     /**
      * Represents the salt for password of the User entity.
      * This field is used to securely store the user's password
@@ -86,7 +87,6 @@ public class User {
      */
     @Column(name = "password_salt", nullable = false)
     private String passwordSalt;
-
     /**
      * Represents the role assigned to the User entity within the system.
      * <br/>
@@ -105,7 +105,6 @@ public class User {
     @Setter
     @Getter
     private UserRole role;
-
     /**
      * Represents the status of the User entity within the system.<br/>
      * This field is mapped to the "active" column in the "user" table
@@ -117,11 +116,70 @@ public class User {
      * This ensures that if a user is inserted without explicitly specifying the "active" value,
      * the account will be inactive by default, which reinforces system security.
      */
-    @Builder.Default
     @Column(name = "active", nullable = false)
     @Setter
     @Getter
     private Boolean active = false;
+
+    /**
+     * Safe constructor, which only sets username, role, and active status.
+     *
+     * @param username the username.
+     * @param role     the user role.
+     * @param active   the active flag (if not specified, it's false).
+     */
+    @Contract(pure = true)
+    @Builder(builderClassName = "UserBuilder")
+    public User(String username, UserRole role, Boolean active) {
+        this.username = username;
+        this.role = role;
+        this.active = active;
+    }
+
+    /**
+     * Creates a {@link User} instance for testing purposes with the specified ID.
+     *
+     * @param id the unique identifier to set for the {@link User} instance
+     * @return a {@link User} instance with the provided ID
+     */
+    @VisibleForTesting
+    static @NotNull User forTest(Long id) {
+        var r = new User();
+        r.id = id;
+        return r;
+    }
+
+    /**
+     * Sets the password for this user.
+     * <br/>
+     * This method generates a new cryptographic salt and hashes the provided plain text password.
+     * The resulting salt and hash are stored internally in the entity.
+     *
+     * @param plainPassword the plain text password to be set
+     */
+    public void setPassword(@NotNull String plainPassword) {
+        Objects.requireNonNull(plainPassword, "Password cannot be null.");
+        if (plainPassword.isBlank()) {
+            throw new IllegalArgumentException("Password cannot be blank.");
+        }
+        if (plainPassword.length() < 8) {
+            throw new IllegalArgumentException("Password must be at least 8 characters.");
+        }
+        String salt = PasswordUtil.generateSalt();
+        String hash = PasswordUtil.hashPassword(plainPassword, salt);
+        this.passwordSalt = salt;
+        this.passwordHash = hash;
+    }
+
+    /**
+     * Verifies the provided plain text password against the stored salt and hash.
+     *
+     * @param plainPassword the plain text password to be verified.
+     * @return true if the password matches, false otherwise.
+     */
+    public boolean verifyPassword(@NotNull String plainPassword) {
+        return PasswordUtil.verifyPassword(plainPassword, passwordSalt, passwordHash);
+    }
 
     @Override
     @Contract(pure = true, value = "null -> false")
@@ -141,5 +199,48 @@ public class User {
         //If entity has an id -> use id hash.
         //If doesn't have an id yet (transient) -> use identityHashCode to distinguish different instances.
         return getId() != null ? Objects.hashCode(getId()) : System.identityHashCode(this);
+    }
+
+    /**
+     * Safe builder: password is managed unly via a plainpassword.
+     */
+    public static class UserBuilder {
+        private String plainPassword;
+
+        /**
+         * Sets the plain text password for the user being built. This password will be stored
+         * and processed securely within the {@code build} method, which will internally
+         * generate a salt and hash for the password.
+         *
+         * @param plainPassword the plain text password to be assigned to the user
+         * @return the current instance of {@code UserBuilder} for method chaining
+         */
+        public UserBuilder password(String plainPassword) {
+            this.plainPassword = plainPassword;
+            return this;
+        }
+
+        /**
+         * Constructs a new {@code User} instance using the specified builder properties.
+         * The method initializes the {@code username}, {@code role}, and {@code active} fields
+         * to the values provided in the builder. If a plain text password is specified,
+         * it automatically processes the password to generate a salt and hash, securely
+         * storing them in the resulting {@code User} instance.
+         *
+         * @return a fully constructed {@code User} instance with the specified properties and,
+         * if applicable, a securely hashed password and generated salt.
+         */
+        public User build() {
+            User user = new User();
+            user.username = this.username;
+            user.role = this.role;
+            user.active = this.active != null && this.active;
+
+            if (plainPassword != null && !plainPassword.isBlank()) {
+                user.setPassword(plainPassword); // creates salt + hash internally.
+            }
+
+            return user;
+        }
     }
 }
