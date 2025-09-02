@@ -22,10 +22,16 @@ package com.yupay.gangcomisiones.model;
 import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.DummyHelpers;
 import com.yupay.gangcomisiones.logging.LogConfig;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.PersistenceException;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Base class for integration tests using local real PostgreSQL.
@@ -54,5 +60,20 @@ public abstract class AbstractPostgreIntegrationTest {
     @AfterAll
     static void close() {
         AppContext.shutdown();
+    }
+
+    /**
+     * Expect a commit failure, asserts that an EntityTransaction
+     * throws an exception on commit, then rollsback transaction
+     * and asserts that thrown exception is IllegalState or Persistence.
+     *
+     * @param et the entity transaction to test.
+     */
+    protected static void expectCommitFailure(@NotNull EntityTransaction et) {
+        var ex = assertThrows(RuntimeException.class, et::commit);
+        if (et.isActive()) et.rollback();
+        assertTrue(ex instanceof IllegalStateException
+                        || ex instanceof PersistenceException,
+                "Expected a persistence-related failure but got: " + ex);
     }
 }
