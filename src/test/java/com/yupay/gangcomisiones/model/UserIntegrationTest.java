@@ -41,12 +41,12 @@ class UserIntegrationTest extends AbstractPostgreIntegrationTest {
         EntityManager em = ctx.getEntityManagerFactory().createEntityManager();
 
         em.getTransaction().begin();
-        User user = new User();
-        user.setUsername("admin");
-        user.setPasswordHash("hash123");
-        user.setPasswordSalt("salt123");
-        user.setRole(UserRole.ROOT);   // enum
-        user.setActive(true);
+        User user = User.builder().username("admin")
+                .passwordHash("123456")
+                .passwordSalt("salt")
+                .role(UserRole.ROOT)
+                .active(true)
+                .build();
         em.persist(user);
         em.getTransaction().commit();
 
