@@ -71,3 +71,6 @@ cd gang-comisiones
 
 ## Developer Documentation
 See [Model Conventions](model/MODEL-CONVENTIONS.md) for details on how domain entities are structured.
+
+# Milestones
+- **2025-09-01**: Domain model complete, tested and ready for services layer.
