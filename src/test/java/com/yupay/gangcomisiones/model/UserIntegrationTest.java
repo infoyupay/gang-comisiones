@@ -42,8 +42,7 @@ class UserIntegrationTest extends AbstractPostgreIntegrationTest {
 
         em.getTransaction().begin();
         User user = User.builder().username("admin")
-                .passwordHash("123456")
-                .passwordSalt("salt")
+                .password("salt01..")
                 .role(UserRole.ROOT)
                 .active(true)
                 .build();

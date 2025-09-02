@@ -43,31 +43,26 @@ class EntityUnitTests {
      */
     @Test
     void testUserEqualsAndHashCode() {
-        User u1 = User.builder()
-                .id(1L)
-                .username("user1")
-                .passwordHash("hash")
-                .role(UserRole.ROOT)
-                .active(true)
-                .build();
-        User u2 = User.builder()
-                .id(1L)
-                .username("user2")
-                .passwordHash("hash2")
-                .role(UserRole.ADMIN)
-                .active(false)
-                .build();
+        User u1 = User.forTest(1L);
+        u1.setUsername("test1");
+        u1.setPassword("test01..");
+        u1.setRole(UserRole.ROOT);
+        u1.setActive(true);
+
+        User u2 = User.forTest(1L);
+        u2.setUsername("user2");
+        u2.setPassword("user02..");
+        u2.setRole(UserRole.ADMIN);
+        u2.setActive(false);
 
         assertEquals(u1, u2);
         assertEquals(u1.hashCode(), u2.hashCode());
 
-        User u3 = User.builder()
-                .id(2L)
-                .username("user1")
-                .passwordHash("hash")
-                .role(UserRole.ROOT)
-                .active(true)
-                .build();
+        User u3 = User.forTest(2L);
+        u3.setUsername("test1");
+        u3.setPassword("test01..");
+        u3.setRole(UserRole.ADMIN);
+
         assertNotEquals(u1, u3);
     }
 
@@ -154,12 +149,7 @@ class EntityUnitTests {
      */
     @Test
     void testGlobalConfigEqualsAndHashCode() {
-        User root = User.builder()
-                .id(1L)
-                .username("root")
-                .passwordHash("hash")
-                .role(UserRole.ROOT)
-                .active(true).build();
+        User root = User.forTest(1L);
         GlobalConfig g1 = GlobalConfig.builder().id((short) 1)
                 .ruc("12345678901")
                 .legalName("Legal")
@@ -220,13 +210,7 @@ class EntityUnitTests {
                 .value(BigDecimal.valueOf(10))
                 .active(true)
                 .build();
-        User cashier = User.builder()
-                .id(2L)
-                .username("cashier")
-                .passwordHash("hash")
-                .role(UserRole.ADMIN)
-                .active(true)
-                .build();
+        User cashier = User.forTest(2L);
 
         Transaction t1 = Transaction.builder()
                 .id(1L)
@@ -274,7 +258,7 @@ class EntityUnitTests {
      */
     @Test
     void testReversalRequestEqualsAndHashCode() {
-        User requester = User.builder().id(3L).username("user").passwordHash("hash").role(UserRole.ADMIN).active(true).build();
+        User requester = User.forTest(3L);
         Transaction txn = Transaction.builder()
                 .id(1L)
                 .bank(Bank.builder()

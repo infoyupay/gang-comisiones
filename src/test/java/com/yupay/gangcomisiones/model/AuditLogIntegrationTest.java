@@ -62,7 +62,7 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
         // Arrange: create a User (assuming minimal constructor/setters available)
         User user = User.builder()
                 .username("tester")
-                .passwordHash("secret")
+                .password("secret25")
                 .role(UserRole.ROOT)
                 .active(true)
                 .build();
@@ -126,7 +126,7 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
 
         User user = User.builder()
                 .username("tester2")
-                .passwordHash("secret")
+                .password("secret25")
                 .role(UserRole.ROOT)
                 .active(true)
                 .build();
@@ -158,7 +158,7 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
 
             user = User.builder()
                     .username("auditUser")
-                    .passwordHash("secret")
+                    .password("secret25")
                     .role(UserRole.ROOT)
                     .active(true)
                     .build();

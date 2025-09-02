@@ -74,7 +74,7 @@ class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
                 .legalName("Empresa Legal SAC")
                 .businessName("Empresa Comercial")
                 .address("Av. Principal 123")
-                .updatedBy(User.builder().id(1L).build())
+                .updatedBy(User.forTest(1L))
                 .updatedFrom("mylaptop");
     }
 

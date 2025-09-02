@@ -85,7 +85,7 @@ public class TestPersistedEntities {
         if (USER.get() == null) {
             var r = User.builder()
                     .active(true)
-                    .passwordHash("password")
+                    .password("password")
                     .role(UserRole.ROOT)
                     .username("rootUser")
                     .build();
