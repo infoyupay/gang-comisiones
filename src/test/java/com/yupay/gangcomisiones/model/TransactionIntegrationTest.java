@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *     <li>Fails when commission is negative.</li>
  *     <li>Equals and hashcode works based on id.</li>
  * </ul>
- * <span><strong>Test-Run:</strong> dvidal ran 10 tests in 1.237s. All passed.</span>
+ * <span><strong>Test-Run:</strong> dvidal ran 10 tests in 1.83. All passed.</span>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -51,82 +51,8 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @BeforeEach
     void cleanTables() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            em.getTransaction().begin();
-            em.createNativeQuery("TRUNCATE TABLE transaction CASCADE").executeUpdate();
-            em.createNativeQuery("TRUNCATE TABLE concept CASCADE").executeUpdate();
-            em.createNativeQuery("TRUNCATE TABLE bank CASCADE").executeUpdate();
-            em.createNativeQuery("TRUNCATE TABLE \"user\" CASCADE").executeUpdate();
-            em.getTransaction().commit();
-        }
+        TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
-
-    /**
-     * Creates and persists a valid test bank.
-     *
-     * @param em the entity manager.
-     * @return the created bank.
-     */
-    private Bank persistBank(@NotNull EntityManager em) {
-        var bank = Bank.builder()
-                .active(true)
-                .name("Test Bank")
-                .build();
-        em.persist(bank);
-        return bank;
-    }
-
-    /**
-     * Creates and persists a valid test concept.
-     *
-     * @param em the entity manager.
-     * @return the created concept.
-     */
-    private Concept persistConcept(@NotNull EntityManager em) {
-        var concept = Concept.builder()
-                .active(true)
-                .name("Test Concept")
-                .type(ConceptType.FIXED)
-                .value(new BigDecimal("10.0000"))
-                .build();
-        em.persist(concept);
-        return concept;
-    }
-
-    /**
-     * Creates and persists a valid test cashier user.
-     *
-     * @param em the entity manager.
-     * @return the created cashier.
-     */
-    private User persistCashier(@NotNull EntityManager em) {
-        var cashier = User.builder()
-                .active(true)
-                .passwordHash("password")
-                .role(UserRole.CASHIER)
-                .username("cashier1")
-                .build();
-        em.persist(cashier);
-        return cashier;
-    }
-
-    /**
-     * Creates and persists a valid test transaction.
-     *
-     * @param em the entity manager.
-     * @return the created transaction.
-     */
-    private Transaction buildValidTransaction(EntityManager em) {
-        return Transaction.builder()
-                .bank(persistBank(em))
-                .concept(persistConcept(em))
-                .cashier(persistCashier(em))
-                .amount(new BigDecimal("10.0000"))
-                .commission(new BigDecimal("1.0000"))
-                .status(TransactionStatus.REGISTERED)
-                .build();
-    }
-
     /**
      * Verifies that a valid transaction can be successfully persisted into the database.
      * <br/>
@@ -154,7 +80,7 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             var et = em.getTransaction();
             et.begin();
-            var tx = buildValidTransaction(em);
+            var tx = TestPersistedEntities.buildValidTansaction(em);
             em.persist(tx);
             et.commit();
             em.refresh(tx);
@@ -178,7 +104,7 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             var et = em.getTransaction();
             et.begin();
-            var tx = buildValidTransaction(em);
+            var tx = TestPersistedEntities.buildValidTansaction(em);
             switch (field) {
                 case "bank" -> tx.setBank(null);
                 case "concept" -> tx.setConcept(null);
@@ -212,7 +138,7 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             var et = em.getTransaction();
             et.begin();
-            var tx = buildValidTransaction(em);
+            var tx = TestPersistedEntities.buildValidTansaction(em);
             tx.setAmount(BigDecimal.ZERO);
             em.persist(tx);
             expectCommitFailure(et);
@@ -238,7 +164,7 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             var et = em.getTransaction();
             et.begin();
-            var tx = buildValidTransaction(em);
+            var tx = TestPersistedEntities.buildValidTansaction(em);
             tx.setCommission(new BigDecimal("-1.00"));
             em.persist(tx);
             expectCommitFailure(et);
