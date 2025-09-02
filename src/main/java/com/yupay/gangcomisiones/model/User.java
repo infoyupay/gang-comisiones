@@ -33,7 +33,6 @@ import java.util.Objects;
  * @author InfoYupay SACS
  * @version 1.0
  */
-@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -56,6 +55,7 @@ public class User {
             schema = "public",
             allocationSize = 1)
     @Column(name = "id", nullable = false)
+    @Getter
     private Long id;
 
     /**
@@ -64,6 +64,7 @@ public class User {
      */
     @Column(name = "username", nullable = false, unique = true)
     @Setter
+    @Getter
     private String username;
 
     /**
@@ -74,7 +75,6 @@ public class User {
      * and cannot be null nor empty.
      */
     @Column(name = "password_hash", nullable = false)
-    @Setter
     private String passwordHash;
 
     /**
@@ -85,7 +85,6 @@ public class User {
      * and cannot be null nor empty.
      */
     @Column(name = "password_salt", nullable = false)
-    @Setter
     private String passwordSalt;
 
     /**
@@ -104,6 +103,7 @@ public class User {
     @Column(name = "role", columnDefinition = "user_role not null")
     @Enumerated(EnumType.STRING)
     @Setter
+    @Getter
     private UserRole role;
 
     /**
@@ -120,6 +120,7 @@ public class User {
     @Builder.Default
     @Column(name = "active", nullable = false)
     @Setter
+    @Getter
     private Boolean active = false;
 
     @Override
