@@ -78,6 +78,17 @@ public class User {
     private String passwordHash;
 
     /**
+     * Represents the salt for password of the User entity.
+     * This field is used to securely store the user's password
+     * in an irreversible hashed format within the database.
+     * It is mapped to the "password_salt" column in the "user" table
+     * and cannot be null nor empty.
+     */
+    @Column(name = "password_salt", nullable = false)
+    @Setter
+    private String passwordSalt;
+
+    /**
      * Represents the role assigned to the User entity within the system.
      * <br/>
      * This field is mapped to the "role" column in the "user" table and

@@ -19,37 +19,32 @@
 
 package com.yupay.gangcomisiones.model;
 
-import com.yupay.gangcomisiones.AppContext;
-import com.yupay.gangcomisiones.DummyHelpers;
-import com.yupay.gangcomisiones.exceptions.AppContextException;
-import com.yupay.gangcomisiones.logging.LogConfig;
 import jakarta.persistence.EntityManager;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 /**
  * Integration test class for entity {@link User}.
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
-class UserIntegrationTest extends AbstractPostgreIntegrationTest{
+class UserIntegrationTest extends AbstractPostgreIntegrationTest {
     /**
      * Tests persisting and querying a user.
      */
     @Test
     void testPersistAndQueryUser() {
+        TestPersistedEntities.clean(ctx.getEntityManagerFactory());
         EntityManager em = ctx.getEntityManagerFactory().createEntityManager();
 
         em.getTransaction().begin();
         User user = new User();
         user.setUsername("admin");
         user.setPasswordHash("hash123");
+        user.setPasswordSalt("salt123");
         user.setRole(UserRole.ROOT);   // enum
         user.setActive(true);
         em.persist(user);

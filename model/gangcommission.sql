@@ -9,7 +9,7 @@
 
 -- object: gangcomision_db | type: DATABASE --
 -- DROP DATABASE IF EXISTS gangcomision_db;
--- CREATE DATABASE gangcomision_test_db;
+CREATE DATABASE gangcomision_db;
 -- ddl-end --
 
 
@@ -44,12 +44,14 @@ CREATE TABLE public."user" (
 	id bigint NOT NULL DEFAULT nextval('public.sq_user_id'::regclass),
 	username varchar NOT NULL,
 	password_hash varchar NOT NULL,
+	password_salt varchar NOT NULL,
 	role public.user_role NOT NULL,
 	active boolean NOT NULL,
 	CONSTRAINT uq_user_username UNIQUE (username),
 	CONSTRAINT user_pk PRIMARY KEY (id),
 	CONSTRAINT chk_user_username_nonempty CHECK (char_length(username) > 0),
-	CONSTRAINT chk_user_passwordhash_nonempty CHECK (char_length(password_hash) > 0)
+	CONSTRAINT chk_user_passwordhash_nonempty CHECK (char_length(password_hash) > 0),
+	CONSTRAINT chk_user_passwordsalt_nonempty CHECK (char_length((password_salt)::text) > 0)
 );
 -- ddl-end --
 
