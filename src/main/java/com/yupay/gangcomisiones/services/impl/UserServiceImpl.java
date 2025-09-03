@@ -48,7 +48,6 @@ import java.util.stream.Stream;
  */
 public record UserServiceImpl(EntityManagerFactory emf,
                               ExecutorService jdbcExecutor) implements UserService, RollbackChecker {
-
     @Contract("_, _, _ -> new")
     @Override
     public @NotNull CompletableFuture<User> createUser(String username, UserRole role, String plainPassword) {
@@ -81,10 +80,10 @@ public record UserServiceImpl(EntityManagerFactory emf,
                 et = em.getTransaction();
                 et.begin();
                 var user = em.find(User.class, userId);
-                if (user == null) throw new PersistenceServicesException("User not found: " + userId);
-                if (!user.getActive()) throw new PersistenceServicesException("User is not active: " + userId);
+                if (user == null) throw UserServiceError.USER_NOT_FOUND_BY_ID.createException(userId);
+                if (!user.getActive()) throw UserServiceError.USER_NOT_ACTIVE.createException(user.getUsername());
                 if (!user.verifyPassword(oldPassword)) {
-                    throw new PersistenceServicesException("Old password does not match for user " + user.getUsername());
+                    throw UserServiceError.PASSWORD_MISMATCH.createException(user.getUsername());
                 }
                 user.setPassword(newPassword);
                 et.commit();
@@ -161,16 +160,16 @@ public record UserServiceImpl(EntityManagerFactory emf,
             try (var em = emf.createEntityManager()) {
                 et = em.getTransaction();
                 et.begin();
-                var root = validateUser(rootUsername, rootPassword, UserRole.ROOT, em)
-                        .orElseThrow(() -> new PersistenceServicesException("No active ROOT user with given credentials."));
+                validateUser(rootUsername, rootPassword, UserRole.ROOT, em)
+                        .orElseThrow(() -> UserServiceError.ROOT_AUTH_FAILED.createException(rootUsername));
                 var user = findByUsername(username, em)
-                        .orElseThrow(() -> new PersistenceServicesException("No user with given name."));
+                        .orElseThrow(() -> UserServiceError.USER_NOT_FOUND_BY_USERNAME.createException(username));
                 user.setPassword(newPassword);
                 et.commit();
             } catch (RuntimeException e) {
                 checkTxAndRollback(et, e);
             }
-        });
+        }, jdbcExecutor);
     }
 
     /**
@@ -201,5 +200,89 @@ public record UserServiceImpl(EntityManagerFactory emf,
                 .getResultStream()
                 .findFirst()
                 .filter(u -> u.verifyPassword(password));
+    }
+
+    /**
+     * Enumeration with UserServices specific error messages.
+     *
+     * @author InfoYupay SACS
+     * @version 1.0
+     */
+    private enum UserServiceError {
+        /**
+         * When user is searched by ID but not found.
+         */
+        USER_NOT_FOUND_BY_ID("User not found by ID", "userId"),
+        /**
+         * When user is searched by username but not found.
+         */
+        USER_NOT_FOUND_BY_USERNAME("User not found by username", "username"),
+        /**
+         * When a user is not active (active flag is false).
+         */
+        USER_NOT_ACTIVE("User is not active", "username"),
+        /**
+         * When user password doesn't match with an external password.
+         */
+        PASSWORD_MISMATCH("Password does not match", "username"),
+        /**
+         * When authenticating a root user fails.
+         */
+        ROOT_AUTH_FAILED("Root authentication failed", "username");
+
+        /**
+         * The default message.
+         */
+        private final String defaultMessage;
+
+        /**
+         * The faulty parameter name associated with the error.
+         */
+        private final String faultyParam;
+
+        /**
+         * Constructs a new UserServiceError with the given default message.
+         *
+         * @param defaultMessage the default message.
+         * @param faultyParam    the faulty parameter name.
+         */
+        @Contract(pure = true)
+        UserServiceError(String defaultMessage, String faultyParam) {
+            this.defaultMessage = defaultMessage;
+            this.faultyParam = faultyParam;
+        }
+
+        /**
+         * Creates a new PersistenceServicesException with the given faulty value, and cause.
+         *
+         * @param faultyValue the faulty value.
+         * @param cause       the cause of the exception.
+         * @return the created PersistenceServicesException.
+         */
+        public @NotNull PersistenceServicesException createException(
+                @Nullable Object faultyValue,
+                @Nullable Throwable cause) {
+            var r = new PersistenceServicesException("[%s] %s: %s = %s"
+                    .formatted(
+                            this.name(),
+                            defaultMessage,
+                            faultyParam,
+                            faultyValue));
+            if (cause != null) {
+                r.initCause(cause);
+            }
+            return r;
+        }
+
+        /**
+         * Creates a new PersistenceServicesException with the given faulty value, and null cause.
+         *
+         * @param faultyValue the faulty value.
+         * @return the created PersistenceServicesException {@code createException(faultyValue, null);}
+         */
+        public @NotNull PersistenceServicesException createException(
+                @Nullable Object faultyValue) {
+            return createException(faultyValue, null);
+        }
     }
 }
