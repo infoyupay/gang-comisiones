@@ -72,8 +72,9 @@ public record UserServiceImpl(EntityManagerFactory emf,
         }, jdbcExecutor);
     }
 
+    @Contract("_, _, _ -> new")
     @Override
-    public CompletableFuture<Void> changePassword(Long userId, String oldPassword, String newPassword) {
+    public @NotNull CompletableFuture<Void> changePassword(Long userId, String oldPassword, String newPassword) {
         return CompletableFuture.runAsync(() -> {
             EntityTransaction et = null;
             try (var em = emf.createEntityManager()) {
@@ -93,8 +94,9 @@ public record UserServiceImpl(EntityManagerFactory emf,
         }, jdbcExecutor);
     }
 
+    @Contract("_ -> new")
     @Override
-    public CompletableFuture<Optional<User>> findById(Long userId) {
+    public @NotNull CompletableFuture<Optional<User>> findById(Long userId) {
         return CompletableFuture.supplyAsync(() -> {
             try (var em = emf.createEntityManager()) {
                 return Optional.ofNullable(em.find(User.class, userId));
@@ -102,8 +104,9 @@ public record UserServiceImpl(EntityManagerFactory emf,
         }, jdbcExecutor);
     }
 
+    @Contract("_ -> new")
     @Override
-    public CompletableFuture<Optional<User>> findByUsername(String username) {
+    public @NotNull CompletableFuture<Optional<User>> findByUsername(String username) {
         return CompletableFuture.supplyAsync(() -> {
             try (var em = emf.createEntityManager()) {
                 return findByUsername(username, em);
@@ -124,8 +127,9 @@ public record UserServiceImpl(EntityManagerFactory emf,
         return query.getResultStream().findFirst();
     }
 
+    @Contract(" -> new")
     @Override
-    public CompletableFuture<List<User>> listAllUsers() {
+    public @NotNull CompletableFuture<List<User>> listAllUsers() {
         return CompletableFuture.supplyAsync(() -> {
             try (var em = emf.createEntityManager()) {
                 var query = em.createQuery("SELECT u FROM User u", User.class);
@@ -134,10 +138,11 @@ public record UserServiceImpl(EntityManagerFactory emf,
         }, jdbcExecutor);
     }
 
+    @Contract("_, _, _ -> new")
     @Override
-    public CompletableFuture<Optional<User>> validateUser(@NotNull String username,
-                                                          @NotNull String password,
-                                                          @Nullable UserRole role) {
+    public @NotNull CompletableFuture<Optional<User>> validateUser(@NotNull String username,
+                                                                   @NotNull String password,
+                                                                   @Nullable UserRole role) {
         return CompletableFuture.supplyAsync(() -> {
             try (var em = emf.createEntityManager()) {
                 return validateUser(username, password, role, em);
