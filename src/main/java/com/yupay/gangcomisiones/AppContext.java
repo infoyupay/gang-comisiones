@@ -21,6 +21,8 @@ package com.yupay.gangcomisiones;
 
 
 import com.yupay.gangcomisiones.exceptions.AppContextException;
+import com.yupay.gangcomisiones.services.UserService;
+import com.yupay.gangcomisiones.services.impl.UserServiceImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -84,6 +86,10 @@ public final class AppContext {
      * Executor for other tasks.
      */
     private final ExecutorService taskExecutor;
+    /**
+     * User service backed by JPA.
+     */
+    private final UserService userService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -104,6 +110,9 @@ public final class AppContext {
                 .ofVirtual()
                 .name("AppContext-Task-", 0)
                 .factory());
+
+        // Persistence services.
+        this.userService = new UserServiceImpl(emf, jdbcExecutor);
     }
 
     /**
@@ -291,6 +300,18 @@ public final class AppContext {
     @Contract(pure = true)
     public ExecutorService getTaskExecutor() {
         return taskExecutor;
+    }
+
+    /**
+     * Retrieves the {@code UserService} instance associated with this context.
+     * The {@code UserService} provides various operations related to {@code User} entities,
+     * such as user creation, password management, and retrieval based on specific criteria.
+     *
+     * @return the {@code UserService} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public UserService getUserService() {
+        return userService;
     }
 }
 
