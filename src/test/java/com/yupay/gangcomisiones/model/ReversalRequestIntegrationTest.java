@@ -19,6 +19,7 @@
 
 package com.yupay.gangcomisiones.model;
 
+import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

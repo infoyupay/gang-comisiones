@@ -19,7 +19,7 @@
 
 package com.yupay.gangcomisiones.model;
 
-import jakarta.persistence.EntityManager;
+import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import jakarta.persistence.PersistenceException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;

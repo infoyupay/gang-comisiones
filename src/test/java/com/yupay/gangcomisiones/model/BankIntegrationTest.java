@@ -19,6 +19,7 @@
 
 package com.yupay.gangcomisiones.model;
 
+import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.AppContext;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
