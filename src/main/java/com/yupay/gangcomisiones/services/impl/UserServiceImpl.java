@@ -22,10 +22,10 @@ package com.yupay.gangcomisiones.services.impl;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
+import com.yupay.gangcomisiones.services.TransactionManager;
 import com.yupay.gangcomisiones.services.UserService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
-import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.criteria.Predicate;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -47,58 +47,42 @@ import java.util.stream.Stream;
  * @version 1.0
  */
 public record UserServiceImpl(EntityManagerFactory emf,
-                              ExecutorService jdbcExecutor) implements UserService, RollbackChecker {
+                              ExecutorService jdbcExecutor) implements UserService, RollbackChecker, TransactionManager {
     @Contract("_, _, _ -> new")
     @Override
     public @NotNull CompletableFuture<User> createUser(String username, UserRole role, String plainPassword) {
-        return CompletableFuture.supplyAsync(() -> {
+        return runInTransactionAsync(em -> {
             var user = User.builder()
                     .username(username)
                     .role(role)
                     .active(true)
                     .password(plainPassword)
                     .build();
-            EntityTransaction et = null;
-            try (var em = emf.createEntityManager()) {
-                et = em.getTransaction();
-                et.begin();
-                var userCount = em
-                        .createQuery("SELECT COUNT(e) FROM User e", Long.class)
-                        .getSingleResult();
-                em.persist(user);
-                //Special case: first ROOT user creation is not logged.
-                if (userCount > 0) {
-                    AuditAction.USER_CREATE.log(em, user.getId());
-                }
-                et.commit();
-            } catch (RuntimeException e) {
-                checkTxAndRollback(et, e);
+            var userCount = em
+                    .createQuery("SELECT COUNT(e) FROM User e", Long.class)
+                    .getSingleResult();
+            em.persist(user);
+            //Special case: first ROOT user creation is not logged.
+            if (userCount > 0) {
+                AuditAction.USER_CREATE.log(em, user.getId());
             }
             return user;
-        }, jdbcExecutor);
+        });
     }
 
     @Contract("_, _, _ -> new")
     @Override
     public @NotNull CompletableFuture<Void> changePassword(Long userId, String oldPassword, String newPassword) {
-        return CompletableFuture.runAsync(() -> {
-            EntityTransaction et = null;
-            try (var em = emf.createEntityManager()) {
-                et = em.getTransaction();
-                et.begin();
-                var user = em.find(User.class, userId);
-                if (user == null) throw UserServiceError.USER_NOT_FOUND_BY_ID.createException(userId);
-                if (!user.getActive()) throw UserServiceError.USER_NOT_ACTIVE.createException(user.getUsername());
-                if (!user.verifyPassword(oldPassword)) {
-                    throw UserServiceError.PASSWORD_MISMATCH.createException(user.getUsername());
-                }
-                user.setPassword(newPassword);
-                AuditAction.USER_PASSWORD_CHANGE.log(em, user.getId());
-                et.commit();
-            } catch (RuntimeException e) {
-                checkTxAndRollback(et, e);
+        return runVoidInTransactionAsync(em -> {
+            var user = em.find(User.class, userId);
+            if (user == null) throw UserServiceError.USER_NOT_FOUND_BY_ID.createException(userId);
+            if (!user.getActive()) throw UserServiceError.USER_NOT_ACTIVE.createException(user.getUsername());
+            if (!user.verifyPassword(oldPassword)) {
+                throw UserServiceError.PASSWORD_MISMATCH.createException(user.getUsername());
             }
-        }, jdbcExecutor);
+            user.setPassword(newPassword);
+            AuditAction.USER_PASSWORD_CHANGE.log(em, user.getId());
+        });
     }
 
     @Contract("_ -> new")
@@ -163,22 +147,14 @@ public record UserServiceImpl(EntityManagerFactory emf,
                                                           @NotNull String rootPassword,
                                                           @NotNull String username,
                                                           @NotNull String newPassword) {
-        return CompletableFuture.runAsync(() -> {
-            EntityTransaction et = null;
-            try (var em = emf.createEntityManager()) {
-                et = em.getTransaction();
-                et.begin();
-                var root = validateUser(rootUsername, rootPassword, UserRole.ROOT, em)
-                        .orElseThrow(() -> UserServiceError.ROOT_AUTH_FAILED.createException(rootUsername));
-                var user = findByUsername(username, em)
-                        .orElseThrow(() -> UserServiceError.USER_NOT_FOUND_BY_USERNAME.createException(username));
-                user.setPassword(newPassword);
-                AuditAction.USER_PASSWORD_RESET.log(em, root, user.getId());
-                et.commit();
-            } catch (RuntimeException e) {
-                checkTxAndRollback(et, e);
-            }
-        }, jdbcExecutor);
+        return runVoidInTransactionAsync(em -> {
+            var root = validateUser(rootUsername, rootPassword, UserRole.ROOT, em)
+                    .orElseThrow(() -> UserServiceError.ROOT_AUTH_FAILED.createException(rootUsername));
+            var user = findByUsername(username, em)
+                    .orElseThrow(() -> UserServiceError.USER_NOT_FOUND_BY_USERNAME.createException(username));
+            user.setPassword(newPassword);
+            AuditAction.USER_PASSWORD_RESET.log(em, root, user.getId());
+        });
     }
 
     /**
