@@ -22,6 +22,7 @@ package com.yupay.gangcomisiones.services;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -131,6 +132,39 @@ public interface TransactionManager {
      */
     default CompletableFuture<Void> runVoidInTransactionAsync(Consumer<EntityManager> transactionBody) {
         return CompletableFuture.runAsync(() -> runVoidInTransaction(transactionBody), jdbcExecutor());
+    }
+
+    /**
+     * Executes a given operation that interacts with the database using an {@link EntityManager}
+     * without managing a transaction. The operation is executed within the context of a newly
+     * created {@link EntityManager}, which is automatically closed after the operation completes.
+     *
+     * @param <T>       the type of the result produced by the operation
+     * @param queryBody a {@link Function} representing the logic to execute, which takes an
+     *                  {@link EntityManager} as a parameter
+     * @return the result of the operation executed within the {@link EntityManager} context
+     */
+    @SuppressWarnings("resource")
+    default <T> T runWithoutTransaction(@NotNull Function<EntityManager, T> queryBody) {
+        try (var em = emf().createEntityManager()) {
+            return queryBody.apply(em);
+        }
+    }
+
+    /**
+     * Executes a given operation that interacts with the database using an {@link EntityManager}
+     * without managing a transaction asynchronously. The operation is executed within the context
+     * of a newly created {@link EntityManager}, which is automatically closed after the operation completes.
+     * The method delegates to the synchronous {@code runWithoutTransaction} method and executes it in a separate thread.
+     *
+     * @param <T>       the type of the result produced by the operation
+     * @param queryBody a {@link Function} representing the logic to execute,
+     *                  which takes an {@link EntityManager} as a parameter
+     * @return a {@link CompletableFuture} that completes with the result of the
+     * operation executed within the {@link EntityManager} context
+     */
+    default <T> CompletableFuture<T> runWithoutTransactionAsync(Function<EntityManager, T> queryBody) {
+        return CompletableFuture.supplyAsync(() -> runWithoutTransaction(queryBody), jdbcExecutor());
     }
 
 }
