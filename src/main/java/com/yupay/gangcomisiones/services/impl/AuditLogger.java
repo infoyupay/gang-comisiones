@@ -23,6 +23,7 @@ import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.exceptions.GangComisionesException;
 import com.yupay.gangcomisiones.model.AuditLog;
 import com.yupay.gangcomisiones.model.User;
+import jakarta.persistence.EntityManager;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.InetAddress;
@@ -86,6 +87,32 @@ public interface AuditLogger {
      */
     default AuditLog createAuditLog(long entityId) {
         return createAuditLog(AppContext.getInstance().getUserSession().getCurrentUser(), entityId);
+    }
+
+    /**
+     * Persists the created auditory log.
+     *
+     * @param em       entity manager object.
+     * @param entityId the entity id.
+     */
+    default void log(
+            @NotNull EntityManager em,
+            long entityId) {
+        em.persist(createAuditLog(entityId));
+    }
+
+    /**
+     * Persists the created auditory log.
+     *
+     * @param em       entity manager object.
+     * @param actor    the actor triggering the log.
+     * @param entityId the entity id.
+     */
+    default void log(
+            @NotNull EntityManager em,
+            @NotNull User actor,
+            long entityId) {
+        em.persist(createAuditLog(actor, entityId));
     }
 
     /**
