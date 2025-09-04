@@ -69,24 +69,18 @@ public record BankServiceImpl(@NotNull EntityManagerFactory emf,
     @Contract(" -> new")
     @Override
     public @NotNull CompletableFuture<List<Bank>> listAllBanks() {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                return em.createQuery("SELECT b FROM Bank b", Bank.class)
-                        .getResultList();
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em -> em
+                .createQuery("SELECT b FROM Bank b", Bank.class)
+                .getResultList());
     }
 
 
     @Contract(" -> new")
     @Override
     public @NotNull CompletableFuture<List<Bank>> listAllActiveBanks() {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                return em.createQuery("SELECT b FROM Bank b WHERE b.active = true", Bank.class)
-                        .getResultList();
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em -> em
+                .createQuery("SELECT b FROM Bank b WHERE b.active = true", Bank.class)
+                .getResultList());
     }
 
 

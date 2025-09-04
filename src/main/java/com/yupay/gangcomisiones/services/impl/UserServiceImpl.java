@@ -88,21 +88,13 @@ public record UserServiceImpl(EntityManagerFactory emf,
     @Contract("_ -> new")
     @Override
     public @NotNull CompletableFuture<Optional<User>> findById(Long userId) {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                return Optional.ofNullable(em.find(User.class, userId));
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em -> Optional.ofNullable(em.find(User.class, userId)));
     }
 
     @Contract("_ -> new")
     @Override
     public @NotNull CompletableFuture<Optional<User>> findByUsername(String username) {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                return findByUsername(username, em);
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em -> findByUsername(username, em));
     }
 
     /**
@@ -113,7 +105,8 @@ public record UserServiceImpl(EntityManagerFactory emf,
      * @return an Optional containing the User if found; otherwise, an empty Optional
      */
     private @NotNull Optional<User> findByUsername(@NotNull String username, @NotNull EntityManager em) {
-        var query = em.createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
+        var query = em
+                .createQuery("SELECT u FROM User u WHERE u.username = :username", User.class);
         query.setParameter("username", username);
         return query.getResultStream().findFirst();
     }
@@ -121,12 +114,8 @@ public record UserServiceImpl(EntityManagerFactory emf,
     @Contract(" -> new")
     @Override
     public @NotNull CompletableFuture<List<User>> listAllUsers() {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                var query = em.createQuery("SELECT u FROM User u", User.class);
-                return query.getResultList();
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em ->
+                em.createQuery("SELECT u FROM User u", User.class).getResultList());
     }
 
     @Contract("_, _, _ -> new")
@@ -134,11 +123,7 @@ public record UserServiceImpl(EntityManagerFactory emf,
     public @NotNull CompletableFuture<Optional<User>> validateUser(@NotNull String username,
                                                                    @NotNull String password,
                                                                    @Nullable UserRole role) {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                return validateUser(username, password, role, em);
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em -> validateUser(username, password, role, em));
     }
 
     @Contract("_, _, _, _ -> new")

@@ -76,12 +76,9 @@ public record ConceptServiceImpl(@NotNull EntityManagerFactory emf,
     @Contract(" -> new")
     @Override
     public @NotNull CompletableFuture<List<Concept>> listAllConcepts() {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                return em.createQuery("SELECT c FROM Concept c", Concept.class)
-                        .getResultList();
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em -> em
+                .createQuery("SELECT c FROM Concept c", Concept.class)
+                .getResultList());
     }
 
     /**
@@ -92,12 +89,9 @@ public record ConceptServiceImpl(@NotNull EntityManagerFactory emf,
     @Contract(" -> new")
     @Override
     public @NotNull CompletableFuture<List<Concept>> listAllActiveConcepts() {
-        return CompletableFuture.supplyAsync(() -> {
-            try (var em = emf.createEntityManager()) {
-                return em.createQuery("SELECT c FROM Concept c WHERE c.active = true", Concept.class)
-                        .getResultList();
-            }
-        }, jdbcExecutor);
+        return runWithoutTransactionAsync(em ->
+                em.createQuery("SELECT c FROM Concept c WHERE c.active = true", Concept.class)
+                        .getResultList());
     }
 
     /**
