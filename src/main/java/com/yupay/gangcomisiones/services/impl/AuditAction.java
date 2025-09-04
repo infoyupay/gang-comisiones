@@ -1,0 +1,90 @@
+/*
+ * gang-comisiones
+ * COPYLEFT 2025
+ * Ingenieria Informatica Yupay SACS
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ *  with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.yupay.gangcomisiones.services.impl;
+
+import org.jetbrains.annotations.Contract;
+
+/**
+ * Enumeration with actions for {@link com.yupay.gangcomisiones.model.AuditLog},
+ * it centralizes the expected values in the action of AuditLog.
+ * <br/>
+ * Each enum has a description extracted from its Javadoc for more readable logs.
+ *
+ * @author InfoYupay SACS
+ * @version 1.0
+ */
+public enum AuditAction {
+    /**
+     * Creation of a new user.
+     */
+    USER_CREATE("Creation of a new user"),
+
+    /**
+     * Change of password for a user.
+     * A password change is when the user, knowing its own password, decides to change it.
+     */
+    USER_PASSWORD_CHANGE("Change of password by the user itself"),
+
+    /**
+     * Password reset for a user. The password reset
+     * is when a ROOT user forces a password change of another user.
+     */
+    USER_PASSWORD_RESET("Password reset forced by a ROOT user"),
+
+    /**
+     * Change of permissions for a user.
+     * A permission change is when a ROOT user changes the permissions of another user, like Linux chmod.
+     */
+    USER_CHMOD("Change of permissions by a ROOT user"),
+
+    /**
+     * When a ROOT user changes the user active flag to false,
+     * this implies a cleaning of the user random disabling such user to logon until password and flag reset.
+     */
+    USER_DISABLE("User disabled by a ROOT user, random password assigned"),
+
+    /**
+     * When a ROOT user changes the user active flag to true,
+     * this implies a password reset.
+     */
+    USER_ENABLE("User enabled by a ROOT user, password reset");
+
+    private final String description;
+
+    /**
+     * Constructs an AuditAction with the specified description.
+     *
+     * @param description the human-readable description of the audit action.
+     */
+    @Contract(pure = true)
+    AuditAction(String description) {
+        this.description = description;
+    }
+
+    /**
+     * Returns a human-readable description of the audit action.
+     *
+     * @return the description of the action.
+     */
+    @Contract(pure = true)
+    public String getDescription() {
+        return description;
+    }
+}
