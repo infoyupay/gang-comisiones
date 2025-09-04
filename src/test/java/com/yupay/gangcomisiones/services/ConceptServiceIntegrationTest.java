@@ -39,15 +39,12 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.AuditLog;
 import com.yupay.gangcomisiones.model.Concept;
 import com.yupay.gangcomisiones.model.ConceptType;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
-import com.yupay.gangcomisiones.model.UserRole;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,44 +69,13 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
      * Sets up the test environment before each test execution.
      * This method performs the following steps:
      * 1. Cleans up previously persisted entities and truncates all database tables
-     *    to ensure a clean state for testing.
+     * to ensure a clean state for testing.
      * 2. Initializes the {@code ConceptService} instance for use within the test cases.
      */
     @BeforeEach
     void setUp() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
         conceptService = ctx.getConceptService();
-    }
-
-    /// Creates an admin user and sets the user as the current user for the application session.
-    /// This method performs the following steps:
-    /// 1. Creates a new user with the username "admin.user", role as administrator,
-    ///    and a default password.
-    /// 2. Updates the current session to set the newly created admin user as the active user.
-    /// It utilizes the application context to retrieve the user service and user session
-    /// required for achieving the above functionality.
-    /// The created user can later be used for testing or administrative actions during
-    /// the test execution lifecycle.
-    void createAndLogAdminUser() {
-        var r = AppContext.getInstance()
-                .getUserService()
-                .createUser("admin.user", UserRole.ADMIN, "password")
-                .join();
-        AppContext.getInstance().getUserSession().setCurrentUser(r);
-    }
-
-    /// Creates a cashier user and sets the user as the current user for the application session.
-    /// This method executes the following steps:
-    /// 1. Creates a new user with the username "cashier.user", assigns the role as cashier, and sets a default password.
-    /// 2. Updates the current session to set the newly created cashier user as the active user.
-    /// The method utilizes the application context to retrieve the user service and user session required for these operations.
-    /// The created user is intended to facilitate testing or role-specific actions during the test lifecycle.
-    void createAndLogCashierUser() {
-        var r = AppContext.getInstance()
-                .getUserService()
-                .createUser("cashier.user", UserRole.CASHIER, "password")
-                .join();
-        AppContext.getInstance().getUserSession().setCurrentUser(r);
     }
 
     /// Verifies that the `createConcept` method in `ConceptService` correctly assigns an ID,
@@ -129,7 +95,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @Test
     void testCreateConcept_AssignsIdActiveTrueAndAudited() throws Exception {
         // given
-        createAndLogAdminUser();
+        UserSessionHelpers.createAndLogAdminUser();
 
         // when
         Concept c = conceptService.createConcept("Telephone Bill", ConceptType.FIXED, new BigDecimal("10.0000")).get();
@@ -170,7 +136,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// and provides meaningful feedback when such actions are attempted.
     @Test
     void testCreateConcept_UnprivilegedUserFails() {
-        createAndLogCashierUser();
+        UserSessionHelpers.createAndLogCashierUser();
 
         var ex = assertThrows(ExecutionException.class,
                 () -> conceptService.createConcept("Water Service", ConceptType.FIXED, new BigDecimal("2.0000")).get());
@@ -189,7 +155,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// This test helps verify role-based access control for the `updateConcept` operation.
     @Test
     void testUpdateConcept_UnprivilegedUserFails() {
-        createAndLogCashierUser();
+        UserSessionHelpers.createAndLogCashierUser();
 
         var ex = assertThrows(ExecutionException.class,
                 () -> conceptService.updateConcept(1L, "Water Service", ConceptType.FIXED, new BigDecimal("2.0000"), true).get());
@@ -210,7 +176,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testCreateConcept_NullFieldsFail() {
-        createAndLogAdminUser();
+        UserSessionHelpers.createAndLogAdminUser();
 
         // null name
         ExecutionException ex1 = assertThrows(ExecutionException.class,
@@ -251,7 +217,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testUpdateConcept_NullFieldsFail() throws Exception {
-        createAndLogAdminUser();
+        UserSessionHelpers.createAndLogAdminUser();
         Concept c = conceptService.createConcept("Internet", ConceptType.RATE, new BigDecimal("0.1000")).get();
 
         // null name
@@ -292,7 +258,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// enforced in the `ConceptService` implementation.
     @Test
     void testCreateConcept_CheckConstraints() {
-        createAndLogAdminUser();
+        UserSessionHelpers.createAndLogAdminUser();
 
         // FIXED exceeding precision (should be max 99.9999)
         ExecutionException ex1 = assertThrows(ExecutionException.class,
