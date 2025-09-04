@@ -24,9 +24,11 @@ import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.services.UserService;
 import com.yupay.gangcomisiones.services.BankService;
 import com.yupay.gangcomisiones.services.ConceptService;
+import com.yupay.gangcomisiones.services.TransactionService;
 import com.yupay.gangcomisiones.services.impl.UserServiceImpl;
 import com.yupay.gangcomisiones.services.impl.BankServiceImpl;
 import com.yupay.gangcomisiones.services.impl.ConceptServiceImpl;
+import com.yupay.gangcomisiones.services.impl.TransactionServiceImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -106,6 +108,10 @@ public final class AppContext {
      * Concept service backed by JPA.
      */
     private final ConceptService conceptService;
+    /**
+     * Transaction service backed by JPA.
+     */
+    private final TransactionService transactionService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -132,6 +138,7 @@ public final class AppContext {
         this.userService = new UserServiceImpl(emf, jdbcExecutor);
         this.bankService = new BankServiceImpl(emf, jdbcExecutor);
         this.conceptService = new ConceptServiceImpl(emf, jdbcExecutor);
+        this.transactionService = new TransactionServiceImpl(emf, jdbcExecutor);
     }
 
     /**
@@ -353,6 +360,17 @@ public final class AppContext {
     @Contract(pure = true)
     public ConceptService getConceptService() {
         return conceptService;
+    }
+
+    /**
+     * Retrieves the {@code TransactionService} instance associated with this context.
+     * The {@code TransactionService} provides operations related to {@code Transaction} entities.
+     *
+     * @return the {@code TransactionService} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public TransactionService getTransactionService() {
+        return transactionService;
     }
 
     /**

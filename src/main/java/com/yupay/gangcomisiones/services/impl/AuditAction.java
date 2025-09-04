@@ -85,7 +85,12 @@ public enum AuditAction implements AuditLogger {
     /**
      * Update of a concept's basic information.
      */
-    CONCEPT_UPDATE("User updates concept.", "model.Concept");
+    CONCEPT_UPDATE("User updates concept.", "model.Concept"),
+
+    /**
+     * Creation of a new transaction.
+     */
+    TRANSACTION_CREATE("User creates tarnsaction.", "model.Transaction");
 
     private final String description;
     private final String entity;
