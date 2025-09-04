@@ -75,7 +75,17 @@ public enum AuditAction implements AuditLogger {
     /**
      * Update of a bank's basic information.
      */
-    BANK_UPDATE("User updates bank.", "model.Bank");
+    BANK_UPDATE("User updates bank.", "model.Bank"),
+
+    /**
+     * Creation of a new concept.
+     */
+    CONCEPT_CREATE("User creates a new concept.", "model.Concept"),
+
+    /**
+     * Update of a concept's basic information.
+     */
+    CONCEPT_UPDATE("User updates concept.", "model.Concept");
 
     private final String description;
     private final String entity;

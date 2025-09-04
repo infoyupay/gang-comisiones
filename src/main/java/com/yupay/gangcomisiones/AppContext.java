@@ -23,8 +23,10 @@ package com.yupay.gangcomisiones;
 import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.services.UserService;
 import com.yupay.gangcomisiones.services.BankService;
+import com.yupay.gangcomisiones.services.ConceptService;
 import com.yupay.gangcomisiones.services.impl.UserServiceImpl;
 import com.yupay.gangcomisiones.services.impl.BankServiceImpl;
+import com.yupay.gangcomisiones.services.impl.ConceptServiceImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -100,6 +102,10 @@ public final class AppContext {
      * Bank service backed by JPA.
      */
     private final BankService bankService;
+    /**
+     * Concept service backed by JPA.
+     */
+    private final ConceptService conceptService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -125,6 +131,7 @@ public final class AppContext {
         // Persistence services.
         this.userService = new UserServiceImpl(emf, jdbcExecutor);
         this.bankService = new BankServiceImpl(emf, jdbcExecutor);
+        this.conceptService = new ConceptServiceImpl(emf, jdbcExecutor);
     }
 
     /**
@@ -335,6 +342,17 @@ public final class AppContext {
     @Contract(pure = true)
     public BankService getBankService() {
         return bankService;
+    }
+
+    /**
+     * Retrieves the {@code ConceptService} instance associated with this context.
+     * The {@code ConceptService} provides operations related to {@code Concept} entities.
+     *
+     * @return the {@code ConceptService} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public ConceptService getConceptService() {
+        return conceptService;
     }
 
     /**
