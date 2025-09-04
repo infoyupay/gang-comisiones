@@ -66,9 +66,9 @@ public record UserServiceImpl(EntityManagerFactory emf,
                         .createQuery("SELECT COUNT(e) FROM User e", Long.class)
                         .getSingleResult();
                 em.persist(user);
-                //Special case: first ROOT user creation.
+                //Special case: first ROOT user creation is not logged.
                 if (userCount > 0) {
-                    em.persist(AuditAction.USER_CREATE.createAuditLog(user.getId()));
+                    AuditAction.USER_CREATE.log(em, user.getId());
                 }
                 et.commit();
             } catch (RuntimeException e) {
@@ -93,7 +93,7 @@ public record UserServiceImpl(EntityManagerFactory emf,
                     throw UserServiceError.PASSWORD_MISMATCH.createException(user.getUsername());
                 }
                 user.setPassword(newPassword);
-                em.persist(AuditAction.USER_PASSWORD_CHANGE.createAuditLog(user.getId()));
+                AuditAction.USER_PASSWORD_CHANGE.log(em, user.getId());
                 et.commit();
             } catch (RuntimeException e) {
                 checkTxAndRollback(et, e);
@@ -173,7 +173,7 @@ public record UserServiceImpl(EntityManagerFactory emf,
                 var user = findByUsername(username, em)
                         .orElseThrow(() -> UserServiceError.USER_NOT_FOUND_BY_USERNAME.createException(username));
                 user.setPassword(newPassword);
-                em.persist(AuditAction.USER_PASSWORD_RESET.createAuditLog(root, user.getId()));
+                AuditAction.USER_PASSWORD_RESET.log(em, root, user.getId());
                 et.commit();
             } catch (RuntimeException e) {
                 checkTxAndRollback(et, e);
