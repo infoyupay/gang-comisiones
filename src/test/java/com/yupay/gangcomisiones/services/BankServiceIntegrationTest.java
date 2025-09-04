@@ -39,11 +39,9 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
-import com.yupay.gangcomisiones.model.UserRole;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,37 +78,6 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         bankService = ctx.getBankService();
     }
 
-    /**
-     * Creates an admin user with a mock username, sets their password,
-     * and logs them into the current session.
-     * <br/>
-     * This method interacts with the application's user service to register a new user
-     * with administrative privileges and establishes the newly created user as the active
-     * user in the session.
-     */
-    void createAndLogAdminUser() {
-        var r = AppContext.getInstance()
-                .getUserService()
-                .createUser("john.doe", UserRole.ADMIN, "password")
-                .join();
-        AppContext.getInstance().getUserSession().setCurrentUser(r);
-    }
-
-    /**
-     * Creates a cashier user with a mock username and role, sets their password,
-     * and logs them into the current session.
-     * <br/>
-     * This method interacts with the application's user service to register a new user
-     * with administrative privileges and establishes the newly created user as the active
-     * user in the session.
-     */
-    void createAndLogCashierUser() {
-        var r = AppContext.getInstance()
-                .getUserService()
-                .createUser("john.doe", UserRole.CASHIER, "password")
-                .join();
-        AppContext.getInstance().getUserSession().setCurrentUser(r);
-    }
 
     /**
      * Verifies that a bank is persisted with an auto-generated id and active=true by default.
@@ -120,7 +87,7 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @Test
     void testCreateBank_AssignsIdAndActiveTrue() throws Exception {
         // when
-        createAndLogAdminUser();
+        UserSessionHelpers.createAndLogAdminUser();
         Bank bank = bankService.createBank("Interbank").get();
 
         // then
@@ -141,7 +108,7 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testCreateBank_UnprivilegedUserFails() {
-        createAndLogCashierUser();
+        UserSessionHelpers.createAndLogCashierUser();
 
         var ex = assertThrows(ExecutionException.class, bankService.createBank("One Bank")::get);
         assertInstanceOf(PersistenceServicesException.class, ex.getCause());
@@ -153,7 +120,7 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUpdateeBank_UnprivilegedUserFails() {
-        createAndLogCashierUser();
+        UserSessionHelpers.createAndLogCashierUser();
 
         var ex = assertThrows(ExecutionException.class,
                 bankService.updateBank(1, "One Bank", false)::get);
@@ -179,7 +146,7 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testUpdateBank_NullFieldsFail() throws Exception {
-        createAndLogAdminUser();
+        UserSessionHelpers.createAndLogAdminUser();
         Bank bank = bankService.createBank("BCP").get();
 
         // null name
