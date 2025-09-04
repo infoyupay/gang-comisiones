@@ -197,6 +197,7 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// @throws Exception if any errors occur during execution
     @Test
     void testChangePassword_Success() throws Exception {
+        UserSessionHelpers.createAndLogRootUser();
         // given
         User created = userService.createUser("carol", UserRole.CASHIER, "oldPass1").get();
 
@@ -224,7 +225,8 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// @throws Exception if any step of the test encounters an error during execution
     @Test
     void testResetPassword_Success() throws Exception {
-        var rootPassword = "i'msexyandiknowit";
+        UserSessionHelpers.createAndLogRootUser();
+        var rootPassword = "password";
         var oldPassword = "resetMe!";
         var newPassword = "newPass0rd";
         // given
