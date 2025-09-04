@@ -114,7 +114,7 @@ public interface UserService {
      *
      * @param em   The EntityManager to use for database operations.
      * @param id   The id of the user to check.
-     * @param role The role of the user to check.
+     * @param role The minimum required role level for user.
      * @return True if the user is still valid, false otherwise.
      */
     boolean contrastUserPrivileges(@NotNull EntityManager em, long id, @NotNull UserRole role);
