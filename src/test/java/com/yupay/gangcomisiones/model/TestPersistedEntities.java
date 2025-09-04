@@ -65,9 +65,12 @@ public class TestPersistedEntities {
         TRANSACTION.set(null);
         try (var em = emf.createEntityManager()) {
             em.getTransaction().begin();
+            em.createNativeQuery("TRUNCATE TABLE reversal_request CASCADE").executeUpdate();
             em.createNativeQuery("TRUNCATE TABLE transaction CASCADE").executeUpdate();
             em.createNativeQuery("TRUNCATE TABLE concept CASCADE").executeUpdate();
             em.createNativeQuery("TRUNCATE TABLE bank CASCADE").executeUpdate();
+            em.createNativeQuery("TRUNCATE TABLE global_config CASCADE").executeUpdate();
+            em.createNativeQuery("TRUNCATE TABLE audit_Log CASCADE").executeUpdate();
             em.createNativeQuery("TRUNCATE TABLE \"user\" CASCADE").executeUpdate();
             em.getTransaction().commit();
         } catch (RuntimeException e) {
