@@ -22,7 +22,6 @@ package com.yupay.gangcomisiones.services;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -92,14 +91,12 @@ public interface TransactionManager {
      * @param <T>             the type of the result produced by the transactional operation
      * @param transactionBody a {@link Function} which takes the {@link EntityManager}
      *                        as parameter and defines the logic to execute within the transaction
-     * @param executorService the executor service to use in the future.
      * @return a {@link CompletableFuture} that completes with the result of the transactional operation
      * @throws RuntimeException if any runtime exception occurs during the transaction process;
      *                          the transaction is rolled back in such cases
      */
-    default <T> CompletableFuture<T> runInTransactionAsync(Function<EntityManager, T> transactionBody,
-                                                           @NotNull ExecutorService executorService) {
-        return CompletableFuture.supplyAsync(() -> runInTransaction(transactionBody), executorService);
+    default <T> CompletableFuture<T> runInTransactionAsync(Function<EntityManager, T> transactionBody) {
+        return CompletableFuture.supplyAsync(() -> runInTransaction(transactionBody), jdbcExecutor());
     }
 
     /**
@@ -128,14 +125,12 @@ public interface TransactionManager {
      * @param transactionBody a {@link Consumer} which takes the {@link EntityManager}
      *                        as parameter and defines the logic to execute within the transaction. The operation does
      *                        not return a result.
-     * @param executorService the executor service to use in the future.
      * @return a {@link CompletableFuture} that completes when the transactional operation is finished.
      * If an exception occurs during execution, the transaction is rolled back, and the returned
      * {@link CompletableFuture} completes exceptionally.
      */
-    default CompletableFuture<Void> runVoidInTransactionAsync(Consumer<EntityManager> transactionBody,
-                                                              @NotNull ExecutorService executorService) {
-        return CompletableFuture.runAsync(() -> runVoidInTransaction(transactionBody), executorService);
+    default CompletableFuture<Void> runVoidInTransactionAsync(Consumer<EntityManager> transactionBody) {
+        return CompletableFuture.runAsync(() -> runVoidInTransaction(transactionBody), jdbcExecutor());
     }
 
 }
