@@ -21,6 +21,7 @@ package com.yupay.gangcomisiones.security;
 
 import com.yupay.gangcomisiones.exceptions.AppSecurityException;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
@@ -52,6 +53,7 @@ public class PasswordUtil {
      * Defines the default length for the cryptographic key used in password hashing.
      */
     private static final int KEY_LENGTH = 256;
+    private static SecureRandom RANDOM;
 
     /**
      * Private constructor to prevent instantiation.
@@ -66,6 +68,19 @@ public class PasswordUtil {
     }
 
     /**
+     * Retrieves an instance of {@link SecureRandom} to ensure secure random number generation.
+     * If the instance is not already initialized, it creates a new {@link SecureRandom} object.
+     *
+     * @return An instance of {@link SecureRandom}, ensuring cryptographically secure random number generation.
+     */
+    private static SecureRandom getSecureRandom() {
+        if (RANDOM == null) {
+            RANDOM = new SecureRandom();
+        }
+        return RANDOM;
+    }
+
+    /**
      * Generates a cryptographic salt of {@link #SALT_LENGTH} length using a secure random number generator.
      * The generated salt is encoded in Base64 format to make it suitable for storage or transmission.
      *
@@ -73,8 +88,25 @@ public class PasswordUtil {
      */
     public static String generateSalt() {
         byte[] salt = new byte[SALT_LENGTH];
-        new SecureRandom().nextBytes(salt);
+        getSecureRandom().nextBytes(salt);
         return Base64.getEncoder().encodeToString(salt);
+    }
+
+    /**
+     * Generates a random password using a secure random number generator.
+     * The generated password is 16 bytes long and encoded in Base64 format.
+     *
+     * @return A Base64-encoded string representation of the generated random password.
+     * @throws AppSecurityException if an error occurs during the password generation process.
+     */
+    public static @NotNull String generateRandomPassword() throws AppSecurityException {
+        byte[] password = new byte[16];
+        getSecureRandom().nextBytes(password);
+        var sb = new StringBuilder(password.length * 2);
+        for (var b : password) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
     }
 
     /**

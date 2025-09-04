@@ -181,6 +181,17 @@ public class User {
         return PasswordUtil.verifyPassword(plainPassword, passwordSalt, passwordHash);
     }
 
+    /// Disables a user by deactivating their account and resetting their password.
+    /// The method performs the following steps:
+    /// 1. Sets the account status to inactive.
+    /// 2. Generates a random password using the PasswordUtil utility and assigns it to the user.
+    /// This operation effectively prevents the user from accessing the account
+    /// until their credentials are updated nad reactivated by a [#ROOT].
+    public void disableUser() {
+        setActive(false);
+        setPassword(PasswordUtil.generateRandomPassword());
+    }
+
     @Override
     @Contract(pure = true, value = "null -> false")
     public final boolean equals(Object o) {
@@ -204,6 +215,7 @@ public class User {
     /**
      * Safe builder: password is managed unly via a plainpassword.
      */
+    @SuppressWarnings("unused")
     public static class UserBuilder {
         private String plainPassword;
 
