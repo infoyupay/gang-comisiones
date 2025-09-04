@@ -87,6 +87,10 @@ public final class AppContext {
      */
     private final ExecutorService taskExecutor;
     /**
+     * User session container.
+     */
+    private final UserSession userSession;
+    /**
      * User service backed by JPA.
      */
     private final UserService userService;
@@ -110,7 +114,8 @@ public final class AppContext {
                 .ofVirtual()
                 .name("AppContext-Task-", 0)
                 .factory());
-
+        //User session container.
+        this.userSession = new UserSession();
         // Persistence services.
         this.userService = new UserServiceImpl(emf, jdbcExecutor);
     }
@@ -312,6 +317,18 @@ public final class AppContext {
     @Contract(pure = true)
     public UserService getUserService() {
         return userService;
+    }
+
+    /**
+     * Retrieves the {@code UserSession} instance associated with the current application context.
+     * The {@code UserSession} manages the currently logged-in user and allows listeners to track
+     * changes to the logged-in user's state.
+     *
+     * @return the {@code UserSession} instance managed by this context.
+     */
+    @Contract(pure = true)
+    public UserSession getUserSession() {
+        return userSession;
     }
 }
 
