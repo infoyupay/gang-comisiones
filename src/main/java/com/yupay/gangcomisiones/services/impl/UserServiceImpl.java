@@ -62,7 +62,14 @@ public record UserServiceImpl(EntityManagerFactory emf,
             try (var em = emf.createEntityManager()) {
                 et = em.getTransaction();
                 et.begin();
+                var userCount = em
+                        .createQuery("SELECT COUNT(e) FROM User e", Long.class)
+                        .getSingleResult();
                 em.persist(user);
+                //Special case: first ROOT user creation.
+                if (userCount > 0) {
+                    em.persist(AuditAction.USER_CREATE.createAuditLog(user.getId()));
+                }
                 et.commit();
             } catch (RuntimeException e) {
                 checkTxAndRollback(et, e);
@@ -86,6 +93,7 @@ public record UserServiceImpl(EntityManagerFactory emf,
                     throw UserServiceError.PASSWORD_MISMATCH.createException(user.getUsername());
                 }
                 user.setPassword(newPassword);
+                em.persist(AuditAction.USER_PASSWORD_CHANGE.createAuditLog(user.getId()));
                 et.commit();
             } catch (RuntimeException e) {
                 checkTxAndRollback(et, e);
@@ -160,11 +168,12 @@ public record UserServiceImpl(EntityManagerFactory emf,
             try (var em = emf.createEntityManager()) {
                 et = em.getTransaction();
                 et.begin();
-                validateUser(rootUsername, rootPassword, UserRole.ROOT, em)
+                var root = validateUser(rootUsername, rootPassword, UserRole.ROOT, em)
                         .orElseThrow(() -> UserServiceError.ROOT_AUTH_FAILED.createException(rootUsername));
                 var user = findByUsername(username, em)
                         .orElseThrow(() -> UserServiceError.USER_NOT_FOUND_BY_USERNAME.createException(username));
                 user.setPassword(newPassword);
+                em.persist(AuditAction.USER_PASSWORD_RESET.createAuditLog(root, user.getId()));
                 et.commit();
             } catch (RuntimeException e) {
                 checkTxAndRollback(et, e);
