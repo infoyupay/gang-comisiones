@@ -47,7 +47,7 @@ import java.util.stream.Stream;
  * @version 1.0
  */
 public record UserServiceImpl(EntityManagerFactory emf,
-                              ExecutorService jdbcExecutor) implements UserService, RollbackChecker, TransactionManager {
+                              ExecutorService jdbcExecutor) implements UserService, TransactionManager {
     @Contract("_, _, _ -> new")
     @Override
     public @NotNull CompletableFuture<User> createUser(String username, UserRole role, String plainPassword) {
