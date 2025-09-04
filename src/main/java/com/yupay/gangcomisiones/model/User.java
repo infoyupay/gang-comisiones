@@ -150,7 +150,7 @@ public class User {
     }
 
     /**
-     * Sets the password for this user.
+     * Sets the password for this user. Plain password minimum length is 8, and not blank.
      * <br/>
      * This method generates a new cryptographic salt and hashes the provided plain text password.
      * The resulting salt and hash are stored internally in the entity.
