@@ -21,6 +21,7 @@ package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
+import jakarta.persistence.EntityManager;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -107,4 +108,14 @@ public interface UserService {
                                           @NotNull String rootPassword,
                                           @NotNull String username,
                                           @NotNull String newPassword);
+
+    /**
+     * Checks if a user is still valid in database for at least the given role.
+     *
+     * @param em   The EntityManager to use for database operations.
+     * @param id   The id of the user to check.
+     * @param role The role of the user to check.
+     * @return True if the user is still valid, false otherwise.
+     */
+    boolean contrastUserPrivileges(@NotNull EntityManager em, long id, @NotNull UserRole role);
 }

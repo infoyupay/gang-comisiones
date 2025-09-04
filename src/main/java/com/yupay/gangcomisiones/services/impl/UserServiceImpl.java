@@ -211,6 +211,14 @@ public record UserServiceImpl(EntityManagerFactory emf,
                 .filter(u -> u.verifyPassword(password));
     }
 
+    @Override
+    public boolean contrastUserPrivileges(@NotNull EntityManager em, long id, @NotNull UserRole role) {
+        var freshUser = em.find(User.class, id);
+        return freshUser != null
+                && freshUser.getActive()
+                && freshUser.getRole().isAtLeast(role);
+    }
+
     /**
      * Enumeration with UserServices specific error messages.
      *
