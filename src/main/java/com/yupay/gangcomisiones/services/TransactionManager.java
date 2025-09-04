@@ -44,6 +44,13 @@ public interface TransactionManager {
     EntityManagerFactory emf();
 
     /**
+     * Provides an {@link ExecutorService} for executing JDBC-related operations asynchronously.
+     *
+     * @return an {@link ExecutorService} instance for managing JDBC tasks.
+     */
+    ExecutorService jdbcExecutor();
+
+    /**
      * Executes a specified transactional operation within a newly created {@link EntityTransaction}.
      * Automatically starts and commits the transaction. If an exception occurs, the transaction
      * is rolled back.
