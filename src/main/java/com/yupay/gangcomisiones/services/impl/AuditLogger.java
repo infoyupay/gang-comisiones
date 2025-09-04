@@ -19,9 +19,11 @@
 
 package com.yupay.gangcomisiones.services.impl;
 
+import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.exceptions.GangComisionesException;
 import com.yupay.gangcomisiones.model.AuditLog;
 import com.yupay.gangcomisiones.model.User;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -64,7 +66,7 @@ public interface AuditLogger {
      * @param entityId the unique identifier of the entity associated with the action
      * @return a new {@code AuditLog} instance representing the logged event
      */
-    default AuditLog createAuditLog(User actor,
+    default AuditLog createAuditLog(@NotNull User actor,
                                     long entityId) {
         return AuditLog.builder()
                 .user(actor)
@@ -74,6 +76,16 @@ public interface AuditLogger {
                 .details(getDescription())
                 .computerName(computerName())
                 .build();
+    }
+
+    /**
+     * Creates an audit log entry based on the currently logged-in user and a specified entity ID.
+     *
+     * @param entityId the unique identifier of the entity associated with the logged action
+     * @return a new {@code AuditLog} instance representing the logged event
+     */
+    default AuditLog createAuditLog(long entityId) {
+        return createAuditLog(AppContext.getInstance().getUserSession().getCurrentUser(), entityId);
     }
 
     /**
