@@ -20,6 +20,7 @@
 package com.yupay.gangcomisiones.services.impl;
 
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Enumeration with actions for {@link com.yupay.gangcomisiones.model.AuditLog},
@@ -30,61 +31,73 @@ import org.jetbrains.annotations.Contract;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public enum AuditAction {
+public enum AuditAction implements AuditLogger {
     /**
      * Creation of a new user.
      */
-    USER_CREATE("Creation of a new user"),
+    USER_CREATE("Creation of a new user", "model.User"),
 
     /**
      * Change of password for a user.
      * A password change is when the user, knowing its own password, decides to change it.
      */
-    USER_PASSWORD_CHANGE("Change of password by the user itself"),
+    USER_PASSWORD_CHANGE("Change of password by the user itself", "model.User"),
 
     /**
      * Password reset for a user. The password reset
      * is when a ROOT user forces a password change of another user.
      */
-    USER_PASSWORD_RESET("Password reset forced by a ROOT user"),
+    USER_PASSWORD_RESET("Password reset forced by a ROOT user", "model.User"),
 
     /**
      * Change of permissions for a user.
      * A permission change is when a ROOT user changes the permissions of another user, like Linux chmod.
      */
-    USER_CHMOD("Change of permissions by a ROOT user"),
+    USER_CHMOD("Change of permissions by a ROOT user", "model.User"),
 
     /**
      * When a ROOT user changes the user active flag to false,
      * this implies a cleaning of the user random disabling such user to logon until password and flag reset.
      */
-    USER_DISABLE("User disabled by a ROOT user, random password assigned"),
+    USER_DISABLE("User disabled by a ROOT user, random password assigned", "model.User"),
 
     /**
      * When a ROOT user changes the user active flag to true,
      * this implies a password reset.
      */
-    USER_ENABLE("User enabled by a ROOT user, password reset");
+    USER_ENABLE("User enabled by a ROOT user, password reset", "model.User");
 
     private final String description;
+    private final String entity;
 
     /**
      * Constructs an AuditAction with the specified description.
      *
      * @param description the human-readable description of the audit action.
+     * @param entity      the entity classname related to the action.
      */
     @Contract(pure = true)
-    AuditAction(String description) {
+    AuditAction(String description, String entity) {
         this.description = description;
+        this.entity = entity;
     }
 
-    /**
-     * Returns a human-readable description of the audit action.
-     *
-     * @return the description of the action.
-     */
     @Contract(pure = true)
+    @Override
     public String getDescription() {
         return description;
     }
+
+    @Contract(pure = true)
+    @Override
+    public @NotNull String getAction() {
+        return name();
+    }
+
+    @Contract(pure = true)
+    @Override
+    public String getEntity() {
+        return entity;
+    }
+
 }
