@@ -65,7 +65,17 @@ public enum AuditAction implements AuditLogger {
      * When a ROOT user changes the user active flag to true,
      * this implies a password reset.
      */
-    USER_ENABLE("User enabled by a ROOT user, password reset", "model.User");
+    USER_ENABLE("User enabled by a ROOT user, password reset", "model.User"),
+
+    /**
+     * Creation of a new bank.
+     */
+    BANK_CREATE("User creates a new bank.", "model.Bank"),
+
+    /**
+     * Update of a bank's basic information.
+     */
+    BANK_UPDATE("User updates bank.", "model.Bank");
 
     private final String description;
     private final String entity;

@@ -22,7 +22,9 @@ package com.yupay.gangcomisiones;
 
 import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.services.UserService;
+import com.yupay.gangcomisiones.services.BankService;
 import com.yupay.gangcomisiones.services.impl.UserServiceImpl;
+import com.yupay.gangcomisiones.services.impl.BankServiceImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -94,6 +96,10 @@ public final class AppContext {
      * User service backed by JPA.
      */
     private final UserService userService;
+    /**
+     * Bank service backed by JPA.
+     */
+    private final BankService bankService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -118,6 +124,7 @@ public final class AppContext {
         this.userSession = new UserSession();
         // Persistence services.
         this.userService = new UserServiceImpl(emf, jdbcExecutor);
+        this.bankService = new BankServiceImpl(emf, jdbcExecutor);
     }
 
     /**
@@ -317,6 +324,17 @@ public final class AppContext {
     @Contract(pure = true)
     public UserService getUserService() {
         return userService;
+    }
+
+    /**
+     * Retrieves the {@code BankService} instance associated with this context.
+     * The {@code BankService} provides operations related to {@code Bank} entities.
+     *
+     * @return the {@code BankService} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public BankService getBankService() {
+        return bankService;
     }
 
     /**
