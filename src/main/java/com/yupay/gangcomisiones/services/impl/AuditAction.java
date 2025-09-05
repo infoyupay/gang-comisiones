@@ -90,7 +90,19 @@ public enum AuditAction implements AuditLogger {
     /**
      * Creation of a new transaction.
      */
-    TRANSACTION_CREATE("User creates tarnsaction.", "model.Transaction");
+    TRANSACTION_CREATE("User creates tarnsaction.", "model.Transaction"),
+    /**
+     * Represents an audit action where a user requests the reversal of a transaction.
+     * This action is associated with the "ReversalRequest" entity and provides a detailed
+     * description for logging and tracking purposes.
+     */
+    REVERSAL_REQUEST_CREATE("User requests reversal of transaction.", "model.ReversalRequest"),
+    /**
+     * Represents an audit action where a user resolves a reversal request.
+     * This action is associated with the "ReversalRequest" entity and provides a detailed
+     * description for logging and tracking purposes.
+     */
+    REVERSAL_REQUEST_RESOLVE("User resolves reversal request.", "model.ReversalRequest");
 
     private final String description;
     private final String entity;
