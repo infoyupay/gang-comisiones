@@ -102,7 +102,13 @@ public enum AuditAction implements AuditLogger {
      * This action is associated with the "ReversalRequest" entity and provides a detailed
      * description for logging and tracking purposes.
      */
-    REVERSAL_REQUEST_RESOLVE("User resolves reversal request.", "model.ReversalRequest");
+    REVERSAL_REQUEST_RESOLVE("User resolves reversal request.", "model.ReversalRequest"),
+    /**
+     * Represents an audit action where a user updates global configuration.
+     * This action is associated with the "GlobalConfig" entity and provides a detailed
+     * description for logging and tracking purposes.
+     */
+    GLOBAL_CONFIG_UPDATE("User updates global configuration.", "model.GlobalConfig");
 
     private final String description;
     private final String entity;

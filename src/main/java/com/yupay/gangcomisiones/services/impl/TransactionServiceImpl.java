@@ -19,7 +19,10 @@
 
 package com.yupay.gangcomisiones.services.impl;
 
+import com.yupay.gangcomisiones.AppContext;
+import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.Transaction;
+import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.TransactionManager;
 import com.yupay.gangcomisiones.services.TransactionService;
 import jakarta.persistence.EntityManagerFactory;
@@ -61,6 +64,14 @@ public record TransactionServiceImpl(EntityManagerFactory emf,
     @Override
     public CompletableFuture<Void> createTransaction(Transaction transaction) {
         return runVoidInTransactionAsync(em -> {
+            var cashier = transaction.getCashier();
+            if (cashier == null) {
+                throw new PersistenceServicesException("Transaction's Cashier is null.");
+            }
+            AppContext.getInstance().getUserService().checkPrivilegesOrException(
+                    em,
+                    cashier.getId(),
+                    UserRole.CASHIER);
             em.persist(transaction);
             AuditAction.TRANSACTION_CREATE.log(em, transaction.getId());
         });

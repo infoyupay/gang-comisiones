@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.exceptions.AppSecurityException;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.*;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
@@ -148,7 +149,7 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
         // when/then: resolving as CASHIER should fail
         ExecutionException ex = assertThrows(ExecutionException.class, () ->
                 reversalRequestService.resolveRequest(req.getId(), cashier.getId(), "cannot", ReversalRequestService.Resolution.DENIED).get());
-        assertInstanceOf(PersistenceServicesException.class, ex.getCause(), "Expected PersistenceServicesException due to unprivileged role");
+        assertInstanceOf(AppSecurityException.class, ex.getCause(), "Expected PersistenceServicesException due to unprivileged role");
 
         // and: resolving as ADMIN APPROVED should set transaction to REVERSED
         User admin = userService.createUser("admin.resolver", UserRole.ADMIN, "password").get();

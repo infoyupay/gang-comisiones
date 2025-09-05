@@ -110,12 +110,12 @@ public interface UserService {
                                           @NotNull String newPassword);
 
     /**
-     * Checks if a user is still valid in database for at least the given role.
+     * Checks if a user is still valid in database for at least the given role. If not, throws a runtime exception.
      *
      * @param em   The EntityManager to use for database operations.
      * @param id   The id of the user to check.
      * @param role The minimum required role level for user.
-     * @return True if the user is still valid, false otherwise.
+     * @return a fresh User object from database.
      */
-    boolean contrastUserPrivileges(@NotNull EntityManager em, long id, @NotNull UserRole role);
+    @NotNull User checkPrivilegesOrException(@NotNull EntityManager em, long id, @NotNull UserRole role);
 }

@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.exceptions.AppSecurityException;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
@@ -111,7 +112,7 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         UserSessionHelpers.createAndLogCashierUser();
 
         var ex = assertThrows(ExecutionException.class, bankService.createBank("One Bank")::get);
-        assertInstanceOf(PersistenceServicesException.class, ex.getCause());
+        assertInstanceOf(AppSecurityException.class, ex.getCause());
     }
 
     /**
@@ -124,7 +125,7 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
 
         var ex = assertThrows(ExecutionException.class,
                 bankService.updateBank(1, "One Bank", false)::get);
-        assertInstanceOf(PersistenceServicesException.class, ex.getCause());
+        assertInstanceOf(AppSecurityException.class, ex.getCause());
     }
 
     /**

@@ -145,8 +145,6 @@ public record ConceptServiceImpl(@NotNull EntityManagerFactory emf,
      */
     private void ensureAdminUser(EntityManager em) {
         User current = AppContext.getInstance().getUserSession().getCurrentUser();
-        if (!AppContext.getInstance().getUserService().contrastUserPrivileges(em, current.getId(), UserRole.ADMIN)) {
-            throw new PersistenceServicesException("At least ADMIN privileges are required to run this operation.");
-        }
+        AppContext.getInstance().getUserService().checkPrivilegesOrException(em, current.getId(), UserRole.ADMIN);
     }
 }

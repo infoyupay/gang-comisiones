@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.exceptions.GangComisionesException;
 import com.yupay.gangcomisiones.model.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
@@ -252,7 +253,7 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
                 .status(TransactionStatus.REGISTERED)
                 .build();
         ExecutionException ex3 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(t3).get());
-        assertInstanceOf(PersistenceException.class, ex3.getCause());
+        assertInstanceOf(GangComisionesException.class, ex3.getCause());
 
         // amount null
         Transaction t4 = Transaction.builder()

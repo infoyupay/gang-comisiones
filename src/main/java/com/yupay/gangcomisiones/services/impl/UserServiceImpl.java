@@ -19,6 +19,7 @@
 
 package com.yupay.gangcomisiones.services.impl;
 
+import com.yupay.gangcomisiones.exceptions.AppSecurityException;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
@@ -173,11 +174,19 @@ public record UserServiceImpl(EntityManagerFactory emf,
     }
 
     @Override
-    public boolean contrastUserPrivileges(@NotNull EntityManager em, long id, @NotNull UserRole role) {
+    public @NotNull User checkPrivilegesOrException(@NotNull EntityManager em,
+                                                    long id,
+                                                    @NotNull UserRole role) {
         var freshUser = em.find(User.class, id);
-        return freshUser != null
-                && freshUser.getActive()
-                && freshUser.getRole().isAtLeast(role);
+        if (freshUser == null) throw UserServiceError.USER_NOT_FOUND_BY_ID.createException(id);
+        if (!freshUser.getActive())
+            throw new AppSecurityException("User %s is not active and cannot perform operations."
+                    .formatted(freshUser.getUsername()));
+        if (!freshUser.getRole().isAtLeast(role))
+            throw new AppSecurityException(
+                    "User %s has not privileges to perform an operation. Required: %s, found %s."
+                            .formatted(freshUser.getUsername(), role, freshUser.getRole()));
+        return freshUser;
     }
 
     /**

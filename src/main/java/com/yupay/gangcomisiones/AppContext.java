@@ -21,16 +21,8 @@ package com.yupay.gangcomisiones;
 
 
 import com.yupay.gangcomisiones.exceptions.AppContextException;
-import com.yupay.gangcomisiones.services.UserService;
-import com.yupay.gangcomisiones.services.BankService;
-import com.yupay.gangcomisiones.services.ConceptService;
-import com.yupay.gangcomisiones.services.TransactionService;
-import com.yupay.gangcomisiones.services.ReversalRequestService;
-import com.yupay.gangcomisiones.services.impl.UserServiceImpl;
-import com.yupay.gangcomisiones.services.impl.BankServiceImpl;
-import com.yupay.gangcomisiones.services.impl.ConceptServiceImpl;
-import com.yupay.gangcomisiones.services.impl.TransactionServiceImpl;
-import com.yupay.gangcomisiones.services.impl.ReversalRequestServiceImpl;
+import com.yupay.gangcomisiones.services.*;
+import com.yupay.gangcomisiones.services.impl.*;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -118,6 +110,10 @@ public final class AppContext {
      * ReversalRequest service backed by JPA.
      */
     private final ReversalRequestService reversalRequestService;
+    /**
+     * GlobalConfig service backed by JPA.
+     */
+    private final GlobalConfigService globalConfigService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -146,6 +142,7 @@ public final class AppContext {
         this.conceptService = new ConceptServiceImpl(emf, jdbcExecutor);
         this.transactionService = new TransactionServiceImpl(emf, jdbcExecutor);
         this.reversalRequestService = new ReversalRequestServiceImpl(emf, jdbcExecutor);
+        this.globalConfigService = new GlobalConfigServiceImpl(emf, jdbcExecutor);
     }
 
     /**
@@ -389,6 +386,17 @@ public final class AppContext {
     @Contract(pure = true)
     public ReversalRequestService getReversalRequestService() {
         return reversalRequestService;
+    }
+
+    /**
+     * Retrieves the {@code GlobalConfigService} instance associated with this context.
+     * The service provides operations related to {@code GlobalConfig} entities.
+     *
+     * @return the {@code GlobalConfigService} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public GlobalConfigService getGlobalConfigService() {
+        return globalConfigService;
     }
 
     /**

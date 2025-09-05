@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.exceptions.AppSecurityException;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.AuditLog;
 import com.yupay.gangcomisiones.model.Concept;
@@ -140,7 +141,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
 
         var ex = assertThrows(ExecutionException.class,
                 () -> conceptService.createConcept("Water Service", ConceptType.FIXED, new BigDecimal("2.0000")).get());
-        assertInstanceOf(PersistenceServicesException.class, ex.getCause());
+        assertInstanceOf(AppSecurityException.class, ex.getCause());
     }
 
     /// Tests that an unprivileged user, such as a user with the "cashier" role, is unable to update an existing concept
@@ -159,7 +160,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
 
         var ex = assertThrows(ExecutionException.class,
                 () -> conceptService.updateConcept(1L, "Water Service", ConceptType.FIXED, new BigDecimal("2.0000"), true).get());
-        assertInstanceOf(PersistenceServicesException.class, ex.getCause());
+        assertInstanceOf(AppSecurityException.class, ex.getCause());
     }
 
     /// Verifies that the `createConcept` method in `ConceptService` fails when any of the required fields are null.

@@ -19,6 +19,7 @@
 
 package com.yupay.gangcomisiones.services.impl;
 
+import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.*;
 import com.yupay.gangcomisiones.services.ReversalRequestService;
@@ -67,10 +68,9 @@ public record ReversalRequestServiceImpl(
                 throw Errors.TRANSACTION_NOT_OWNED.exception(userId);
             }
             //Get user from db
-            var user = em.find(User.class, userId);
-            if (user == null) {
-                throw Errors.USER_NOT_FOUND.exception(userId);
-            }
+            var user = AppContext.getInstance()
+                    .getUserService()
+                    .checkPrivilegesOrException(em, userId, UserRole.CASHIER);
             //Build request.
             var request = ReversalRequest
                     .builder()
@@ -125,12 +125,8 @@ public record ReversalRequestServiceImpl(
                                                   Resolution resolution) {
         return runVoidInTransactionAsync(em -> {
             //Check user exists and has enough privileges.
-            var user = em.find(User.class, userId);
-            if (user == null) {
-                throw Errors.USER_NOT_FOUND.exception(userId);
-            } else if (!user.getActive() || !user.getRole().isAtLeast(UserRole.ADMIN)) {
-                throw Errors.USER_UNPRIVILEGED.exception(user.getRole());
-            }
+            var user = AppContext.getInstance().getUserService()
+                    .checkPrivilegesOrException(em, userId, UserRole.ADMIN);
             //Modify request
             var i = em.createQuery("""
                             UPDATE ReversalRequest r
@@ -173,33 +169,12 @@ public record ReversalRequestServiceImpl(
      */
     private enum Errors {
         /**
-         * Error representing the scenario where a reversal request could not be found.
-         * This is typically associated with the "ReversalRequest" entity and the field "ReversalRequest.id".
-         * It is used to indicate that an operation involving a reversal request failed
-         * because the specified request does not exist or could not be located.
-         */
-        REQUEST_NOT_FOUND("Reversal request not found", "ReversalRequest.id"),
-        /**
          * Error representing the scenario where a transaction could not be found.
          * This is typically associated with the "Transaction" entity and the field "Transaction.id".
          * It is used to indicate that an operation involving a transaction failed
          * because the specified transaction does not exist or could not be located.
          */
         TRANSACTION_NOT_FOUND("Transaction not found", "Transaction.id"),
-        /**
-         * Error representing the scenario where a user could not be found.
-         * This is typically associated with the "User" entity and the field "User.id".
-         * It is used to indicate that an operation involving a user failed
-         * because the specified user does not exist or could not be located.
-         */
-        USER_NOT_FOUND("User not found", "User.id"),
-        /**
-         * Error representing the scenario where a user does not have the required privileges
-         * to perform a specific action. This is typically associated with the "User" entity
-         * and the field "User.role". It is used to indicate that an operation failed
-         * due to insufficient user permissions.
-         */
-        USER_UNPRIVILEGED("User have no privileges to perform action.", "User.role"),
         /**
          * Error representing the scenario where a transaction is not owned by the requesting user.
          * This is typically associated with the "Transaction" entity and the field "Transaction.cashier".
