@@ -25,10 +25,12 @@ import com.yupay.gangcomisiones.services.UserService;
 import com.yupay.gangcomisiones.services.BankService;
 import com.yupay.gangcomisiones.services.ConceptService;
 import com.yupay.gangcomisiones.services.TransactionService;
+import com.yupay.gangcomisiones.services.ReversalRequestService;
 import com.yupay.gangcomisiones.services.impl.UserServiceImpl;
 import com.yupay.gangcomisiones.services.impl.BankServiceImpl;
 import com.yupay.gangcomisiones.services.impl.ConceptServiceImpl;
 import com.yupay.gangcomisiones.services.impl.TransactionServiceImpl;
+import com.yupay.gangcomisiones.services.impl.ReversalRequestServiceImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -112,6 +114,10 @@ public final class AppContext {
      * Transaction service backed by JPA.
      */
     private final TransactionService transactionService;
+    /**
+     * ReversalRequest service backed by JPA.
+     */
+    private final ReversalRequestService reversalRequestService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -139,6 +145,7 @@ public final class AppContext {
         this.bankService = new BankServiceImpl(emf, jdbcExecutor);
         this.conceptService = new ConceptServiceImpl(emf, jdbcExecutor);
         this.transactionService = new TransactionServiceImpl(emf, jdbcExecutor);
+        this.reversalRequestService = new ReversalRequestServiceImpl(emf, jdbcExecutor);
     }
 
     /**
@@ -371,6 +378,17 @@ public final class AppContext {
     @Contract(pure = true)
     public TransactionService getTransactionService() {
         return transactionService;
+    }
+
+    /**
+     * Retrieves the {@code ReversalRequestService} instance associated with this context.
+     * The service provides operations related to {@code ReversalRequest} entities.
+     *
+     * @return the {@code ReversalRequestService} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public ReversalRequestService getReversalRequestService() {
+        return reversalRequestService;
     }
 
     /**
