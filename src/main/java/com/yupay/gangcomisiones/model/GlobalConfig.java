@@ -61,7 +61,8 @@ public class GlobalConfig {
      */
     @Id
     @Column(name = "id", nullable = false)
-    private Short id;
+    @Builder.Default
+    private Short id = 1;
 
     /**
      * Represents the unique Tax Identification Number (RUC) of a business entity.
