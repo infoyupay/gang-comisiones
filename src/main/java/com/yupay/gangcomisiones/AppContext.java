@@ -114,6 +114,10 @@ public final class AppContext {
      * GlobalConfig service backed by JPA.
      */
     private final GlobalConfigService globalConfigService;
+    /**
+     * GlobalConfig cache.
+     */
+    private final GlobalConfigCache globalConfigCache;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -143,6 +147,7 @@ public final class AppContext {
         this.transactionService = new TransactionServiceImpl(emf, jdbcExecutor);
         this.reversalRequestService = new ReversalRequestServiceImpl(emf, jdbcExecutor);
         this.globalConfigService = new GlobalConfigServiceImpl(emf, jdbcExecutor);
+        this.globalConfigCache = new GlobalConfigCache(this);
     }
 
     /**
@@ -410,6 +415,18 @@ public final class AppContext {
     public UserSession getUserSession() {
         return userSession;
     }
+
+    /**
+     * Retrieves the {@code GlobalConfigCache} instance associated with the current application context.
+     * The {@code GlobalConfigCache} provides a cache for {@code GlobalConfig} entities.
+     *
+     * @return value of property.
+     */
+    @Contract(pure = true)
+    public GlobalConfigCache getGlobalConfigCache() {
+        return globalConfigCache;
+    }
+
 }
 
 
