@@ -21,6 +21,7 @@ package com.yupay.gangcomisiones.usecase.install;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.AppContext;
+import com.yupay.gangcomisiones.DummyHelpers;
 import com.yupay.gangcomisiones.LocalFiles;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,12 +32,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Integration tests for the local installation service behavior related to ZIP unpacking.
@@ -187,6 +188,57 @@ class InstallationServiceLocalImplTest extends AbstractPostgreIntegrationTest {
             Path projectDir = LocalFiles.PROJECT.asPath();
             assertTrue(Files.exists(projectDir.resolve("subdir")));
             assertTrue(Files.exists(projectDir.resolve("subdir/file.txt")));
+        } finally {
+            System.setProperty("user.home", originalUserHome);
+        }
+    }
+
+    /**
+     * Verifies that the asynchronous ZIP unpacking operation completes successfully, creating the expected
+     * files and directory structure within the project folder.
+     *
+     * @param tempDir a JUnit-managed temporary directory used to manage and isolate filesystem side effects during the test.
+     * @throws Exception if an unexpected error occurs while waiting for the asynchronous operation or accessing the filesystem.
+     */
+    @Test
+    void testUnpackDummyZipAsync_completesSuccessfully(@TempDir @NotNull Path tempDir) throws Exception {
+        String originalUserHome = System.getProperty("user.home");
+        try {
+            System.setProperty("user.home", tempDir.toString());
+            LocalFiles.YUPAY.reset();
+            LocalFiles.PROJECT.reset();
+            LocalFiles.LOGS.reset();
+            LocalFiles.JPA_PROPERTIES.reset();
+            Files.createDirectories(LocalFiles.PROJECT.asPath());
+
+
+            Path zip = DummyHelpers.getDummyPropertiesZip();
+            Path tempProject = LocalFiles.PROJECT.asPath();
+            Path pathDummy = tempProject.resolve("dummyprop.properties");
+            Path pathDummyChild = tempProject.resolve("dummydir","childdummyprop.properties");
+
+
+            // Act
+            CompletableFuture<Void> future = installationService.unpackZipAsync(zip);
+            future.join(); // wait for task to end
+
+            // Assert
+            assertTrue(Files.exists(pathDummy));
+            assertTrue(Files.exists(pathDummyChild));
+
+            //Load properties from unpacked files
+            var propDummy = new Properties();
+            var propDummyChild = new Properties();
+            try(var isDummy = Files.newInputStream(pathDummy);
+            var isDummyChild = Files.newInputStream(pathDummyChild)) {
+                propDummy.load(isDummy);
+                propDummyChild.load(isDummyChild);
+            }
+
+            assertTrue(propDummy.containsKey("title"));
+            assertTrue(propDummyChild.containsKey("title"));
+            assertEquals("dummy",  propDummy.get("title"));
+            assertEquals("dummychild",  propDummyChild.get("title"));
         } finally {
             System.setProperty("user.home", originalUserHome);
         }
