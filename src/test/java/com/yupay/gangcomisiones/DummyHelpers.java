@@ -93,4 +93,16 @@ public class DummyHelpers {
     public static @NotNull Properties readDummyJpaProperties() {
         return readPropertiesFromDummyPath(getDummyJpaProperties());
     }
+
+    /**
+     * Retrieves the path to the dummy properties zip file located in the test classpath.
+     * The file is intended for use in integration tests.
+     *
+     * @return a {@link Path} pointing to the dummy properties zip file.
+     * @throws NullPointerException if the resource is not found in the classpath.
+     * @throws RuntimeException if the resource URI cannot be converted into a path.
+     */
+    public static @NotNull Path getDummyPropertiesZip() {
+        return getDummyPathFromResource("dummy.zip");
+    }
 }
