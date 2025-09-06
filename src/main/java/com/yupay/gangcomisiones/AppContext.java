@@ -23,6 +23,8 @@ package com.yupay.gangcomisiones;
 import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.services.*;
 import com.yupay.gangcomisiones.services.impl.*;
+import com.yupay.gangcomisiones.usecase.install.InstallationService;
+import com.yupay.gangcomisiones.usecase.install.InstallationServiceLocalImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -118,6 +120,10 @@ public final class AppContext {
      * GlobalConfig cache.
      */
     private final GlobalConfigCache globalConfigCache;
+    /**
+     * Global installation service backed by java.nio.Path.
+     */
+    private final InstallationService installationService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -148,6 +154,7 @@ public final class AppContext {
         this.reversalRequestService = new ReversalRequestServiceImpl(emf, jdbcExecutor);
         this.globalConfigService = new GlobalConfigServiceImpl(emf, jdbcExecutor);
         this.globalConfigCache = new GlobalConfigCache(this);
+        this.installationService = new InstallationServiceLocalImpl(taskExecutor);
     }
 
     /**
@@ -414,6 +421,18 @@ public final class AppContext {
     @Contract(pure = true)
     public UserSession getUserSession() {
         return userSession;
+    }
+
+    /**
+     * Retrieves the {@code InstallationService} instance associated with this context.
+     * The {@code InstallationService} provides operations related to installation tasks,
+     * such as unpacking installation files, verifying persistence, and managing I/O executions.
+     *
+     * @return the {@code InstallationService} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public InstallationService getInstallationService() {
+        return installationService;
     }
 
     /**
