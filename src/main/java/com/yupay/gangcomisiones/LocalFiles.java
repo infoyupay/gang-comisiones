@@ -38,8 +38,6 @@
 
 package com.yupay.gangcomisiones;
 
-import java.nio.file.Path;
-
 /**
  * Provides constants representing file and directory paths used
  * within the Gang-Comisiones project.
@@ -60,7 +58,7 @@ public class LocalFiles {
      * This constant is used as a base path for other application-specific
      * file and directory paths.
      */
-    public static final Path YUPAY = Path.of(System.getProperty("user.home"), ".yupay");
+    public static final PathHolder YUPAY = PathHolder.ofRoot(() -> System.getProperty("user.home"), ".yupay");
 
     /**
      * Represents the path to the root directory for Gang-Comisiones project files
@@ -69,7 +67,7 @@ public class LocalFiles {
      * This constant is used as a base path for other project-specific
      * file and directory paths.
      */
-    public static final Path PROJECT = YUPAY.resolve("gang-comisiones");
+    public static final PathHolder PROJECT = PathHolder.ofParent(YUPAY, "gang-comisiones");
 
     /**
      * Represents the path to the persistence properties file for the Gang-Comisiones project.
@@ -77,12 +75,12 @@ public class LocalFiles {
      * <br/>
      * This constant is used to locate the JPA properties file within the project directory.
      */
-    public static final Path JPA_PROPERTIES = PROJECT.resolve("persistence.properties");
+    public static final PathHolder JPA_PROPERTIES = PathHolder.ofParent(PROJECT, "persistence.properties");
     /**
      * Represents the path to the logs directory for the Gang-Comisiones project.
      * This directory is used to store log files generated during the application's execution.
      * <br/>
      * This constant is used to locate the logs directory within the project directory.
      */
-    public static final Path LOGS = PROJECT.resolve("logs");
+    public static final PathHolder LOGS = PathHolder.ofParent(PROJECT, "logs");
 }

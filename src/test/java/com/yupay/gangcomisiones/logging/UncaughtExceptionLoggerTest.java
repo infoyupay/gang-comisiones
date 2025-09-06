@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 class UncaughtExceptionLoggerTest {
 
-    private static final Path LOG_DIR = LocalFiles.LOGS;
+    private static final Path LOG_DIR = LocalFiles.LOGS.asPath();
     private static final Path LOG_FILE = LOG_DIR.resolve("gang-comisiones.log");
 
     /**
