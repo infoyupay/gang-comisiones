@@ -100,9 +100,33 @@ public class DummyHelpers {
      *
      * @return a {@link Path} pointing to the dummy properties zip file.
      * @throws NullPointerException if the resource is not found in the classpath.
-     * @throws RuntimeException if the resource URI cannot be converted into a path.
+     * @throws RuntimeException     if the resource URI cannot be converted into a path.
      */
     public static @NotNull Path getDummyPropertiesZip() {
         return getDummyPathFromResource("dummy.zip");
+    }
+
+    /**
+     * Retrieves the path to the corrupt dummy zip file located in the test classpath.
+     * This file is used primarily for testing scenarios involving corrupted zip files.
+     *
+     * @return a {@link Path} pointing to the corrupt dummy zip file.
+     * @throws NullPointerException if the resource is not found in the classpath.
+     * @throws RuntimeException     if the resource URI cannot be converted into a path.
+     */
+    public static @NotNull Path getCorruptZip() {
+        return getDummyPathFromResource("dummy-corrupt.zip");
+    }
+
+    /**
+     * Retrieves the path to the dummy JPA zip file located in the test classpath.
+     * The file is primarily used for integration testing purposes.
+     *
+     * @return a {@link Path} pointing to the dummy JPA zip file.
+     * @throws NullPointerException if the resource is not found in the classpath.
+     * @throws RuntimeException     if the resource URI cannot be converted into a path.
+     */
+    public static @NotNull Path getDummyJpaZip() {
+        return getDummyPathFromResource("dummy-jpa.zip");
     }
 }
