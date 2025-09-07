@@ -17,7 +17,26 @@
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.yupay.gangcomisiones.usecase.install;
+/*
+ * gang-comisiones
+ * COPYLEFT 2025
+ * Ingenieria Informatica Yupay SACS
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ *  with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.AppContext;
@@ -53,9 +72,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author InfoYupay SACS
  * @version 1.0
  */
-class InstallationServiceLocalImplTest extends AbstractPostgreIntegrationTest {
+class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
 
-    private InstallationService installationService;
+    private ZipInstallerService zipInstallerService;
 
     /**
      * Initializes the installation service from the application context prior to each test execution.
@@ -64,7 +83,7 @@ class InstallationServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @BeforeEach
     void setUp() {
-        installationService = AppContext.getInstance().getInstallationService();
+        zipInstallerService = AppContext.getInstance().getInstallationService();
     }
 
     /**
@@ -98,7 +117,7 @@ class InstallationServiceLocalImplTest extends AbstractPostgreIntegrationTest {
             Path zip = createTestZip(tempDir);
 
             // Act
-            installationService.unpackZip(zip);
+            zipInstallerService.unpackZip(zip);
 
             // Assert
             Path projectDir = LocalFiles.PROJECT.asPath();
@@ -138,7 +157,7 @@ class InstallationServiceLocalImplTest extends AbstractPostgreIntegrationTest {
             Path maliciousZip = createMaliciousZip(tempDir);
 
             // Act
-            installationService.unpackZip(maliciousZip);
+            zipInstallerService.unpackZip(maliciousZip);
 
             // Assert: file outside project not created
             Path outsideFile = LocalFiles.PROJECT.asPath().getParent().resolve("outside.txt");
@@ -181,7 +200,7 @@ class InstallationServiceLocalImplTest extends AbstractPostgreIntegrationTest {
             Path zip = createTestZip(tempDir);
 
             // Act
-            CompletableFuture<Void> future = installationService.unpackZipAsync(zip);
+            CompletableFuture<Void> future = zipInstallerService.unpackZipAsync(zip);
             future.join(); // wait for task to end
 
             // Assert
@@ -219,7 +238,7 @@ class InstallationServiceLocalImplTest extends AbstractPostgreIntegrationTest {
 
 
             // Act
-            CompletableFuture<Void> future = installationService.unpackZipAsync(zip);
+            CompletableFuture<Void> future = zipInstallerService.unpackZipAsync(zip);
             future.join(); // wait for task to end
 
             // Assert

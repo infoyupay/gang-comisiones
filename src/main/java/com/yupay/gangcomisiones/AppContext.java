@@ -23,8 +23,8 @@ package com.yupay.gangcomisiones;
 import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.services.*;
 import com.yupay.gangcomisiones.services.impl.*;
-import com.yupay.gangcomisiones.usecase.install.InstallationService;
-import com.yupay.gangcomisiones.usecase.install.InstallationServiceLocalImpl;
+import com.yupay.gangcomisiones.services.ZipInstallerService;
+import com.yupay.gangcomisiones.services.impl.ZipInstallerServiceLocalImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -123,7 +123,7 @@ public final class AppContext {
     /**
      * Global installation service backed by java.nio.Path.
      */
-    private final InstallationService installationService;
+    private final ZipInstallerService zipInstallerService;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -154,7 +154,7 @@ public final class AppContext {
         this.reversalRequestService = new ReversalRequestServiceImpl(emf, jdbcExecutor);
         this.globalConfigService = new GlobalConfigServiceImpl(emf, jdbcExecutor);
         this.globalConfigCache = new GlobalConfigCache(this);
-        this.installationService = new InstallationServiceLocalImpl(taskExecutor);
+        this.zipInstallerService = new ZipInstallerServiceLocalImpl(taskExecutor);
     }
 
     /**
@@ -431,8 +431,8 @@ public final class AppContext {
      * @return the {@code InstallationService} instance managed by this application context.
      */
     @Contract(pure = true)
-    public InstallationService getInstallationService() {
-        return installationService;
+    public ZipInstallerService getInstallationService() {
+        return zipInstallerService;
     }
 
     /**

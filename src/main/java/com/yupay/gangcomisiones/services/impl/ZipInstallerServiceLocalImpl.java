@@ -17,9 +17,29 @@
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.yupay.gangcomisiones.usecase.install;
+/*
+ * gang-comisiones
+ * COPYLEFT 2025
+ * Ingenieria Informatica Yupay SACS
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ *  with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package com.yupay.gangcomisiones.services.impl;
 
 import com.yupay.gangcomisiones.LocalFiles;
+import com.yupay.gangcomisiones.services.ZipInstallerService;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +53,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 /**
- * Implementation of the {@link InstallationService} interface that handles
+ * Implementation of the {@link ZipInstallerService} interface that handles
  * installation-related tasks specific to the local environment.
  * <br/>
  * This record provides methods for unpacking ZIP files into a designated
@@ -43,9 +63,9 @@ import java.util.zip.ZipInputStream;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public record InstallationServiceLocalImpl(@NotNull ExecutorService ioExecutor)
-        implements InstallationService {
-    private static final Logger LOG = LoggerFactory.getLogger(InstallationServiceLocalImpl.class);
+public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
+        implements ZipInstallerService {
+    private static final Logger LOG = LoggerFactory.getLogger(ZipInstallerServiceLocalImpl.class);
 
     @Override
     public void unpackZip(Path zipPath) throws IOException {
