@@ -23,8 +23,6 @@ package com.yupay.gangcomisiones;
 import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.services.*;
 import com.yupay.gangcomisiones.services.impl.*;
-import com.yupay.gangcomisiones.services.ZipInstallerService;
-import com.yupay.gangcomisiones.services.impl.ZipInstallerServiceLocalImpl;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -222,6 +220,15 @@ public final class AppContext {
         AppContext fresh = new AppContext(jpaProperties);
         INSTANCE.set(fresh);
         return fresh;
+    }
+
+    /**
+     * Checks whether the application context has been initialized.
+     *
+     * @return {@code true} if the application context has been initialized; {@code false} otherwise.
+     */
+    public static synchronized boolean isInitialized() {
+        return INSTANCE.get() != null;
     }
 
     /**
