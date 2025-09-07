@@ -39,7 +39,7 @@
 package com.yupay.gangcomisiones.services.impl;
 
 import com.yupay.gangcomisiones.LocalFiles;
-import com.yupay.gangcomisiones.exceptions.AppInstallationException;
+import com.yupay.gangcomisiones.exceptions.AppInstalationException;
 import com.yupay.gangcomisiones.services.ZipInstallProgressListener;
 import com.yupay.gangcomisiones.services.ZipInstallerService;
 import org.jetbrains.annotations.NotNull;
@@ -112,7 +112,7 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
             if (processed>0) {
                 listener.onComplete();
             }else{
-                throw new AppInstallationException("No files found in the zip.");
+                throw new AppInstalationException("No files found in the zip.");
             }
         } catch (IOException | RuntimeException e) {
             listener.onError(e);

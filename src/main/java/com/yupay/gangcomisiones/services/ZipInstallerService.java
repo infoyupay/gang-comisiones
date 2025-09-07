@@ -38,7 +38,7 @@
 
 package com.yupay.gangcomisiones.services;
 
-import com.yupay.gangcomisiones.exceptions.AppInstallationException;
+import com.yupay.gangcomisiones.exceptions.AppInstalationException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
@@ -113,7 +113,7 @@ public interface ZipInstallerService {
             try {
                 unpackZip(zipPath, listener);
             } catch (IOException | RuntimeException e) {
-                throw new AppInstallationException("Unable to unpack zip file " + zipPath, e);
+                throw new AppInstalationException("Unable to unpack zip file " + zipPath, e);
             }
         }, ioExecutor());
     }

@@ -25,7 +25,7 @@ package com.yupay.gangcomisiones.exceptions;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public class AppInstallationException extends GangComisionesException {
+public class AppInstalationException extends GangComisionesException {
     /**
      * Constructs a new runtime exception with the specified detail message.
      * The cause is not initialized, and may subsequently be initialized by a
@@ -34,7 +34,7 @@ public class AppInstallationException extends GangComisionesException {
      * @param message the detail message. The detail message is saved for
      *                later retrieval by the {@link #getMessage()} method.
      */
-    public AppInstallationException(String message) {
+    public AppInstalationException(String message) {
         super(message);
     }
 
@@ -52,7 +52,7 @@ public class AppInstallationException extends GangComisionesException {
      *                unknown.)
      * @since 1.4
      */
-    public AppInstallationException(String message, Throwable cause) {
+    public AppInstalationException(String message, Throwable cause) {
         super(message, cause);
     }
 
@@ -69,7 +69,7 @@ public class AppInstallationException extends GangComisionesException {
      *              unknown.)
      * @since 1.4
      */
-    public AppInstallationException(Throwable cause) {
+    public AppInstalationException(Throwable cause) {
         super(cause);
     }
 }
