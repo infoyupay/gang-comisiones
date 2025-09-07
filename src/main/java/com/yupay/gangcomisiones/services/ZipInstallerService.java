@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.exceptions.AppInstallationException;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -46,16 +47,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Defines installation-related operations for the application lifecycle, such as unpacking
- * installation bundles and verifying persistence prerequisites.
- * <br/>
- * Typical responsibilities include:
- * <ul>
- *   <li>Providing an I/O-oriented executor for background tasks.</li>
- *   <li>Unpacking ZIP archives into the designated installation directory with path traversal protection.</li>
- *   <li>Checking whether the persistence configuration already exists.</li>
- *   <li>Offering a convenience asynchronous wrapper for blocking operations.</li>
- * </ul>
+ * Service interface responsible for managing the installation process of ZIP archives
+ * into a designated installation directory. This includes unpacking ZIP files, ensuring
+ * safety against ZIP Slip vulnerabilities, and notifying progress via a listener.
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -78,7 +72,22 @@ public interface ZipInstallerService {
      * @param zipPath the path to the ZIP file to unpack; must point to a readable file.
      * @throws IOException if an I/O error occurs while reading the archive or writing entries.
      */
-    void unpackZip(Path zipPath) throws IOException;
+    default void unpackZip(Path zipPath) throws IOException {
+        unpackZip(zipPath, ZipInstallProgressListener.noOp());
+    }
+
+    /**
+     * Unpacks the provided ZIP archive into the installation directory, notifying the listener
+     * of progress and completion.
+     * <br/>
+     * Implementations must guard against ZIP Slip by rejecting entries whose normalized
+     * output path would escape the installation root directory.
+     *
+     * @param zipPath  the path to the ZIP file to unpack; must point to a readable file.
+     * @param listener the listener to notify of progress and completion.
+     * @throws IOException if an I/O error occurs while reading the archive or writing entries.
+     */
+    void unpackZip(Path zipPath, @NotNull ZipInstallProgressListener listener) throws IOException;
 
     /**
      * Indicates whether the persistence configuration is already present on the local machine.
@@ -88,21 +97,38 @@ public interface ZipInstallerService {
     boolean persistenceExists();
 
     /**
-     * Asynchronously unpacks the provided ZIP archive using the I/O executor.
-     * <br/>
-     * Any {@link IOException} thrown by the underlying unpack operation is wrapped into an
-     * {@link AppInstallationException} and completes the returned future exceptionally.
+     * Asynchronously unpacks the provided ZIP archive into the installation directory, notifying the
+     * given listener of progress and completion. This method wraps the blocking {@code unpackZip}
+     * operation in a {@link CompletableFuture}, allowing it to execute in a background thread
+     * provided by {@code ioExecutor()}.
      *
-     * @param zipPath the path to the ZIP file to unpack; must point to a readable file.
-     * @return a {@link CompletableFuture} that completes when unpacking finishes, or completes exceptionally on failure.
+     * @param zipPath  the path to the ZIP file to unpack; must point to a readable file.
+     * @param listener the listener to notify of progress and completion, or {@code null} if no
+     *                 notifications are required.
+     * @return a {@link CompletableFuture} that completes when the operation finishes, or completes
+     * exceptionally if an error occurs.
      */
-    default CompletableFuture<Void> unpackZipAsync(Path zipPath) {
+    default CompletableFuture<Void> unpackZipAsync(Path zipPath, @NotNull ZipInstallProgressListener listener) {
         return CompletableFuture.runAsync(() -> {
             try {
-                unpackZip(zipPath);
+                unpackZip(zipPath, listener);
             } catch (IOException e) {
                 throw new AppInstallationException("Unable to unpack zip file " + zipPath, e);
             }
         }, ioExecutor());
+    }
+
+    /**
+     * Asynchronously unpacks the provided ZIP archive into the installation directory
+     * without specifying a listener for progress or completion notifications. This method
+     * wraps the blocking {@code unpackZip} operation in a {@link CompletableFuture},
+     * allowing it to execute in a background thread provided by {@code ioExecutor()}.
+     *
+     * @param zipPath the path to the ZIP file to unpack; must point to a readable file.
+     * @return a {@link CompletableFuture} that completes when the operation finishes, or completes
+     * exceptionally if an error occurs.
+     */
+    default CompletableFuture<Void> unpackZipAsync(Path zipPath) {
+        return unpackZipAsync(zipPath, ZipInstallProgressListener.noOp());
     }
 }

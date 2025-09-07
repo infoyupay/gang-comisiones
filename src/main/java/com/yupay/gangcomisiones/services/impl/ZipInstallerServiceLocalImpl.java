@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.services.impl;
 
 import com.yupay.gangcomisiones.LocalFiles;
+import com.yupay.gangcomisiones.services.ZipInstallProgressListener;
 import com.yupay.gangcomisiones.services.ZipInstallerService;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -68,18 +69,23 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
     private static final Logger LOG = LoggerFactory.getLogger(ZipInstallerServiceLocalImpl.class);
 
     @Override
-    public void unpackZip(Path zipPath) throws IOException {
+    public void unpackZip(Path zipPath, @NotNull ZipInstallProgressListener listener) throws IOException {
+        int processed = 0;
         try (var is = Files.newInputStream(zipPath);
              var zis = new ZipInputStream(is)) {
+
             var installDir = LocalFiles.PROJECT.asPath();
+            listener.onStart(-1); // con ZipInputStream no sabemos el total de entradas
+
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 var outPath = installDir.resolve(entry.getName()).normalize();
-                //zip slip protection
+                // zip slip protection
                 if (!outPath.startsWith(installDir)) {
                     LOG.warn("Skipped potentially unsafe entry: {}", entry.getName());
                     continue;
                 }
+
                 if (entry.isDirectory()) {
                     Files.createDirectories(outPath);
                     LOG.info("Create directory: {}", outPath);
@@ -88,7 +94,15 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
                     Files.copy(zis, outPath, StandardCopyOption.REPLACE_EXISTING);
                     LOG.info("Uncompressed file: {}", outPath);
                 }
+
+                processed++;
+                listener.onEntryProcessed(entry.getName(), outPath, processed);
             }
+
+            listener.onComplete();
+        } catch (IOException e) {
+            listener.onError(e);
+            throw e;
         }
     }
 
