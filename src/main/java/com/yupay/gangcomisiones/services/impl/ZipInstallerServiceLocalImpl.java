@@ -100,7 +100,7 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
             }
 
             listener.onComplete();
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             listener.onError(e);
             throw e;
         }
