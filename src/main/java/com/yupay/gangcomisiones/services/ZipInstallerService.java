@@ -112,7 +112,7 @@ public interface ZipInstallerService {
         return CompletableFuture.runAsync(() -> {
             try {
                 unpackZip(zipPath, listener);
-            } catch (IOException e) {
+            } catch (IOException | RuntimeException e) {
                 throw new AppInstallationException("Unable to unpack zip file " + zipPath, e);
             }
         }, ioExecutor());
