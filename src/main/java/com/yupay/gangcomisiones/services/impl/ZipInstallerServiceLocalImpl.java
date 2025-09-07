@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.services.impl;
 
 import com.yupay.gangcomisiones.LocalFiles;
+import com.yupay.gangcomisiones.exceptions.AppInstallationException;
 import com.yupay.gangcomisiones.services.ZipInstallProgressListener;
 import com.yupay.gangcomisiones.services.ZipInstallerService;
 import org.jetbrains.annotations.NotNull;
@@ -98,8 +99,21 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
                 processed++;
                 listener.onEntryProcessed(entry.getName(), outPath, processed);
             }
-
-            listener.onComplete();
+            /*
+             * Comments from God:
+             * This validation is important, if a corrupted zip file comes to the ZipInputStream,
+             * then the process would be considered successful since the ZipInputStream.nextEntry
+             * never would find a valid header, returning directly null without throwing any
+             * exception at all and producing unexpected behavior.
+             * Making this validation, if the processed counter is still zero, then we can assume
+             * that the zip file is corrupted or empty, and must throw an Exception because the
+             * installation process can not be completed and the system state will become inconsistent.
+             */
+            if (processed>0) {
+                listener.onComplete();
+            }else{
+                throw new AppInstallationException("No files found in the zip.");
+            }
         } catch (IOException | RuntimeException e) {
             listener.onError(e);
             throw e;
