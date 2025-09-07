@@ -118,4 +118,11 @@ public interface UserService {
      * @return a fresh User object from database.
      */
     @NotNull User checkPrivilegesOrException(@NotNull EntityManager em, long id, @NotNull UserRole role);
+
+    /**
+     * Checks if there is at least one user in the database.
+     *
+     * @return A CompletableFuture that completes with true if there is at least one user, false otherwise.
+     */
+    CompletableFuture<Boolean> isAnyUser();
 }

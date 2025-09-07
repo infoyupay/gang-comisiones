@@ -189,6 +189,12 @@ public record UserServiceImpl(EntityManagerFactory emf,
         return freshUser;
     }
 
+    @Override
+    public CompletableFuture<Boolean> isAnyUser() {
+        return runWithoutTransactionAsync(em ->
+                em.createQuery("SELECT COUNT(u) FROM User u", Long.class).getSingleResult() > 0);
+    }
+
     /**
      * Enumeration with UserServices specific error messages.
      *
