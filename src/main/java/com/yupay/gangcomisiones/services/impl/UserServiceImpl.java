@@ -49,10 +49,17 @@ import java.util.stream.Stream;
  */
 public record UserServiceImpl(EntityManagerFactory emf,
                               ExecutorService jdbcExecutor) implements UserService, TransactionManager {
+
     @Contract("_, _, _ -> new")
     @Override
     public @NotNull CompletableFuture<User> createUser(String username, UserRole role, String plainPassword) {
-        return runInTransactionAsync(em -> {
+        return CompletableFuture.supplyAsync(() -> createUserSync(username, role, plainPassword), jdbcExecutor);
+    }
+
+    @Contract("_, _, _ -> new")
+    @Override
+    public @NotNull User createUserSync(String username, UserRole role, String plainPassword) {
+        return runInTransaction(em -> {
             var user = User.builder()
                     .username(username)
                     .role(role)

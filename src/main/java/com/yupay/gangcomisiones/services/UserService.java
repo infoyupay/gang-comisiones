@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface UserService {
     /**
-     * Creates a new user with the given username, role, and plain password.
+     * Asynchronously creates a new user with the given username, role, and plain password.
      *
      * @param username      The username of the new user.
      * @param role          The role of the new user.
@@ -45,6 +45,16 @@ public interface UserService {
      * @return A CompletableFuture that completes with the newly created user.
      */
     CompletableFuture<User> createUser(String username, UserRole role, String plainPassword);
+
+    /**
+     * Creates a new user synchronously with the given username, role, and plain password.
+     *
+     * @param username      The username of the new user.
+     * @param role          The role to assign to the new user.
+     * @param plainPassword The plain text password for the new user.
+     * @return The newly created User object.
+     */
+    User createUserSync(String username, UserRole role, String plainPassword);
 
     /**
      * Changes the password of the user with the given ID.
