@@ -50,7 +50,7 @@ import java.util.Objects;
  */
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @Getter
 @Entity
 @Table(name = "global_config", schema = "public")
