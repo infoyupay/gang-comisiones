@@ -79,12 +79,12 @@ public class TestPersistedEntities {
     }
 
     /**
-     * Creates and persists a valid test user.
+     * Creates and persists a valid test ROOT user.
      *
      * @param em the entity manager.
      * @return the created user.
      */
-    public static User persistUser(@NotNull EntityManager em) {
+    public static User persistRootUser(@NotNull EntityManager em) {
         if (USER.get() == null) {
             var r = User.builder()
                     .active(true)
@@ -146,7 +146,7 @@ public class TestPersistedEntities {
         return Transaction.builder()
                 .bank(persistBank(em))
                 .concept(persistConcept(em))
-                .cashier(persistUser(em))
+                .cashier(persistRootUser(em))
                 .amount(new BigDecimal("10.0000"))
                 .commission(new BigDecimal("1.0000"))
                 .status(TransactionStatus.REGISTERED)

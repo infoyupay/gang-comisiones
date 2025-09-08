@@ -97,9 +97,9 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
 
             var rr = ReversalRequest
                     .builder()
-                    .evaluatedBy(TestPersistedEntities.persistUser(em))
+                    .evaluatedBy(TestPersistedEntities.persistRootUser(em))
                     .message("Please, do it for me.")
-                    .requestedBy(TestPersistedEntities.persistUser(em))
+                    .requestedBy(TestPersistedEntities.persistRootUser(em))
                     .status(ReversalRequestStatus.PENDING)
                     .transaction(TestPersistedEntities.persistTransaction(em))
                     .build();
@@ -131,9 +131,9 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
             et.begin();
 
             var rr = ReversalRequest.builder()
-                    .evaluatedBy(TestPersistedEntities.persistUser(em))
+                    .evaluatedBy(TestPersistedEntities.persistRootUser(em))
                     .message("Please, do it for me.")
-                    .requestedBy(TestPersistedEntities.persistUser(em))
+                    .requestedBy(TestPersistedEntities.persistRootUser(em))
                     .status(ReversalRequestStatus.PENDING)
                     .transaction(TestPersistedEntities.persistTransaction(em))
                     .build();
@@ -188,9 +188,9 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
 
             var rr1 = ReversalRequest
                     .builder()
-                    .evaluatedBy(TestPersistedEntities.persistUser(em))
+                    .evaluatedBy(TestPersistedEntities.persistRootUser(em))
                     .message("Please, do it for me 1.")
-                    .requestedBy(TestPersistedEntities.persistUser(em))
+                    .requestedBy(TestPersistedEntities.persistRootUser(em))
                     .status(ReversalRequestStatus.PENDING)
                     .transaction(TestPersistedEntities.persistTransaction(em))
                     .build();
@@ -198,9 +198,9 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
 
             var rr2 = ReversalRequest
                     .builder()
-                    .evaluatedBy(TestPersistedEntities.persistUser(em))
+                    .evaluatedBy(TestPersistedEntities.persistRootUser(em))
                     .message("Please, do it for me 2.")
-                    .requestedBy(TestPersistedEntities.persistUser(em))
+                    .requestedBy(TestPersistedEntities.persistRootUser(em))
                     .status(ReversalRequestStatus.PENDING)
                     .transaction(TestPersistedEntities.persistTransaction(em))
                     .build();
@@ -251,7 +251,7 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
             var rr = ReversalRequest
                     .builder()
                     .message("Please, do it for me 1.")
-                    .requestedBy(TestPersistedEntities.persistUser(em))
+                    .requestedBy(TestPersistedEntities.persistRootUser(em))
                     .status(ReversalRequestStatus.PENDING)
                     .transaction(TestPersistedEntities.persistTransaction(em))
                     .build();
