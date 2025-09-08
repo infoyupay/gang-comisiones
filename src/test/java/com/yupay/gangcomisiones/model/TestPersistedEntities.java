@@ -99,6 +99,26 @@ public class TestPersistedEntities {
     }
 
     /**
+     * Creates and persists a valid test ADMIN user.
+     *
+     * @param em the entity manager.
+     * @return the created user.
+     */
+    public static User persistAdminUser(@NotNull EntityManager em) {
+        if (USER.get() == null) {
+            var r = User.builder()
+                    .active(true)
+                    .password("12345678")
+                    .role(UserRole.ADMIN)
+                    .username("admin")
+                    .build();
+            em.persist(r);
+            USER.set(r);
+        }
+        return USER.get();
+    }
+
+    /**
      * Creates and persists a valid test concept.
      *
      * @param em the entity manager.
