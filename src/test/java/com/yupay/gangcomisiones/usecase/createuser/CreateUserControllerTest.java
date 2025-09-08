@@ -33,6 +33,7 @@ import org.mockito.stubbing.Answer;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 /**
@@ -96,7 +97,9 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
         var result = controller.run().join();
 
         assertEquals(UseCaseResultType.OK, result.result());
-        assertEquals("rootUser", result.value().getUsername());
+        var value = result.value();
+        assertNotNull(value);
+        assertEquals("rootUser", value.getUsername());
         verify(view).showSuccess(contains("rootUser"));
         verify(view, never()).showError(anyString());
         verify(view).showCreateUserForm(true);
@@ -162,7 +165,9 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
         var result = controller.run().join();
 
         assertEquals(UseCaseResultType.OK, result.result());
-        assertEquals("cashier", result.value().getUsername());
+        var value = result.value();
+        assertNotNull(value);
+        assertEquals("cashier", value.getUsername());
         verify(view).showSuccess(contains("cashier"));
         verify(view, never()).showError(anyString());
         verify(view).showCreateUserForm(false);

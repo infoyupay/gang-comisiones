@@ -45,8 +45,8 @@ import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.GlobalConfigService;
 import com.yupay.gangcomisiones.services.UserService;
 import com.yupay.gangcomisiones.usecase.commons.PrivilegeChecker;
+import com.yupay.gangcomisiones.usecase.commons.Result;
 import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
-import com.yupay.gangcomisiones.usecase.commons.WriteSingleResult;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,14 +105,14 @@ public class SetGlobalConfigController {
     /**
      * Executes the use case.
      *
-     * @return a future containing a {@link WriteSingleResult}
+     * @return a future containing a {@link Result}
      * with the outcome and possibly the updated {@link GlobalConfig}
      */
-    public CompletableFuture<WriteSingleResult<GlobalConfig>> run() {
+    public CompletableFuture<Result<GlobalConfig>> run() {
         try {
             var currentUser = AppContext.getInstance().getUserSession().getCurrentUser();
             if (!checkRootPrivileges(currentUser)) {
-                return WriteSingleResult.errorCompleted();
+                return Result.errorCompleted();
             }
 
             // Step 3: get current GlobalConfig via cache (fresh fetch)
@@ -122,7 +122,7 @@ public class SetGlobalConfigController {
             // Step 4-7: show form and handle optional response
             var editedOpt = view.showSetGlobalConfigForm(copyForEditing, bootstrapMode);
             if (editedOpt.isEmpty()) {
-                return WriteSingleResult.completed(UseCaseResultType.CANCEL);
+                return Result.cancelCompleted();
             }
             var edited = editedOpt.get();
 
@@ -130,24 +130,24 @@ public class SetGlobalConfigController {
                 // 9.a bootstrap: blocking update
                 globalConfigService.updateGlobalConfig(edited).join();
                 view.showSuccess("Configuración global actualizada correctamente.");
-                return WriteSingleResult.completed(UseCaseResultType.OK, edited);
+                return Result.completed(UseCaseResultType.OK, edited);
             }
 
             // 9.b normal: non-blocking
             return globalConfigService.updateGlobalConfig(edited)
                     .thenApply(_ -> {
                         view.showSuccess("Configuración global actualizada correctamente.");
-                        return new WriteSingleResult<>(UseCaseResultType.OK, edited);
+                        return new Result<>(UseCaseResultType.OK, edited);
                     })
                     .exceptionally(t -> {
                         view.showError("Error actualizando configuración global.\n" + t.getMessage());
                         LOG.error("Cannot update GlobalConfig.", t);
-                        return WriteSingleResult.error();
+                        return Result.error();
                     });
         } catch (RuntimeException e) {
             LOG.error("Set Global Config failed before sending request to persistence service.", e);
             view.showError("No pudimos iniciar el proceso de actualización de configuración.\n" + e.getMessage());
-            return WriteSingleResult.errorCompleted();
+            return Result.errorCompleted();
         }
     }
 }

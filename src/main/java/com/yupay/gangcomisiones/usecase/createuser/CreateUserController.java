@@ -24,8 +24,8 @@ import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.UserService;
 import com.yupay.gangcomisiones.usecase.commons.PrivilegeChecker;
+import com.yupay.gangcomisiones.usecase.commons.Result;
 import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
-import com.yupay.gangcomisiones.usecase.commons.WriteSingleResult;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -95,38 +95,38 @@ public class CreateUserController {
      * If cancelled, a CANCEL status is returned. If an error occurs,
      * an error result is returned.
      */
-    public CompletableFuture<WriteSingleResult<User>> run() {
+    public CompletableFuture<Result<User>> run() {
         try {
             if (!(bootstrapMode ||
                     checkRootPrivileges(AppContext.getInstance().getUserSession().getCurrentUser()))) {
-                return WriteSingleResult.errorCompleted();
+                return Result.errorCompleted();
             }
             var dtoOptional = view.showCreateUserForm(bootstrapMode);
             if (dtoOptional.isEmpty()) {
-                return WriteSingleResult.completed(UseCaseResultType.CANCEL);
+                return Result.cancelCompleted();
             }
             var dto = dtoOptional.get();
             if (bootstrapMode) {
                 // Blocking, required at startup
                 var user = userService.createUserSync(dto.username(), dto.role(), dto.password());
                 succeeded(user);
-                return WriteSingleResult.completed(UseCaseResultType.OK, user);
+                return Result.completed(UseCaseResultType.OK, user);
             } else {
                 //Non-blocking normal use case
                 return userService.createUser(dto.username(), dto.role(), dto.password())
                         .thenApply(user -> {
                             succeeded(user);
-                            return new WriteSingleResult<>(UseCaseResultType.OK, user);
+                            return new Result<>(UseCaseResultType.OK, user);
                         }).exceptionally(throwable -> {
                             view.showError("Error creando usuario.\n" + throwable.getMessage());
                             LOG.error("Cannot create user.", throwable);
-                            return WriteSingleResult.error();
+                            return Result.error();
                         });
             }
         } catch (RuntimeException e) {
             LOG.error("User creation failed before sending request to persistence service.", e);
             view.showError("No pudimos iniciar la creación del usuario.\n" + e.getMessage());
-            return WriteSingleResult.errorCompleted();
+            return Result.errorCompleted();
         }
     }
 

@@ -51,6 +51,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -138,7 +139,9 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
 
         // Assert
         assertEquals(UseCaseResultType.OK, result.result());
-        assertEquals("12345678901", result.value().getRuc());
+        var value = result.value();
+        assertNotNull(value);
+        assertEquals("12345678901", value.getRuc());
         verify(view).showSuccess(contains("Configuración global actualizada"));
         verify(view, never()).showError(anyString());
         verify(view).showSetGlobalConfigForm(any(GlobalConfig.class), eq(true));
@@ -245,7 +248,9 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
 
         // Assert
         assertEquals(UseCaseResultType.OK, result.result());
-        assertEquals("12345678901", result.value().getRuc());
+        var value = result.value();
+        assertNotNull(value);
+        assertEquals("12345678901", value.getRuc());
         verify(view).showSuccess(contains("Configuración global actualizada"));
         verify(view, never()).showError(anyString());
         verify(view).showSetGlobalConfigForm(any(GlobalConfig.class), eq(false));
