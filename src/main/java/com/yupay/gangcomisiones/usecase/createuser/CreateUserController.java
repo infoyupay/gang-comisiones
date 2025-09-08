@@ -99,7 +99,7 @@ public class CreateUserController {
      * If cancelled, a CANCEL status is returned. If an error occurs,
      * an error result is returned.
      */
-    private CompletableFuture<WriteSingleResult<User>> run() {
+    public CompletableFuture<WriteSingleResult<User>> run() {
         try {
             if (!(bootstrapMode ||
                     checkRootPrivileges(AppContext.getInstance().getUserSession().getCurrentUser()))) {
