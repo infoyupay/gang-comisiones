@@ -36,41 +36,26 @@
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.yupay.gangcomisiones.usecase.setglobalconfig;
-
-import com.yupay.gangcomisiones.model.GlobalConfig;
-import com.yupay.gangcomisiones.usecase.commons.ErrorShower;
-
-import java.util.Optional;
-
+package com.yupay.gangcomisiones.usecase.commons;
 /**
- * Contract for the view of the "Set Global Config" use case.
- * <br/>
- * Implementations are responsible for displaying the form, handling user
- * interactions and returning the resulting {@link GlobalConfig} instance.
+ * Enumeration that represents the types of use case results.
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
-public interface SetGlobalConfigView extends ErrorShower {
+public enum UseCaseResultType {
     /**
-     * Displays the Global Config form to the user.
-     * <ul>
-     *     <li>The form must allow editing of all {@link GlobalConfig} fields that are intended to be changed by a user.</li>
-     *     <li>A copy of the current config is provided; implementations may modify and return it.</li>
-     *     <li>If the user cancels/closes the form, return an empty {@link Optional}.</li>
-     * </ul>
-     *
-     * @param config        a copy of the current {@link GlobalConfig} to be edited.
-     * @param bootstrapMode whether the application is running in bootstrap mode.
-     * @return an {@link Optional} containing the edited {@link GlobalConfig}, or empty if the user cancelled.
+     * Represents a successful outcome of a use case process.
      */
-    Optional<GlobalConfig> showSetGlobalConfigForm(GlobalConfig config, boolean bootstrapMode);
-
+    OK,
     /**
-     * Shows a success/confirmation message to the user.
-     *
-     * @param message the text to display.
+     * Represents an erroneous or unsuccessful outcome of a use case process.
      */
-    void showSuccess(String message);
+    ERROR,
+    /**
+     * Represents a canceled outcome of a use case process, indicating
+     * that the action was intentionally halted or interrupted, both
+     * by the system or by the user.
+     */
+    CANCEL
 }

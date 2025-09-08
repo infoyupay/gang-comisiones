@@ -24,7 +24,7 @@ import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
-import com.yupay.gangcomisiones.usecase.UseCaseResultType;
+import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
 import jakarta.persistence.EntityTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

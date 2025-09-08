@@ -19,7 +19,7 @@
 
 package com.yupay.gangcomisiones.usecase.createuser;
 
-import com.yupay.gangcomisiones.usecase.ErrorShower;
+import com.yupay.gangcomisiones.usecase.commons.ErrorShower;
 
 import java.util.Optional;
 

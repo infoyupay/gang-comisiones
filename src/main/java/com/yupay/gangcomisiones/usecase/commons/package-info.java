@@ -16,27 +16,10 @@
  * You should have received a copy of the GNU General Public License along
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-
-package com.yupay.gangcomisiones.usecase;
 /**
- * Enumeration that represents the types of use case results.
+ * Contains common classes and interfaces used across the use cases.
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
-public enum UseCaseResultType {
-    /**
-     * Represents a successful outcome of a use case process.
-     */
-    OK,
-    /**
-     * Represents an erroneous or unsuccessful outcome of a use case process.
-     */
-    ERROR,
-    /**
-     * Represents a canceled outcome of a use case process, indicating
-     * that the action was intentionally halted or interrupted, both
-     * by the system or by the user.
-     */
-    CANCEL
-}
+package com.yupay.gangcomisiones.usecase.commons;
