@@ -39,12 +39,12 @@
 package com.yupay.gangcomisiones.usecase.setglobalconfig;
 
 import com.yupay.gangcomisiones.AppContext;
-import com.yupay.gangcomisiones.exceptions.GangComisionesException;
 import com.yupay.gangcomisiones.model.GlobalConfig;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.GlobalConfigService;
 import com.yupay.gangcomisiones.services.UserService;
+import com.yupay.gangcomisiones.usecase.PrivilegeChecker;
 import com.yupay.gangcomisiones.usecase.UseCaseResultType;
 import com.yupay.gangcomisiones.usecase.WriteSingleResult;
 import org.jetbrains.annotations.NotNull;
@@ -86,18 +86,20 @@ public class SetGlobalConfigController {
         this.globalConfigService = globalConfigService;
         this.bootstrapMode = bootstrapMode;
     }
-//TODO: extract to external helper.
+
+    /**
+     * Checks if the user has root privileges.
+     *
+     * @param user the user to check.
+     * @return true if the user has root privileges, false otherwise.
+     */
     private boolean checkRootPrivileges(@NotNull User user) {
-        try (var em = AppContext.getInstance().getEntityManagerFactory().createEntityManager()) {
-            userService.checkPrivilegesOrException(em, user.getId(), UserRole.ROOT);
-            return true;
-        } catch (GangComisionesException e) {
-            view.showError("El usuario no tiene privilegios de ROOT.\n" + e.getMessage());
-            return false;
-        } catch (RuntimeException e) {
-            view.showError("No se pudieron verificar los privilegios del usuario.");
-            throw e;
-        }
+        return PrivilegeChecker.checkPrivileges(
+                AppContext.getInstance().getEntityManagerFactory(),
+                userService,
+                user,
+                UserRole.ROOT,
+                view);
     }
 
     /**

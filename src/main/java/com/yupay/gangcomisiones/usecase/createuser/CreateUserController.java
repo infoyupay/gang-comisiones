@@ -20,10 +20,10 @@
 package com.yupay.gangcomisiones.usecase.createuser;
 
 import com.yupay.gangcomisiones.AppContext;
-import com.yupay.gangcomisiones.exceptions.GangComisionesException;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.UserService;
+import com.yupay.gangcomisiones.usecase.PrivilegeChecker;
 import com.yupay.gangcomisiones.usecase.UseCaseResultType;
 import com.yupay.gangcomisiones.usecase.WriteSingleResult;
 import org.jetbrains.annotations.NotNull;
@@ -71,16 +71,12 @@ public class CreateUserController {
      * @return true if the user has ROOT privileges, false otherwise
      */
     private boolean checkRootPrivileges(User user) {
-        try (var em = AppContext.getInstance().getEntityManagerFactory().createEntityManager()) {
-            userService.checkPrivilegesOrException(em, user.getId(), UserRole.ROOT);
-            return true;
-        } catch (GangComisionesException e) {
-            view.showError("El usuario no tiene privilegios de ROOT.\n" + e.getMessage());
-            return false;
-        } catch (RuntimeException e) {
-            view.showError("No se pudieron verificar los privilegios del usuario.");
-            throw e;
-        }
+        return PrivilegeChecker.checkPrivileges(
+                AppContext.getInstance().getEntityManagerFactory(),
+                userService,
+                user,
+                UserRole.ROOT,
+                view);
     }
 
     /**

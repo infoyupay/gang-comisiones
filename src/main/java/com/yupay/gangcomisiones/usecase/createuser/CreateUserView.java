@@ -19,6 +19,8 @@
 
 package com.yupay.gangcomisiones.usecase.createuser;
 
+import com.yupay.gangcomisiones.usecase.ErrorShower;
+
 import java.util.Optional;
 
 /**
@@ -29,7 +31,7 @@ import java.util.Optional;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public interface CreateUserView {
+public interface CreateUserView extends ErrorShower {
     /// Displays a form for creating a new user and collects the required information. The form shall include the
     /// following fields:
     /// - Username
@@ -39,18 +41,10 @@ public interface CreateUserView {
     /// If bootstrapMode, the form will force the role to [#ROOT].
     ///
     /// @param bootstrapMode a boolean indicating whether the form should be displayed in bootstrap mode.
-    ///                                           If true, the form will use the bootstrap configuration, otherwise, it will not.
+    ///                                                                If true, the form will use the bootstrap configuration, otherwise, it will not.
     /// @return an `Optional<CreateUserDTO>` containing the user creation data if the form is completed successfully,
     /// or an empty `Optional` if the operation is canceled or fails.
     Optional<CreateUserDTO> showCreateUserForm(boolean bootstrapMode);
-
-    /**
-     * Displays an error message to the user.
-     *
-     * @param message the error message to be displayed. It should provide
-     *                information about the error encountered.
-     */
-    void showError(String message);
 
     /**
      * Displays a success message to the user.

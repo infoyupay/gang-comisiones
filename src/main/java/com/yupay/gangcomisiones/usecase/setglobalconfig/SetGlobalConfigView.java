@@ -39,6 +39,7 @@
 package com.yupay.gangcomisiones.usecase.setglobalconfig;
 
 import com.yupay.gangcomisiones.model.GlobalConfig;
+import com.yupay.gangcomisiones.usecase.ErrorShower;
 
 import java.util.Optional;
 
@@ -51,7 +52,7 @@ import java.util.Optional;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public interface SetGlobalConfigView {
+public interface SetGlobalConfigView extends ErrorShower {
     /**
      * Displays the Global Config form to the user.
      * <ul>
@@ -65,13 +66,6 @@ public interface SetGlobalConfigView {
      * @return an {@link Optional} containing the edited {@link GlobalConfig}, or empty if the user cancelled.
      */
     Optional<GlobalConfig> showSetGlobalConfigForm(GlobalConfig config, boolean bootstrapMode);
-
-    /**
-     * Shows an error message to the user.
-     *
-     * @param message the text to display.
-     */
-    void showError(String message);
 
     /**
      * Shows a success/confirmation message to the user.
