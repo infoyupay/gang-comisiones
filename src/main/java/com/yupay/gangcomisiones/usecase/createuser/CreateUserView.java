@@ -42,13 +42,21 @@ public interface CreateUserView extends UserPrompter<CreateUserDTO> {
     /// If bootstrapMode, the form will force the role to [#ROOT].
     ///
     /// @param bootstrapMode a boolean indicating whether the form should be displayed in bootstrap mode.
-    ///                                                                                     If true, the form will use the bootstrap configuration, otherwise, it will not.
+    ///                                                                                                          If true, the form will use the bootstrap configuration, otherwise, it will not.
     /// @return an `Optional<CreateUserDTO>` containing the user creation data if the form is completed successfully,
     /// or an empty `Optional` if the operation is canceled or fails.
     Optional<CreateUserDTO> showCreateUserForm(boolean bootstrapMode);
 
+    /**
+     * Displays a user-facing form for input and captures the outcome.
+     *
+     * @param value the initial value to be displayed in the form.
+     * @param mode  the mode of the form, indicating whether it is for creation, update, or view.
+     * @return an {@link Optional} containing the value of type T representing the user's input,
+     * or an empty {@link Optional} if the input is not provided or the form is canceled.
+     */
     @Override
-    default Optional<CreateUserDTO> showUserForm(FormMode mode) {
+    default Optional<CreateUserDTO> showUserForm(CreateUserDTO value, FormMode mode) {
         return showCreateUserForm(false);
     }
 }

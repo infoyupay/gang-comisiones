@@ -39,7 +39,8 @@
 package com.yupay.gangcomisiones.usecase.setglobalconfig;
 
 import com.yupay.gangcomisiones.model.GlobalConfig;
-import com.yupay.gangcomisiones.usecase.commons.ErrorShower;
+import com.yupay.gangcomisiones.usecase.commons.FormMode;
+import com.yupay.gangcomisiones.usecase.commons.UserPrompter;
 
 import java.util.Optional;
 
@@ -52,7 +53,7 @@ import java.util.Optional;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public interface SetGlobalConfigView extends ErrorShower {
+public interface SetGlobalConfigView extends UserPrompter<GlobalConfig> {
     /**
      * Displays the Global Config form to the user.
      * <ul>
@@ -68,9 +69,15 @@ public interface SetGlobalConfigView extends ErrorShower {
     Optional<GlobalConfig> showSetGlobalConfigForm(GlobalConfig config, boolean bootstrapMode);
 
     /**
-     * Shows a success/confirmation message to the user.
+     * Displays a user-facing form for input and captures the outcome.
      *
-     * @param message the text to display.
+     * @param value the initial value to be displayed in the form.
+     * @param mode  the mode of the form, indicating whether it is for creation, update, or view.
+     * @return an {@link Optional} containing the value of type T representing the user's input,
+     * or an empty {@link Optional} if the input is not provided or the form is canceled.
      */
-    void showSuccess(String message);
+    @Override
+    default Optional<GlobalConfig> showUserForm(GlobalConfig value, FormMode mode) {
+        return showSetGlobalConfigForm(value, mode == FormMode.CREATE);
+    }
 }

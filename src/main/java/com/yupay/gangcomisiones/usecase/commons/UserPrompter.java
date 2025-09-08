@@ -78,7 +78,19 @@ public interface UserPrompter<T> extends ErrorShower {
      * @return an {@link Optional} containing the value of type T representing the user's input,
      * or an empty {@link Optional} if the input is not provided or the form is canceled.
      */
-    Optional<T> showUserForm(FormMode mode);
+    default Optional<T> showUserForm(FormMode mode) {
+        return showUserForm(null, mode);
+    }
+
+    /**
+     * Displays a user-facing form for input and captures the outcome.
+     *
+     * @param value the initial value to be displayed in the form.
+     * @param mode  the mode of the form, indicating whether it is for creation, update, or view.
+     * @return an {@link Optional} containing the value of type T representing the user's input,
+     * or an empty {@link Optional} if the input is not provided or the form is canceled.
+     */
+    Optional<T> showUserForm(T value, FormMode mode);
 
     /**
      * Displays a user-facing message categorized by a specific message type. This method can be used to
