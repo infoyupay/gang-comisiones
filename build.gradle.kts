@@ -113,6 +113,10 @@ dependencies {
     mockitoAgent("org.mockito:mockito-core:5.19.0") {
         isTransitive = false
     }
+
+    //AssertJ for improved assertions.
+    // https://mvnrepository.com/artifact/org.assertj/assertj-core
+    testImplementation("org.assertj:assertj-core:3.27.4")
 }
 
 // Configuring junit platform
