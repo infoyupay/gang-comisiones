@@ -54,4 +54,15 @@ public interface MessagePresenter extends ErrorPresenter {
     default void showError(String message) {
         showMessage(message, MessageType.ERROR);
     }
+
+    /**
+     * Displays a warning message to the user. This method delegates the message
+     * display to the {@link #showMessage(String, MessageType)} method with
+     * {@link MessageType#WARNING}.
+     *
+     * @param message the warning message to display
+     */
+    default void showWarning(String message) {
+        showMessage(message, MessageType.WARNING);
+    }
 }
