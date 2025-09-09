@@ -46,7 +46,7 @@ public record SuccessProcessor<T>(ListPresenter<T> presenter,
      * @return a new {@code SuccessProcessor} configured for the insert operation
      */
     @Contract("_ -> new")
-    public static <T> @NotNull SuccessProcessor<T> insert(ListPresenter<T> presenter){
+    public static <T> @NotNull SuccessProcessor<T> insert(ListPresenter<T> presenter) {
         return new SuccessProcessor<>(presenter, PresenterEndpoint.INSERT);
     }
 
@@ -59,18 +59,16 @@ public record SuccessProcessor<T>(ListPresenter<T> presenter,
      * @return a new {@code SuccessProcessor} configured for the replace operation
      */
     @Contract("_ -> new")
-    public static <T> @NotNull SuccessProcessor<T> replace(ListPresenter<T> presenter){
+    public static <T> @NotNull SuccessProcessor<T> replace(ListPresenter<T> presenter) {
         return new SuccessProcessor<>(presenter, PresenterEndpoint.REPLACE);
     }
+
     @Override
     public void accept(Result<T> result) {
         if (result != null
                 && result.result() == UseCaseResultType.OK
                 && result.value() != null) {
-            switch (endpoint) {
-                case INSERT -> presenter.insert(result.value());
-                case REPLACE -> presenter.replace(result.value());
-            }
+            endpoint.apply(presenter, result.value());
         }
     }
 
@@ -82,10 +80,29 @@ public record SuccessProcessor<T>(ListPresenter<T> presenter,
         /**
          * Represents an operation to add new elements within the context of a presenter.
          */
-        INSERT,
+        INSERT {
+            @Override
+            <T> void apply(ListPresenter<T> presenter, T value) {
+                presenter.insert(value);
+            }
+        },
         /**
          * Represents an operation to replace existing elements within the context of a presenter.
          */
-        REPLACE
+        REPLACE {
+            @Override
+            <T> void apply(ListPresenter<T> presenter, T value) {
+                presenter.replace(value);
+            }
+        };
+
+        /**
+         * Applies a specific operation to modify a {@link ListPresenter} using the given value of type {@code T}.
+         *
+         * @param <T>       the type of elements managed by the {@code ListPresenter}
+         * @param presenter the {@code ListPresenter} to which the operation should be applied
+         * @param value     the value of type {@code T} to be used in the operation
+         */
+        abstract <T> void apply(ListPresenter<T> presenter, T value);
     }
 }
