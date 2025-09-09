@@ -71,4 +71,11 @@ public interface ListPresenter<T> extends Consumer<List<T>> {
      * @param item the new instance of type {@code T} to be used as a replacement
      */
     void replace(T item);
+
+    /**
+     * Inserts a new instance of type {@code T} into the implementing class's managed structure.
+     *
+     * @param item the instance of type {@code T} to be inserted
+     */
+    void insert(T item);
 }
