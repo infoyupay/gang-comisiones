@@ -20,12 +20,12 @@
 package com.yupay.gangcomisiones.usecase.commons;
 
 /**
- * Common interface to show error messages to the user.
+ * Abstraction to present error messages to the user.
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
-public interface ErrorShower {
+public interface ErrorPresenter {
     /**
      * Displays an error message to the user.
      *

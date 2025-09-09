@@ -41,7 +41,7 @@ public class PrivilegeChecker {
      * @param userService The {@code UserService} used to verify the user's privileges.
      * @param user        The {@code User} whose privileges will be checked.
      * @param privilege   The {@code UserRole} privilege to check for the user.
-     * @param onError     The {@code ErrorShower} used to handle and display errors when the user lacks privileges
+     * @param onError     The {@code ErrorPresenter} used to handle and display errors when the user lacks privileges
      *                    or a runtime error occurs.
      * @return {@code true} if the user has the specified privilege, {@code false} if the privilege check fails.
      * @throws RuntimeException if an unexpected error occurs during the privilege check.
@@ -50,7 +50,7 @@ public class PrivilegeChecker {
                                           @NotNull UserService userService,
                                           @NotNull User user,
                                           @NotNull UserRole privilege,
-                                          @NotNull ErrorShower onError) {
+                                          @NotNull ErrorPresenter onError) {
         try (var em = emf.createEntityManager()) {
             userService.checkPrivilegesOrException(em, user.getId(), privilege);
             return true;

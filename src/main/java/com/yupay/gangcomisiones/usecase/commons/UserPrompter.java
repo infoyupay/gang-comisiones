@@ -70,7 +70,7 @@ import java.util.Optional;
  *   <li>Adopt across multiple views to improve reusability, reduce boilerplate, and simplify maintenance.</li>
  * </ul>
  */
-public interface UserPrompter<T> extends ErrorShower {
+public interface UserPrompter<T> extends MessagePresenter {
     /**
      * Displays a user-facing form for input and captures the outcome.
      *
@@ -100,21 +100,4 @@ public interface UserPrompter<T> extends ErrorShower {
      * @param type    the type of the message being displayed, represented by the {@link MessageType} enumeration.
      *                This determines how the message will be categorized and possibly rendered.
      */
-    void showMessage(String message, MessageType type);
-
-    /**
-     * Displays a success message to the user. The message is categorized as an informational message
-     * to provide positive feedback or confirmation of a successful operation.
-     *
-     * @param message the success message content to be displayed. It should clearly convey the success
-     *                of the operation or action to the user.
-     */
-    default void showSuccess(String message) {
-        showMessage(message, MessageType.INFORMATION);
-    }
-
-    @Override
-    default void showError(String message) {
-        showMessage(message, MessageType.ERROR);
-    }
 }
