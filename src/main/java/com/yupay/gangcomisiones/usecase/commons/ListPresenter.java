@@ -37,7 +37,6 @@ import java.util.function.Consumer;
  * @author InfoYupay SACS
  * @version 1.0
  */
-@FunctionalInterface
 public interface ListPresenter<T> extends Consumer<List<T>> {
 
     /**
@@ -58,4 +57,11 @@ public interface ListPresenter<T> extends Consumer<List<T>> {
      * @param list the non-null list of elements to be displayed or processed
      */
     void showList(@NotNull List<T> list);
+
+    /**
+     * Clears the current list of elements managed or processed by the implementing class.
+     * This method should reset the state of the list to empty, removing all previously
+     * added or processed elements.
+     */
+    void clearList();
 }
