@@ -75,7 +75,8 @@ CREATE TABLE public.bank (
 	name varchar NOT NULL,
 	active boolean NOT NULL,
 	CONSTRAINT bank_pk PRIMARY KEY (id),
-	CONSTRAINT chk_bank_name_nonempty CHECK (char_length(name) > 0)
+	CONSTRAINT chk_bank_name_nonempty CHECK (char_length(name) > 0),
+	CONSTRAINT uq_bank_name UNIQUE (name)
 );
 -- ddl-end --
 
@@ -108,7 +109,8 @@ CREATE TABLE public.concept (
 	active boolean NOT NULL,
 	CONSTRAINT concept_pk PRIMARY KEY (id),
 	CONSTRAINT chk_concept_name_nonempty CHECK (char_length(name) > 0),
-	CONSTRAINT chk_concept_value_valid CHECK ((type = 'FIXED' AND value >= 0) OR (type = 'RATE' AND value BETWEEN 0 AND 1))
+	CONSTRAINT chk_concept_value_valid CHECK ((type = 'FIXED' AND value >= 0) OR (type = 'RATE' AND value BETWEEN 0 AND 1)),
+	CONSTRAINT uq_concept_name UNIQUE (name)
 );
 -- ddl-end --
 
@@ -293,25 +295,6 @@ USING btree
 (
 	cashier
 );
-/*
- * gang-comisiones
- * COPYLEFT 2025
- * Ingenieria Informatica Yupay SACS
- *
- * This program is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by the
- * Free Software Foundation, either version 3 of the License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along
- *  with this program. If not, see <https://www.gnu.org/licenses/>.
- */
-
 -- ddl-end --
 
 -- object: idx_transaction_bank_date | type: INDEX --
