@@ -64,4 +64,11 @@ public interface ListPresenter<T> extends Consumer<List<T>> {
      * added or processed elements.
      */
     void clearList();
+
+    /**
+     * Replaces an existing instance of the type {@code T} with the specified {@code item}.
+     *
+     * @param item the new instance of type {@code T} to be used as a replacement
+     */
+    void replace(T item);
 }
