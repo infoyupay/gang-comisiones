@@ -50,4 +50,19 @@ public class AuditLogChecker {
                     .isEmpty();
         }
     }
+
+    /**
+     * Checks if any audit log entry exists in database.
+     *
+     * @param emf the entity manager factory used to create the entity manager
+     * @return true if any audit log entry exists, false otherwise
+     */
+    public static boolean checkAnyAuditLogExists(EntityManagerFactory emf) {
+        try (var em = emf.createEntityManager()) {
+            return em.createQuery(
+                            "SELECT COUNT(a) FROM AuditLog a",
+                            Long.class)
+                    .getSingleResult() > 0;
+        }
+    }
 }
