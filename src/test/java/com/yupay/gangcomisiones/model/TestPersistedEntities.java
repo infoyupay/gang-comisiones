@@ -19,14 +19,17 @@
 
 package com.yupay.gangcomisiones.model;
 
+import com.yupay.gangcomisiones.AppContext;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.EntityTransaction;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 
 /**
  * Facility to centralize test entities creation and persist.
@@ -91,6 +94,26 @@ public class TestPersistedEntities {
                     .password("password")
                     .role(UserRole.ROOT)
                     .username("rootUser")
+                    .build();
+            em.persist(r);
+            USER.set(r);
+        }
+        return USER.get();
+    }
+
+    /**
+     * Creates and persists a valid test CASHIER user.
+     *
+     * @param em the entity manager.
+     * @return the created user.
+     */
+    public static User persistCashierUser(@NotNull EntityManager em) {
+        if (USER.get() == null) {
+            var r = User.builder()
+                    .active(true)
+                    .password("abcd1234")
+                    .role(UserRole.CASHIER)
+                    .username("cashier")
                     .build();
             em.persist(r);
             USER.set(r);
@@ -186,6 +209,33 @@ public class TestPersistedEntities {
             TRANSACTION.set(r);
         }
         return TRANSACTION.get();
+    }
+
+    /**
+     * Executes a given operation within a transactional context.
+     * An EntityManager is provided to the operation, and the transaction
+     * is committed if the operation completes successfully or rolled back
+     * in case of a runtime exception.
+     *
+     * @param <T>       the type of the result produced by the operation performed within the transaction
+     * @param ctx       the application context containing the EntityManagerFactory
+     * @param performer a function that takes an EntityManager, performs an operation, and produces a result
+     * @return the result of the operation performed within the transaction
+     * @throws RuntimeException if an exception occurs during the transaction, after rolling back the transaction
+     */
+    public static <T> T performInTransaction(@NotNull AppContext ctx,
+                                             @NotNull Function<EntityManager, T> performer) {
+        EntityTransaction tx = null;
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            tx = em.getTransaction();
+            tx.begin();
+            var r = performer.apply(em);
+            tx.commit();
+            return r;
+        } catch (RuntimeException e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            throw e;
+        }
     }
 
 }
