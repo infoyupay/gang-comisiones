@@ -19,6 +19,8 @@
 
 package com.yupay.gangcomisiones.usecase.commons;
 
+import com.yupay.gangcomisiones.model.User;
+
 /**
  * Represents a view component for displaying a board, combining the responsibilities of presenting lists
  * and showing messages or errors. This interface extends {@code ListPresenter} to provide mechanisms for
@@ -29,4 +31,12 @@ package com.yupay.gangcomisiones.usecase.commons;
  * @version 1.0
  */
 public interface BoardView<T> extends ListPresenter<T>, MessagePresenter {
+    /**
+     * Propagates the privileges of the specified user to associated components or elements.
+     * This tells the board view to disable/enable components based on the user's privileges.
+     *
+     * @param user the user whose privileges are to be propagated
+     */
+    void propagatePrivileges(User user);
+
 }
