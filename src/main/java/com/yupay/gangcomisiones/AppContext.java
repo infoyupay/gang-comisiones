@@ -23,6 +23,8 @@ package com.yupay.gangcomisiones;
 import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.services.*;
 import com.yupay.gangcomisiones.services.impl.*;
+import com.yupay.gangcomisiones.usecase.registry.DefaultViewRegistry;
+import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 import org.jetbrains.annotations.Contract;
@@ -122,6 +124,10 @@ public final class AppContext {
      * Global installation service backed by java.nio.Path.
      */
     private final ZipInstallerService zipInstallerService;
+    /**
+     * Global view registry. This may change with app implementaiton.
+     */
+    private final ViewRegistry viewRegistry;
 
     /**
      * Constructs an instance of {@code AppContext} with the provided JPA properties.
@@ -130,8 +136,9 @@ public final class AppContext {
      *
      * @param jpaProperties the path to the JPA properties file used for configuring
      *                      the {@code EntityManagerFactory}.
+     * @param viewRegistry  the view registry.
      */
-    private AppContext(Path jpaProperties) {
+    private AppContext(Path jpaProperties, ViewRegistry viewRegistry) {
         this.emf = buildEntityManagerFactory(jpaProperties);
         this.jdbcExecutor = Executors.newSingleThreadExecutor(r -> {
             Thread t = new Thread(r, "AppContext-JDBC");
@@ -144,6 +151,8 @@ public final class AppContext {
                 .factory());
         //User session container.
         this.userSession = new UserSession();
+        //Registries
+        this.viewRegistry = viewRegistry;
         // Persistence services.
         this.userService = new UserServiceImpl(emf, jdbcExecutor);
         this.bankService = new BankServiceImpl(emf, jdbcExecutor);
@@ -160,12 +169,13 @@ public final class AppContext {
      * If multiple threads race, only one succeeds; others see the winner.
      *
      * @param jpaProperties the path of .properties file.
+     * @param viewRegistry  the view registry.
      * @return the instance, initializes if needed.
      */
-    public static AppContext getInstance(Path jpaProperties) {
+    public static AppContext getInstance(Path jpaProperties, ViewRegistry viewRegistry) {
         AppContext ctx = INSTANCE.get();
         if (ctx == null) {
-            ctx = new AppContext(jpaProperties);
+            ctx = new AppContext(jpaProperties, viewRegistry);
             if (!INSTANCE.compareAndSet(null, ctx)) {
                 // Lost the race, discard the one we just created
                 ctx = INSTANCE.get();
@@ -183,6 +193,19 @@ public final class AppContext {
             }
         }
         return ctx;
+    }
+
+    /**
+     * Retrieves the unique instance of {@code AppContext}, lazily creating it if necessary.
+     * This method initializes the application context using the specified JPA properties file.
+     * If the instance has already been created, it simply returns the existing one.
+     * This method delegates to {@link #getInstance(Path, ViewRegistry)} with a {@code null} ViewRegistry.
+     *
+     * @param jpaProperties the path to the JPA properties file used to configure the {@code EntityManagerFactory}.
+     * @return the singleton instance of {@code AppContext}.
+     */
+    public static AppContext getInstance(Path jpaProperties) {
+        return getInstance(jpaProperties, new DefaultViewRegistry());
     }
 
     /**
@@ -209,17 +232,29 @@ public final class AppContext {
      * This is safe to call at runtime; it will replace the global instance.
      *
      * @param jpaProperties the path to .properties file.
+     * @param viewRegistry  the view registry.
      * @return the new instance (restarted).
      */
-    public static synchronized @NotNull AppContext restart(Path jpaProperties) {
+    public static synchronized @NotNull AppContext restart(Path jpaProperties, ViewRegistry viewRegistry) {
         AppContext old = INSTANCE.getAndSet(null);
         if (old == null) {
             throw new AppContextException("Cannot restart AppContext because it was not initialized.");
         }
         AppContext.shutdown(old);
-        AppContext fresh = new AppContext(jpaProperties);
+        AppContext fresh = new AppContext(jpaProperties, viewRegistry);
         INSTANCE.set(fresh);
         return fresh;
+    }
+
+    /**
+     * Restarts the application context using the provided JPA properties.
+     * This method rebuilds the application context, ensuring that the specified JPA properties are applied.
+     *
+     * @param jpaProperties the path to the JPA properties file that will be used to configure the application context
+     * @return the newly created and initialized {@link AppContext} instance
+     */
+    public static synchronized @NotNull AppContext restart(Path jpaProperties) {
+        return restart(jpaProperties, new DefaultViewRegistry());
     }
 
     /**
@@ -452,6 +487,19 @@ public final class AppContext {
     public GlobalConfigCache getGlobalConfigCache() {
         return globalConfigCache;
     }
+
+    /**
+     * Retrieves the {@code ViewRegistry} instance associated with this application context.
+     * The {@code ViewRegistry} is responsible for managing and providing access to
+     * view-specific components within the application.
+     *
+     * @return the {@code ViewRegistry} instance managed by this application context.
+     */
+    @Contract(pure = true)
+    public ViewRegistry getViewRegistry() {
+        return viewRegistry;
+    }
+
 
 }
 
