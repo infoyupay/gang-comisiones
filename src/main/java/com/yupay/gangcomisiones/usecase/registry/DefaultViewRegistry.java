@@ -17,19 +17,18 @@
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.yupay.gangcomisiones.usecase.commons;
+package com.yupay.gangcomisiones.usecase.registry;
 
-import com.yupay.gangcomisiones.registry.TypeRegistry;
+import com.yupay.gangcomisiones.registry.DefaultTypeRegistry;
 
 /**
- * Alias for a type-based registry dedicated to view components.
+ * Backwards-compatible adapter extending {@link DefaultTypeRegistry} for use case views.
  * <br/>
- * Prefer using {@link TypeRegistry} for generic use,
- * and this alias when you want to emphasize the view-specific intent.
+ * Prefer using {@link DefaultTypeRegistry} directly for generic components.
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
-public interface ViewRegistry extends TypeRegistry {
-    // No additional members; narrows semantic intent to view components.
+public final class DefaultViewRegistry extends DefaultTypeRegistry implements ViewRegistry {
+    // Inherits all behavior from DefaultTypeRegistry.
 }

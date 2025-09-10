@@ -17,7 +17,7 @@
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.yupay.gangcomisiones.usecase.commons;
+package com.yupay.gangcomisiones.usecase.registry;
 
 import com.yupay.gangcomisiones.registry.DefaultTypeRegistry;
 
