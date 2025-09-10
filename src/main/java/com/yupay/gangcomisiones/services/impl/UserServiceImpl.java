@@ -202,6 +202,16 @@ public record UserServiceImpl(EntityManagerFactory emf,
                 em.createQuery("SELECT COUNT(u) FROM User u", Long.class).getSingleResult() > 0);
     }
 
+    @Override
+    public boolean checkUserCurrentlyActive(long id) {
+        return runWithoutTransaction(em -> {
+            var r = em.createQuery("SELECT u.active FROM User u WHERE u.id = :id", Boolean.class)
+                    .setParameter("id", id)
+                    .getSingleResultOrNull();
+            return r != null && r;
+        });
+    }
+
     /**
      * Enumeration with UserServices specific error messages.
      *

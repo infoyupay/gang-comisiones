@@ -130,6 +130,14 @@ public interface UserService {
     @NotNull User checkPrivilegesOrException(@NotNull EntityManager em, long id, @NotNull UserRole role);
 
     /**
+     * Checks if a user is still valid in database.
+     *
+     * @param id The id of the user to check.
+     * @return true if user is active, false otherwise.
+     */
+    boolean checkUserCurrentlyActive(long id);
+
+    /**
      * Checks if there is at least one user in the database.
      *
      * @return A CompletableFuture that completes with true if there is at least one user, false otherwise.

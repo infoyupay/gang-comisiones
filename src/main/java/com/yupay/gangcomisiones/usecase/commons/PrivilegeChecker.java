@@ -25,6 +25,8 @@ import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.UserService;
 import jakarta.persistence.EntityManagerFactory;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for handling privilege checks for users.
@@ -33,6 +35,8 @@ import org.jetbrains.annotations.NotNull;
  * @version 1.0
  */
 public class PrivilegeChecker {
+    private static final Logger LOG = LoggerFactory.getLogger(PrivilegeChecker.class);
+
     /**
      * Checks if a user has the specified privilege and handles errors appropriately.
      *
@@ -59,6 +63,27 @@ public class PrivilegeChecker {
             return false;
         } catch (RuntimeException e) {
             onError.showError("No se pudieron verificar los privilegios del usuario.");
+            throw e;
+        }
+    }
+
+    /**
+     * Checks if the given user is still active.
+     *
+     * @param userService The {@link  UserService} used to verify the user's active status.
+     * @param user        The {@link  User} whose active status is to be checked.
+     * @param onError     The {@link  ErrorPresenter} used to handle and display errors that occur during the check.
+     * @return {@code true} if the user is still active, {@code false} otherwise.
+     * @throws RuntimeException if an unexpected error occurs during the active status check.
+     */
+    public static boolean isUserStillActive(@NotNull UserService userService,
+                                            @NotNull User user,
+                                            @NotNull ErrorPresenter onError) {
+        try {
+            return userService.checkUserCurrentlyActive(user.getId());
+        } catch (RuntimeException e) {
+            onError.showError("No se pudo verificar si el usuario está activo.\n" + e.getMessage());
+            LOG.error("Error al verificar si el usuario está activo", e);
             throw e;
         }
     }
