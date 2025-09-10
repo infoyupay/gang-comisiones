@@ -17,9 +17,9 @@
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.yupay.gangcomisiones.usecase;
+package com.yupay.gangcomisiones.registry;
 
-import com.yupay.gangcomisiones.exceptions.UseCaseControllerRegistryException;
+import com.yupay.gangcomisiones.exceptions.TypeRegistryException;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,57 +29,56 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Default thread-safe implementation of {@link UseCaseControllerRegistry}.
+ * Default thread-safe implementation of {@link TypeRegistry}.
  * <br/>
  * <strong>Characteristics:</strong>
  * <ul>
  *   <li>Backed by a {@link ConcurrentHashMap} for concurrent access.</li>
  *   <li>{@link #register(Class, Supplier)} replaces any existing supplier for the same class.</li>
- *   <li>{@link #resolve(Class)} throws {@link UseCaseControllerRegistryException} if
+ *   <li>{@link #resolve(Class)} throws {@link TypeRegistryException} if
  *       no supplier is found or if the produced instance is incompatible.</li>
  *   <li>Null checks are enforced via {@link Objects#requireNonNull(Object, String)}.</li>
  * </ul>
  * <strong>Thread-safety:</strong>
  * <ul>
  *   <li>All registry operations are safe for concurrent use.</li>
- *   <li>The thread-safety of created controller instances depends on the provided {@link Supplier}.</li>
+ *   <li>The thread-safety of created component instances depends on the provided {@link Supplier}.</li>
  * </ul>
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
-public final class DefaultUseCaseControllerRegistry implements UseCaseControllerRegistry {
-    private final Map<Class<?>, Supplier<?>> controllers = new ConcurrentHashMap<>();
+public class DefaultTypeRegistry implements TypeRegistry {
+    private final Map<Class<?>, Supplier<?>> suppliers = new ConcurrentHashMap<>();
 
     @Override
-    public <U> void register(@NotNull Class<U> useCaseClass, @NotNull Supplier<? extends U> supplier) {
-        Objects.requireNonNull(useCaseClass, "useCaseClass must not be null");
+    public <U> void register(@NotNull Class<U> componentClass, @NotNull Supplier<? extends U> supplier) {
+        Objects.requireNonNull(componentClass, "componentClass must not be null");
         Objects.requireNonNull(supplier, "supplier must not be null");
-        controllers.put(useCaseClass, supplier);
+        suppliers.put(componentClass, supplier);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
-    public <U> U resolve(Class<U> useCaseClass) {
-        var supplier = controllers.get(useCaseClass);
+    public <U> U resolve(Class<U> componentClass) {
+        var supplier = suppliers.get(componentClass);
         if (supplier == null) {
-            throw new UseCaseControllerRegistryException("Unable to find a supplier for " + useCaseClass);
+            throw new TypeRegistryException("Unable to find a supplier for " + componentClass);
         }
         var result = supplier.get();
-        if (useCaseClass.isInstance(result)) {
-            return (U) result;
+        if (componentClass.isInstance(result)) {
+            return componentClass.cast(result);
         }
-        throw new UseCaseControllerRegistryException("Retrieved controller doesn't match " + useCaseClass);
+        throw new TypeRegistryException("Retrieved instance doesn't match " + componentClass);
     }
 
     @Contract(pure = true)
     @Override
-    public boolean isRegistered(Class<?> useCaseClass) {
-        return controllers.containsKey(useCaseClass);
+    public boolean isRegistered(Class<?> componentClass) {
+        return suppliers.containsKey(componentClass);
     }
 
     @Override
-    public void unregister(Class<?> useCaseClass) {
-        controllers.remove(useCaseClass);
+    public void unregister(Class<?> componentClass) {
+        suppliers.remove(componentClass);
     }
 }
