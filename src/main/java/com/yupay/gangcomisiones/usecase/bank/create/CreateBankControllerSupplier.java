@@ -32,7 +32,7 @@ import java.util.Objects;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public class CreteBankControllerSupplier implements UseCaseSupplier<CreateBankController> {
+public class CreateBankControllerSupplier implements UseCaseSupplier<CreateBankController> {
     @Override
     public CreateBankController get() {
         return new CreateBankController(
