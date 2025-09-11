@@ -19,10 +19,17 @@
 
 package com.yupay.gangcomisiones.usecase.registry;
 
-import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.exceptions.UseCaseControllerRegistryException;
+import com.yupay.gangcomisiones.usecase.bank.create.CreateBankController;
+import com.yupay.gangcomisiones.usecase.bank.create.CreateBankControllerSupplier;
+import com.yupay.gangcomisiones.usecase.bank.edit.EditBankController;
+import com.yupay.gangcomisiones.usecase.bank.edit.EditBankControllerSupplier;
+import com.yupay.gangcomisiones.usecase.createuser.CreateUserController;
+import com.yupay.gangcomisiones.usecase.createuser.CreateUserControllerSupplier;
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeyControllerSupplier;
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeysController;
+import com.yupay.gangcomisiones.usecase.setglobalconfig.SetGlobalConfigController;
+import com.yupay.gangcomisiones.usecase.setglobalconfig.SetGlobalConfigControllerSupplier;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -114,9 +121,18 @@ public final class ControllerRegistries {
      * @return {@code true} if the default initializer was registered successfully, {@code false} otherwise
      */
     public static boolean registerAllDefaults() {
-        return registerDefaults(reg ->
-                reg.register(InstallKeysController.class,
-                        new InstallKeyControllerSupplier()));
+        return registerDefaults(reg -> {
+            reg.register(InstallKeysController.class,
+                    new InstallKeyControllerSupplier());
+            reg.register(CreateUserController.class,
+                    new CreateUserControllerSupplier());
+            reg.register(SetGlobalConfigController.class,
+                    new SetGlobalConfigControllerSupplier());
+            reg.register(CreateBankController.class,
+                    new CreateBankControllerSupplier());
+            reg.register(EditBankController.class,
+                    new EditBankControllerSupplier());
+        });
     }
 
     /**
