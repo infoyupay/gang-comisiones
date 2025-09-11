@@ -19,7 +19,7 @@
 
 package com.yupay.gangcomisiones.usecase.registry;
 
-import com.yupay.gangcomisiones.exceptions.TypeRegistryException;
+import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.exceptions.UseCaseControllerRegistryException;
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeyControllerSupplier;
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeysController;
@@ -44,62 +44,30 @@ import java.util.function.Consumer;
  */
 public final class ControllerRegistries {
     /**
-     * Private constructor to prevent instantiation of the {@code ControllerRegistries} utility class.
-     *<br/>
-     * This class is designed to provide static methods and is not intended to be instantiated.
-     * Marked as pure to indicate it has no side effects.
-     */
-    @Contract(pure = true)
-    private ControllerRegistries() {
-        // Prevent instantiation
-    }
-
-    /**
      * Atomic reference holding a one-time consumer initializer for the default implementation of
      * {@link UseCaseControllerRegistry}.
-     *<br/>
+     * <br/>
      * This field is used to facilitate the registration of custom initialization logic that can modify
      * or populate the default {@link UseCaseControllerRegistry} before its first use.
-     *<br/>
+     * <br/>
      * The consumer initializer set in this reference should be thread-safe, as the default registry
      * may be accessed concurrently. Once the default registry has been initialized, this reference
      * will no longer have an effect.
-     *<br/>
+     * <br/>
      * Intended for internal use within {@link ControllerRegistries} to manage default registry setup
      * in a thread-safe and controlled manner.
      */
     private static final AtomicReference<Consumer<UseCaseControllerRegistry>> INITIALIZER = new AtomicReference<>();
 
     /**
-     * Static nested class that holds the default instance of {@link UseCaseControllerRegistry}.
-     * Implements the initialization-on-demand holder idiom for lazy and thread-safe instantiation.
-     *<br/>
-     * The singleton instance is created upon the first invocation of its enclosing class's {@code defaultRegistry} method.
-     * This design ensures that the default registry is initialized only once and without requiring explicit
-     * synchronization, while allowing optional customization prior to the registry's creation.
-     *<br/>
-     * This mechanism leverages an optional initializer, which, if supplied via {@code ControllerRegistries#registerDefaults},
-     * is applied exactly once during the creation of the default registry.
+     * Private constructor to prevent instantiation of the {@code ControllerRegistries} utility class.
+     * <br/>
+     * This class is designed to provide static methods and is not intended to be instantiated.
+     * Marked as pure to indicate it has no side effects.
      */
-    private static final class Holder {
-        private static final UseCaseControllerRegistry INSTANCE = create();
-
-        /**
-         * Creates and initializes a new instance of {@link UseCaseControllerRegistry}.
-         * This method employs an atomic initializer, ensuring that any optional
-         * customization logic is applied exactly once. The returned registry is
-         * an instance of {@link DefaultUseCaseControllerRegistry}.
-         *
-         * @return a fully initialized and potentially customized {@link UseCaseControllerRegistry} instance
-         */
-        private static @NotNull UseCaseControllerRegistry create() {
-            UseCaseControllerRegistry registry = new DefaultUseCaseControllerRegistry();
-            Consumer<UseCaseControllerRegistry> init = INITIALIZER.getAndSet(null);
-            if (init != null) {
-                init.accept(registry);
-            }
-            return registry;
-        }
+    @Contract(pure = true)
+    private ControllerRegistries() {
+        // Prevent instantiation
     }
 
     /**
@@ -134,9 +102,52 @@ public final class ControllerRegistries {
         return INITIALIZER.compareAndSet(null, initializer);
     }
 
-    public static boolean registerDefaults(){
-        return registerDefaults(reg->{
-            reg.register(InstallKeysController.class, new InstallKeyControllerSupplier());
-        });
+    /**
+     * Registers the default controllers for the application by utilizing a predefined initializer.
+     * The initializer will register specific components in the default registry before its first use.
+     * <br/>
+     * This provides the necessary wiring for default controllers.
+     * If the default registry has already been initialized, this method has no effect
+     * and returns {@code false}. If an initializer was already registered and the registry
+     * is not yet initialized, this method returns {@code false} and preserves the initial initializer.
+     *
+     * @return {@code true} if the default initializer was registered successfully, {@code false} otherwise
+     */
+    public static boolean registerAllDefaults() {
+        return registerDefaults(reg ->
+                reg.register(InstallKeysController.class,
+                        new InstallKeyControllerSupplier(AppContext::getInstance)));
+    }
+
+    /**
+     * Static nested class that holds the default instance of {@link UseCaseControllerRegistry}.
+     * Implements the initialization-on-demand holder idiom for lazy and thread-safe instantiation.
+     * <br/>
+     * The singleton instance is created upon the first invocation of its enclosing class's {@code defaultRegistry} method.
+     * This design ensures that the default registry is initialized only once and without requiring explicit
+     * synchronization, while allowing optional customization prior to the registry's creation.
+     * <br/>
+     * This mechanism leverages an optional initializer, which, if supplied via {@code ControllerRegistries#registerDefaults},
+     * is applied exactly once during the creation of the default registry.
+     */
+    private static final class Holder {
+        private static final UseCaseControllerRegistry INSTANCE = create();
+
+        /**
+         * Creates and initializes a new instance of {@link UseCaseControllerRegistry}.
+         * This method employs an atomic initializer, ensuring that any optional
+         * customization logic is applied exactly once. The returned registry is
+         * an instance of {@link DefaultUseCaseControllerRegistry}.
+         *
+         * @return a fully initialized and potentially customized {@link UseCaseControllerRegistry} instance
+         */
+        private static @NotNull UseCaseControllerRegistry create() {
+            UseCaseControllerRegistry registry = new DefaultUseCaseControllerRegistry();
+            Consumer<UseCaseControllerRegistry> init = INITIALIZER.getAndSet(null);
+            if (init != null) {
+                init.accept(registry);
+            }
+            return registry;
+        }
     }
 }
