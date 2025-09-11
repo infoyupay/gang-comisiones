@@ -204,6 +204,7 @@ public final class AppContext {
      * @param jpaProperties the path to the JPA properties file used to configure the {@code EntityManagerFactory}.
      * @return the singleton instance of {@code AppContext}.
      */
+    @Deprecated(forRemoval = true)
     public static AppContext getInstance(Path jpaProperties) {
         return getInstance(jpaProperties, new DefaultViewRegistry());
     }
