@@ -20,6 +20,8 @@
 package com.yupay.gangcomisiones;
 
 import com.yupay.gangcomisiones.logging.LogConfig;
+import com.yupay.gangcomisiones.usecase.registry.DefaultViewRegistry;
+import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.PersistenceException;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 public abstract class AbstractPostgreIntegrationTest {
 
+    protected static ViewRegistry viewRegistry;
     protected static AppContext ctx;
     protected static Logger LOGGER;
 
@@ -48,8 +51,9 @@ public abstract class AbstractPostgreIntegrationTest {
     @BeforeAll
     static void init() {
         LogConfig.initLogging();
+        viewRegistry = new DefaultViewRegistry();
         LOGGER = LoggerFactory.getLogger(AbstractPostgreIntegrationTest.class);
-        ctx = AppContext.getInstance(DummyHelpers.getDummyJpaProperties());
+        ctx = AppContext.getInstance(DummyHelpers.getDummyJpaProperties(), viewRegistry);
     }
 
     /**
