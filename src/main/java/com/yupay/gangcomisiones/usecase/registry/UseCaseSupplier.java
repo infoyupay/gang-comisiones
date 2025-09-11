@@ -20,6 +20,7 @@
 package com.yupay.gangcomisiones.usecase.registry;
 
 import com.yupay.gangcomisiones.AppContext;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Supplier;
 
@@ -51,5 +52,24 @@ public interface UseCaseSupplier<U> extends Supplier<U> {
      */
     default Supplier<AppContext> appContextSupplier() {
         return AppContext::getInstance;
+    }
+
+    /**
+     * Constructs a formatted message indicating a null pointer issue during the supply operation
+     * of a specific use case implementation.
+     *
+     * @param impl          the class of the supplier implementation attempting to provide the use case
+     * @param supplied      the class of the use case being supplied
+     * @param nullComponent the class of the component that is not available
+     * @param <X>           type of the supplier implementation
+     * @return a formatted string message describing the null pointer issue
+     */
+    default <X extends UseCaseSupplier<U>> String nullPointerMessage(@NotNull Class<X> impl,
+                                                                     @NotNull Class<U> supplied,
+                                                                     @NotNull Class<?> nullComponent) {
+        return "%s cannot supply %s: %s is not available.".formatted(
+                impl.getSimpleName(),
+                supplied.getSimpleName(),
+                nullComponent.getSimpleName());
     }
 }
