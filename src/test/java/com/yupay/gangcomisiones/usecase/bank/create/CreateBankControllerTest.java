@@ -20,19 +20,18 @@
 package com.yupay.gangcomisiones.usecase.bank.create;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.TestViews;
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.usecase.AuditLogChecker;
-import com.yupay.gangcomisiones.usecase.PrintLineAnswer;
 import com.yupay.gangcomisiones.usecase.bank.BankView;
 import com.yupay.gangcomisiones.usecase.commons.FormMode;
-import com.yupay.gangcomisiones.usecase.commons.MessageType;
 import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
 import jakarta.persistence.EntityManagerFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Optional;
 
@@ -55,7 +54,9 @@ import static org.mockito.Mockito.*;
  *   <li>Error handling when an authenticated non-{@code ADMIN} user attempts creation.</li>
  *   <li>Error propagation on duplicate bank names returned by the persistence layer.</li>
  * </ul>
- * Execution note: dvidal@infoyupay.com passed 5 tests in 2 sec 40 ms at 2025-09-09 08:05 UTC-5.
+ * <div style="border: 1px solid black; padding: 1px;">
+ *   <b>Execution note:</b> dvidal@infoyupay.com passed 5 tests in 2.037s at 2025-09-11 15:04 UTC-5.
+ *   </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -79,21 +80,16 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
     @BeforeEach
     void prepareTest() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
-        view = Mockito.mock(BankView.class);
-        mockViewMessages();
     }
 
-    /**
-     * Configures the mock view to print messages passed through
-     * {@link BankView#showMessage(String, MessageType)} using a {@link PrintLineAnswer}.
-     * <ul>
-     *   <li>Helps to visualize messages during test execution.</li>
-     *   <li>Keeps assertions focused on behavior rather than console output.</li>
-     * </ul>
-     */
-    private void mockViewMessages() {
-        doAnswer(PrintLineAnswer.get()).when(view).showMessage(anyString(), any());
+    @AfterEach
+    void cleanUp() {
+        view = null;
+        if (viewRegistry.isRegistered(BankView.class)) {
+            viewRegistry.unregister(BankView.class);
+        }
     }
+
 
     /**
      * Asserts that no audit log entries exist for the current test state.
@@ -129,21 +125,21 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
-        when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(sampleBank));
-
+        view = TestViews.bankView(FormMode.CREATE, sampleBank);
+        viewRegistry.registerInstance(BankView.class, view);
         var controller = new CreateBankController(ctx);
 
         // Act
         var result = controller.run().join();
 
         // Assert
+        verify(view).showUserForm(FormMode.CREATE);
         assertThat(result.result()).isEqualTo(UseCaseResultType.OK);
         //noinspection DataFlowIssue
         assertThat(result.value()).isNotNull()
                 .extracting(Bank::getName, Bank::getActive)
                 .containsExactly(sampleBank.getName(), sampleBank.getActive());
 
-        verify(view).showUserForm(FormMode.CREATE);
         verify(view, never()).showError(anyString());
         verify(view, atLeastOnce()).showSuccess(contains("creado exitosamente con código"));
 
@@ -167,7 +163,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange
         var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
-        when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.empty());
+        view = TestViews.bankView(FormMode.CREATE, null);
+        viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new CreateBankController(ctx);
 
@@ -202,7 +199,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
     void givenNoUser_whenRun_thenErrorAndNoFormShown() {
         // Arrange
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
-        when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(sampleBank));
+        view = TestViews.bankView(FormMode.CREATE, sampleBank);
+        viewRegistry.registerInstance(BankView.class, view);
         ctx.getUserSession().setCurrentUser(null);
 
         var controller = new CreateBankController(ctx);
@@ -237,7 +235,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
-        when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(sampleBank));
+        view = TestViews.bankView(FormMode.CREATE, sampleBank);
+        viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new CreateBankController(ctx);
 
@@ -278,7 +277,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
 
         var bankDuplicate = Bank.builder().name(persisted.bank().getName()).active(true).build();
         ctx.getUserSession().setCurrentUser(persisted.admin);
-        when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(bankDuplicate));
+        view = TestViews.bankView(FormMode.CREATE, bankDuplicate);
+        viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new CreateBankController(ctx);
 
