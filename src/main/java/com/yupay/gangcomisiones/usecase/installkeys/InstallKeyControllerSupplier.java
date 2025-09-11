@@ -19,6 +19,7 @@
 
 package com.yupay.gangcomisiones.usecase.installkeys;
 
+import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.usecase.registry.UseCaseSupplier;
 import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import com.yupay.gangcomisiones.usecase.task.TaskMonitor;
@@ -52,10 +53,12 @@ public final class InstallKeyControllerSupplier
     @Override
     public @NotNull InstallKeysController get() throws NullPointerException {
         var context = Objects.requireNonNull(appContextSupplier().get(),
-                "Supplied context cannot be null");
+                () -> nullPointerMessage(InstallKeysController.class,
+                        AppContext.class));
         var viewRegistry =
                 Objects.requireNonNull(context.getViewRegistry(),
-                        "View registry cannot be null in supplied context.");
+                        () -> nullPointerMessage(InstallKeysController.class,
+                                ViewRegistry.class));
         return new InstallKeysController(viewRegistry.resolve(InstallKeysView.class),
                 viewRegistry.resolve(TaskMonitor.class),
                 context.getInstallationService());
