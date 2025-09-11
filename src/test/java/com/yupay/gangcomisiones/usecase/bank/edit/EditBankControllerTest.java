@@ -171,7 +171,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
             return Optional.of(b);
         });
 
-        var controller = new EditBankController(view, ctx);
+        var controller = new EditBankController(ctx);
 
         // Act
         var result = controller.run(persisted.bank()).join();
@@ -211,7 +211,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         ctx.getUserSession().setCurrentUser(admin);
         when(view.showUserForm(any(), eq(FormMode.EDIT))).thenReturn(Optional.empty());
 
-        var controller = new EditBankController(view, ctx);
+        var controller = new EditBankController(ctx);
 
         // Act
         var result = controller.run(bank).join();
@@ -247,7 +247,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(null);
 
-        var controller = new EditBankController(view, ctx);
+        var controller = new EditBankController(ctx);
 
         // Act
         var result = controller.run(bank).join();
@@ -281,7 +281,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(cashier);
 
-        var controller = new EditBankController(view, ctx);
+        var controller = new EditBankController(ctx);
 
         // Act
         var result = controller.run(bank).join();
@@ -335,7 +335,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
             return Optional.of(b);
         });
 
-        var controller = new EditBankController(view, ctx);
+        var controller = new EditBankController(ctx);
 
         // Act
         var result = controller.run(persisted.a()).join();

@@ -71,11 +71,10 @@ public class EditBankController {
      * Creates a controller bound to a UI {@link BankView} and an application {@link AppContext}.<br/>
      * The context supplies required services such as {@link UserService}, {@link BankService}, and the {@link UserSession}.
      *
-     * @param view the UI view used to interact with the user; must not be {@code null}
      * @param ctx  the application context providing services and session; must be {@link NotNull}
      */
-    public EditBankController(BankView view, @NotNull AppContext ctx) {
-        this.view = view;
+    public EditBankController(@NotNull AppContext ctx) {
+        this.view = ctx.getViewRegistry().resolve(BankView.class);
         this.userService = ctx.getUserService();
         this.bankService = ctx.getBankService();
         this.userSession = ctx.getUserSession();

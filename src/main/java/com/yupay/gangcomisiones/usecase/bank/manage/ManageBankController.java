@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * Controller class responsible for managing operations related to the "Manage Bank" use case.
  * This class coordinates user interactions, manages business logic, and communicates with
  * the view layer to render outputs and handle inputs.
+ *
  * @param context the {@link AppContext} instance that provides application-level services
  *                and user session management. Must not be null.
  * @param view    the {@link BankBoardView} instance responsible for displaying the user interface
@@ -142,7 +143,7 @@ public record ManageBankController(BankBoardView view, AppContext context) {
      * @param bank the Bank entity to be edited. Must not be null.
      */
     public void editBank(Bank bank) {
-        new EditBankController(view.getBankView(), context)
+        new EditBankController(context)
                 .run(bank)
                 .thenAcceptAsync(SuccessProcessor.replace(view));
     }
