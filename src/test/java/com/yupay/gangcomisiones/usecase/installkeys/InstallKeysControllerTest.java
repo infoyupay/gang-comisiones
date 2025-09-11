@@ -45,25 +45,24 @@ import static org.mockito.Mockito.*;
  * Integration-style unit tests for {@code InstallKeysController}, exercising the
  * end-to-end flow around ZIP selection, asynchronous unpacking, progress reporting,
  * and application context refresh.
- * <p>
+ * <br/>
  * Scenarios covered:
  * <ol>
  *   <li>Successful installation when a valid JPA ZIP is provided.</li>
  *   <li>Graceful abort when the view returns a {@code null} path (user cancellation).</li>
  *   <li>Failure path when a corrupted ZIP is provided, ensuring error propagation.</li>
  * </ol>
- * <p>
+ * <br/>
  * Environment handling:
  * <ul>
  *   <li>Temporarily overrides {@code user.home} to isolate filesystem side effects.</li>
  *   <li>Resets and prepares local directories used by the application.</li>
  *   <li>Initializes logging and validates JPA properties on success.</li>
  * </ul>
- * <p>
- * Test execution note:
- * <ul>
- *   <li>dvidal@infoyupay.com passed the 3 tests in 2.199ms at 2025-09-11T11:01(-05:00).</li>
- * </ul>
+ * <br/>
+ * <div style="border: 1px solid black; padding: 1px;">
+ * <b>Execution note:</b> dvidal@infoyupay.com passed 3 tests in 2.199s at 2025-09-11 11:01 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -178,7 +177,7 @@ class InstallKeysControllerTest {
         assertEquals(InstallKeysResult.SUCCESS, result);
 
         LogConfig.initLogging();
-        AppContext.getInstance(LocalFiles.JPA_PROPERTIES.asPath());
+        AppContext.getInstance(LocalFiles.JPA_PROPERTIES.asPath(), new DefaultViewRegistry());
 
         assertEquals("jdbc:postgresql://localhost:5432/gang_comision_test?stringtype=unspecified&ApplicationName=gangcomision_test",
                 AppContext.getInstance()
