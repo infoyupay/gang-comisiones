@@ -82,6 +82,12 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
 
+    /**
+     * Cleans up the test environment after each test method execution.
+     * <br/>
+     * Resets the `view` field to `null` and removes any registered instance of
+     * {@link BankView} from the {@code viewRegistry}.
+     */
     @AfterEach
     void cleanUp() {
         view = null;
