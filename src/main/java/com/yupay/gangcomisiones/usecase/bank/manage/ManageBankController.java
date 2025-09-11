@@ -27,36 +27,46 @@ import com.yupay.gangcomisiones.usecase.bank.create.CreateBankController;
 import com.yupay.gangcomisiones.usecase.bank.edit.EditBankController;
 import com.yupay.gangcomisiones.usecase.commons.PrivilegeChecker;
 import com.yupay.gangcomisiones.usecase.commons.SuccessProcessor;
+import com.yupay.gangcomisiones.usecase.registry.UseCaseControllerRegistry;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Objects;
+import java.util.function.Supplier;
 
 /**
  * Controller class responsible for managing operations related to the "Manage Bank" use case.
  * This class coordinates user interactions, manages business logic, and communicates with
  * the view layer to render outputs and handle inputs.
  *
- * @param context the {@link AppContext} instance that provides application-level services
- *                and user session management. Must not be null.
- * @param view    the {@link BankBoardView} instance responsible for displaying the user interface
- *                for managing banks. Must not be null.
  * @author InfoYupay SACS
  * @version 1.0
  */
-public record ManageBankController(BankBoardView view, AppContext context) {
+public final class ManageBankController {
     private static final Logger LOG = LoggerFactory.getLogger(ManageBankController.class);
+    private final Supplier<AppContext> context;
+    private final UseCaseControllerRegistry controllersRegistry;
+    private final BankBoardView view;
 
     /**
-     * Constructs a new instance of the ManageBankController.
+     * Constructs a new ManageBankController instance.
+     * Initializes the controller with the required application context supplier
+     * and the registry of use case controllers.
      *
-     * @param view    the {@link BankBoardView} instance responsible for displaying the user interface
-     *                for managing banks. Must not be null.
-     * @param context the {@link AppContext} instance that provides application-level services
-     *                and user session management. Must not be null.
+     * @param context             a supplier providing the current application context. Must not be null.
+     * @param controllersRegistry the registry containing use case controllers. Must not be null.
+     * @throws NullPointerException if either {@code context} or {@code controllersRegistry} is null.
      */
-    @Contract(pure = true)
-    public ManageBankController {
+    public ManageBankController(@NotNull Supplier<AppContext> context,
+                                @NotNull UseCaseControllerRegistry controllersRegistry) {
+        this.context = Objects
+                .requireNonNull(context, "Context supplier must not be null.");
+        this.controllersRegistry = Objects
+                .requireNonNull(controllersRegistry, "Controllers registry must not be null.");
+        this.view = getContext().getViewRegistry().resolve(BankBoardView.class);
     }
 
     /// Initiates the "Manage Bank" use case.
@@ -75,7 +85,7 @@ public record ManageBankController(BankBoardView view, AppContext context) {
     ///   displays an error message to the user, and closes the view to ensure proper cleanup.
     public void startUseCase() {
         try {
-            var user = getActiveUserOrShowError();
+            var user = getActiveUserOrShowError(getContext());
             if (user == null) return;
 
             propagatePrivileges(user);
@@ -88,22 +98,26 @@ public record ManageBankController(BankBoardView view, AppContext context) {
         }
     }
 
-    /// Retrieves the currently active user from the user session associated with the application context.
-    /// If no user session is active or the user's account is no longer active, appropriate error handling is triggered:
-    /// - Displays an error message to the user when there is no active session.
-    /// - Throws a `BankUseCasesException` if the user is inactive.
-    ///
-    /// @return the currently active `User` if one exists and is active; otherwise, returns `null`.
-    ///         If a `BankUseCasesException` is thrown, no value is returned.
-    private @Nullable User getActiveUserOrShowError() {
-        var user = context.getUserSession().getCurrentUser();
+    /**
+     * Retrieves the currently active user associated with the given application context.
+     * If no active user is found or the user is no longer active, an error message is
+     * displayed, and appropriate actions are taken. This method can return null if the
+     * user session is inactive or throw an exception if the user is no longer active.
+     *
+     * @param ctx the application context used to retrieve the user session and user service.
+     *            Must not be null.
+     * @return the active user if present and still active; otherwise, returns null
+     * or throws an exception if the user is no longer active.
+     */
+    private @Nullable User getActiveUserOrShowError(@NotNull AppContext ctx) {
+        var user = ctx.getUserSession().getCurrentUser();
         if (user == null) {
             view.showError("No puedes iniciar la Administración de Bancos sin haber iniciado sesión primero.");
             LOG.error("There wasn't an active user session when starting Manage Bank use case.");
             return null;
         }
 
-        if (!PrivilegeChecker.isUserStillActive(context.getUserService(), user, view)) {
+        if (!PrivilegeChecker.isUserStillActive(ctx.getUserService(), user, view)) {
             view.showError("El usuario ya no está activo.");
             throw new BankUseCasesException("User " + user.getId() + " is no longer active.");
         }
@@ -130,7 +144,8 @@ public record ManageBankController(BankBoardView view, AppContext context) {
     /// - On cancellation or error, delegates appropriate handling to the view.
     /// The invocation is non-blocking and operates asynchronously.
     public void createBank() {
-        new CreateBankController(context)
+        controllersRegistry
+                .resolve(CreateBankController.class)
                 .run()
                 .thenAcceptAsync(SuccessProcessor.insert(view));
     }
@@ -143,7 +158,8 @@ public record ManageBankController(BankBoardView view, AppContext context) {
      * @param bank the Bank entity to be edited. Must not be null.
      */
     public void editBank(Bank bank) {
-        new EditBankController(context)
+        controllersRegistry
+                .resolve(EditBankController.class)
                 .run(bank)
                 .thenAcceptAsync(SuccessProcessor.replace(view));
     }
@@ -159,7 +175,7 @@ public record ManageBankController(BankBoardView view, AppContext context) {
     /// - If no banks are found, the view's list is cleared.
     /// - On failure, an error message is logged and presented to the user.
     public void listBank() {
-        context.getBankService()
+        getContext().getBankService()
                 .listAllBanks()
                 .whenComplete((result, throwable) -> {
                     if (throwable != null) {
@@ -175,4 +191,45 @@ public record ManageBankController(BankBoardView view, AppContext context) {
                     }
                 });
     }
+
+    /**
+     * Retrieves the current application context required to perform operations in the "Manage Bank" use case.
+     * If the context is not available (null), this method throws a {@code BankUseCasesException}.
+     *
+     * @return a non-null {@code AppContext} representing the current application context.
+     * @throws BankUseCasesException if the context is not set or is null.
+     */
+    private @NotNull AppContext getContext() throws BankUseCasesException {
+        var r = context.get();
+        if (r == null) {
+            throw new BankUseCasesException(
+                    "Provided context is null. Manage banks cannot be started while in bootstrap.");
+        } else {
+            return r;
+        }
+    }
+
+    @Contract(value = "null -> false", pure = true)
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        var that = (ManageBankController) obj;
+        return Objects.equals(this.context, that.context) &&
+                Objects.equals(this.controllersRegistry, that.controllersRegistry);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(context, controllersRegistry);
+    }
+
+    @Contract(pure = true)
+    @Override
+    public @NotNull String toString() {
+        return "ManageBankController[" +
+                "context=" + context + ", " +
+                "controllersRegistry=" + controllersRegistry + ']';
+    }
+
 }

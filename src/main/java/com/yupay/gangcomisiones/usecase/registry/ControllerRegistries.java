@@ -24,6 +24,8 @@ import com.yupay.gangcomisiones.usecase.bank.create.CreateBankController;
 import com.yupay.gangcomisiones.usecase.bank.create.CreateBankControllerSupplier;
 import com.yupay.gangcomisiones.usecase.bank.edit.EditBankController;
 import com.yupay.gangcomisiones.usecase.bank.edit.EditBankControllerSupplier;
+import com.yupay.gangcomisiones.usecase.bank.manage.ManageBankController;
+import com.yupay.gangcomisiones.usecase.bank.manage.ManageBankControllerSupplier;
 import com.yupay.gangcomisiones.usecase.createuser.CreateUserController;
 import com.yupay.gangcomisiones.usecase.createuser.CreateUserControllerSupplier;
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeyControllerSupplier;
@@ -132,6 +134,8 @@ public final class ControllerRegistries {
                     new CreateBankControllerSupplier());
             reg.register(EditBankController.class,
                     new EditBankControllerSupplier());
+            reg.register(ManageBankController.class,
+                    new ManageBankControllerSupplier());
         });
     }
 
