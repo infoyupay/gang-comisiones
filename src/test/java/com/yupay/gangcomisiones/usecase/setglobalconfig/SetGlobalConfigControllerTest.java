@@ -21,20 +21,20 @@ package com.yupay.gangcomisiones.usecase.setglobalconfig;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.AppContext;
+import com.yupay.gangcomisiones.TestViews;
 import com.yupay.gangcomisiones.model.GlobalConfig;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
-import jakarta.persistence.EntityTransaction;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * Integration tests for SetGlobalConfigController covering bootstrap, cancel, permission checks, and validation errors.
@@ -45,7 +45,9 @@ import static org.mockito.Mockito.*;
  *   <li>Invalid data path: asserts error feedback is shown when data is incomplete or invalid.</li>
  *   <li>View interactions are verified via mocks to ensure correct messages and prompts are displayed.</li>
  * </ul>
- * <p>dvidal@infoyupay.com passed 5 testts in 2sec 231ms at 2025-09-08 08:03 UTC-5</p>
+ * <div style="border: 1px solid black; padding: 1px;">
+ * <b>Execution note:</b> dvidal@infoyupay.com passed 5 tests in 1.941s at 2025-09-11 12:07 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -60,7 +62,14 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     @BeforeEach
     void setUp() {
         TestPersistedEntities.clean(AppContext.getInstance().getEntityManagerFactory());
-        view = mock(SetGlobalConfigView.class);
+    }
+
+    /**
+     * Cleans up resources after each test.
+     */
+    @AfterEach
+    void cleanUp() {
+        view = null;
     }
 
     /**
@@ -77,18 +86,8 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void bootstrap_success() {
         // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
-        User currentUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistRootUser(em);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
-        }
+        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistRootUser);
+        ctx.getUserSession().setCurrentUser(currentUser);
 
         var edited = GlobalConfig.builder()
                 .ruc("12345678901")
@@ -99,16 +98,7 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
                 .updatedBy(currentUser)
                 .updatedFrom("test-host")
                 .build();
-        when(view.showSetGlobalConfigForm(any(GlobalConfig.class), eq(true))).thenReturn(Optional.of(edited));
-
-        doAnswer(inv -> {
-            System.out.println(inv.getArgument(0, String.class));
-            return null;
-        }).when(view).showSuccess(anyString());
-        doAnswer(inv -> {
-            System.out.println(inv.getArgument(0, String.class));
-            return null;
-        }).when(view).showError(anyString());
+        var view = TestViews.setGlobalConfigView(edited);
 
         var controller = new SetGlobalConfigController(view,
                 ctx.getUserService(),
@@ -142,20 +132,12 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void bootstrap_cancel() {
         // Arrange
-        User currentUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistRootUser(em);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
-        }
+        // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
+        // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
+        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistRootUser);
+        ctx.getUserSession().setCurrentUser(currentUser);
 
-        when(view.showSetGlobalConfigForm(any(GlobalConfig.class), eq(true))).thenReturn(Optional.empty());
+        var view = TestViews.setGlobalConfigView(null);
 
         var controller = new SetGlobalConfigController(view,
                 ctx.getUserService(),
@@ -186,18 +168,9 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void normal_rootUser_canUpdate() {
         // Arrange a ROOT user in session
-        User currentUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistRootUser(em);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
-        }
+        // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
+        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistRootUser);
+        ctx.getUserSession().setCurrentUser(currentUser);
 
         var edited = GlobalConfig.builder()
                 .ruc("12345678901")
@@ -208,16 +181,7 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
                 .updatedBy(currentUser)
                 .updatedFrom("test-host")
                 .build();
-        when(view.showSetGlobalConfigForm(any(GlobalConfig.class), eq(false))).thenReturn(Optional.of(edited));
-
-        doAnswer(inv -> {
-            System.out.println(inv.getArgument(0, String.class));
-            return null;
-        }).when(view).showSuccess(anyString());
-        doAnswer(inv -> {
-            System.out.println(inv.getArgument(0, String.class));
-            return null;
-        }).when(view).showError(anyString());
+        var view = TestViews.setGlobalConfigView(edited);
 
         var controller = new SetGlobalConfigController(view,
                 ctx.getUserService(),
@@ -250,18 +214,11 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void normal_nonRootUser_cannotUpdate() {
         // Arrange an ADMIN user (non-ROOT)
-        User currentUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistAdminUser(em);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
-        }
+        // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
+        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        ctx.getUserSession().setCurrentUser(currentUser);
+
+        var view = TestViews.setGlobalConfigView(null);
 
         var controller = new SetGlobalConfigController(view,
                 ctx.getUserService(),
@@ -292,18 +249,8 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void normal_errorOnInvalidData_showsError() {
         // Arrange a ROOT user in session
-        User currentUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistRootUser(em);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
-        }
+       var currentUser =  TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistRootUser);
+       ctx.getUserSession().setCurrentUser(currentUser);
 
         // Missing required fields to trigger persistence exception
         var invalid = GlobalConfig.builder()
@@ -313,11 +260,7 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
                 .updatedBy(currentUser)
                 .updatedFrom("test-host")
                 .build();
-        when(view.showSetGlobalConfigForm(any(GlobalConfig.class), eq(false))).thenReturn(Optional.of(invalid));
-        doAnswer(inv -> {
-            System.out.println(inv.getArgument(0, String.class));
-            return null;
-        }).when(view).showError(anyString());
+        view = TestViews.setGlobalConfigView(invalid);
 
         var controller = new SetGlobalConfigController(view,
                 ctx.getUserService(),

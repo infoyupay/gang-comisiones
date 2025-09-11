@@ -19,13 +19,17 @@
 
 package com.yupay.gangcomisiones;
 
+import com.yupay.gangcomisiones.model.GlobalConfig;
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeysView;
+import com.yupay.gangcomisiones.usecase.setglobalconfig.SetGlobalConfigView;
 import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
 
 /**
  * Provides utility methods for creating mocked views used in testing.
@@ -46,5 +50,20 @@ public class TestViews {
         var r = mock(InstallKeysView.class);
         when(r.showOpenDialogForZip()).thenReturn(userInput);
         return r;
+    }
+
+    public static @NotNull SetGlobalConfigView setGlobalConfigView(GlobalConfig userInput) {
+        var view = mock(SetGlobalConfigView.class);
+        doAnswer(inv -> {
+            System.out.println(inv.getArgument(0, String.class));
+            return null;
+        }).when(view).showSuccess(anyString());
+        doAnswer(inv -> {
+            System.out.println(inv.getArgument(0, String.class));
+            return null;
+        }).when(view).showError(anyString());
+        when(view.showSetGlobalConfigForm(any(GlobalConfig.class), anyBoolean()))
+                .thenReturn(Optional.ofNullable(userInput));
+        return view;
     }
 }
