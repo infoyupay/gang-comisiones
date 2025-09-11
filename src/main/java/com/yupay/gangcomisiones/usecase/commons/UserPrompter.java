@@ -92,12 +92,4 @@ public interface UserPrompter<T> extends MessagePresenter {
      */
     Optional<T> showUserForm(T value, FormMode mode);
 
-    /**
-     * Displays a user-facing message categorized by a specific message type. This method can be used to
-     * provide information, warnings, or errors to the user, depending on the specified message type.
-     *
-     * @param message the message content to be displayed to the user. It should clearly convey the intended information.
-     * @param type    the type of the message being displayed, represented by the {@link MessageType} enumeration.
-     *                This determines how the message will be categorized and possibly rendered.
-     */
 }
