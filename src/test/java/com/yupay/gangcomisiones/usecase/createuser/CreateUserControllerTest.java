@@ -25,7 +25,7 @@ import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
-import jakarta.persistence.EntityTransaction;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
@@ -48,7 +48,9 @@ import static org.mockito.Mockito.*;
  *   <li>Permission denial for non-ROOT users attempting creation.</li>
  *   <li>Error propagation on duplicate usernames.</li>
  * </ul>
- * Execution note: dvidal@infoyupay.com passed the 5 tests in 2 sec 611 ms at 2025-09-08 00:42:00 UTC-5.
+ * <div style="border: 1px solid black; padding: 1px;">
+ * <b>Execution note:</b> dvidal@infoyupay.com passed 5 tests in 2.471s at 2025-09-11 11:35 UTC-5
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -69,6 +71,26 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
     void setUp() {
         TestPersistedEntities.clean(AppContext.getInstance().getEntityManagerFactory());
         view = mock(CreateUserView.class);
+        viewRegistry.registerInstance(CreateUserView.class, view);
+    }
+
+    /// Cleans up the test environment by unregistering the `CreateUserView`
+    /// instance from the `viewRegistry`, if it is registered. This ensures
+    /// that the state of the registry is reset after each test execution.
+    ///
+    /// Preconditions:
+    /// - `viewRegistry` must be non-null.
+    /// - `viewRegistry.isRegistered(Class<?>)` is expected to return `true`
+    /// if the specified component is already registered.
+    ///
+    /// Postconditions:
+    /// - If the `CreateUserView` was registered, it will be unregistered.
+    /// - If the `CreateUserView` was not registered, there will be no effect.
+    @AfterEach
+    void cleanRegistry() {
+        if (viewRegistry != null && viewRegistry.isRegistered(CreateUserView.class)) {
+            viewRegistry.unregister(CreateUserView.class);
+        }
     }
 
     /**
@@ -137,20 +159,9 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_rootUser_canCreate() {
-        User currentUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistRootUser(em);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) {
-                tx.rollback();
-            }
-            throw e;
-        }
+        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistRootUser);
+        ctx.getUserSession().setCurrentUser(currentUser);
+
         var dto = new CreateUserDTO("cashier", "12345678", UserRole.CASHIER);
         when(view.showCreateUserForm(false)).thenReturn(Optional.of(dto));
         Answer<?> mockPrintLn = invocation -> {
@@ -185,18 +196,8 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_nonRootUser_cannotCreate() {
-        User currentUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistAdminUser(em);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
-        }
+        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        ctx.getUserSession().setCurrentUser(currentUser);
 
         var controller = new CreateUserController(view, ctx.getUserService(), false);
 
@@ -220,25 +221,17 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_errorOnDuplicateUsername() {
-        User currentUser, dupUser;
-        EntityTransaction tx = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            tx = em.getTransaction();
-            tx.begin();
-            currentUser = TestPersistedEntities.persistRootUser(em);
-            dupUser = User.builder()
+        var current = TestPersistedEntities.performInTransaction(ctx, em -> {
+            var _current = TestPersistedEntities.persistRootUser(em);
+            em.persist(User.builder()
                     .username("dupUser")
                     .password("abcd1234")
                     .role(UserRole.CASHIER)
                     .active(true)
-                    .build();
-            em.persist(dupUser);
-            tx.commit();
-            ctx.getUserSession().setCurrentUser(currentUser);
-        } catch (RuntimeException e) {
-            if (tx != null && tx.isActive()) tx.rollback();
-            throw e;
-        }
+                    .build());
+            return _current;
+        });
+        ctx.getUserSession().setCurrentUser(current);
 
         var dto = new CreateUserDTO("dupUser", "1234ABCD", UserRole.CASHIER);
         when(view.showCreateUserForm(false)).thenReturn(Optional.of(dto));
