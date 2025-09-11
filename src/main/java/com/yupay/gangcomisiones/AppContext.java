@@ -171,6 +171,14 @@ public final class AppContext {
      * @param jpaProperties the path of .properties file.
      * @param viewRegistry  the view registry.
      * @return the instance, initializes if needed.
+     * @implNote <ul>
+     * <li>
+     * If called multiple times, the most recent call wins and replaces the global instance.
+     * </li>
+     * <li>
+     * Subsequent calls to {@link #getInstance()} return that global instance.
+     * </li>
+     * </ul>
      */
     public static AppContext getInstance(Path jpaProperties, ViewRegistry viewRegistry) {
         AppContext ctx = INSTANCE.get();
@@ -203,6 +211,11 @@ public final class AppContext {
      *
      * @param jpaProperties the path to the JPA properties file used to configure the {@code EntityManagerFactory}.
      * @return the singleton instance of {@code AppContext}.
+     * @apiNote TODO: Remove this method once the adoption of new design finishes.
+     * @deprecated Use {@link #getInstance(Path, ViewRegistry)} instead. Due a change in architecture, we need to
+     * hold a view registry here, this is managed by the application initialization process, ie: if it's JavaFx,
+     * the Application.startMethod should create the view registry with javafx implementations and pass to this
+     * context. Once the adoption of new design finishes, this method will be removed.
      */
     @Deprecated(forRemoval = true)
     public static AppContext getInstance(Path jpaProperties) {
@@ -222,7 +235,7 @@ public final class AppContext {
         AppContext ctx = INSTANCE.get();
         if (ctx == null) {
             throw new AppContextException("AppContext has not been initialized. " +
-                    "Call getInstance(Path jpaProperties) first.");
+                    "Call getInstance(Path jpaProperties, ViewRegistry viewRegistry) first.");
         }
         return ctx;
     }
