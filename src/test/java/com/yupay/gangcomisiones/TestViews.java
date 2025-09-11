@@ -65,7 +65,7 @@ public class TestViews {
     ///   encapsulated in an `Optional`, or an empty `Optional` if `userInput` is `null`.
     ///
     /// @param userInput the `GlobalConfig` instance to be returned by the
-    ///                                                    `showSetGlobalConfigForm` method.
+    ///                                                                                                                                         `showSetGlobalConfigForm` method.
     /// @return a mocked `SetGlobalConfigView` instance with the specified behavior.
     public static @NotNull SetGlobalConfigView setGlobalConfigView(GlobalConfig userInput) {
         var view = mock(SetGlobalConfigView.class);
@@ -127,14 +127,22 @@ public class TestViews {
     /// - When the `showUserForm` method is invoked, it returns an [Optional] containing
     ///   the provided [Bank] result or an empty [Optional] based on the input.
     ///
-    /// @param mode   the [FormMode] indicating the mode in which the user form will be displayed
+    /// @param mode   the [FormMode] indicating the mode in which the user form will be displayed.
+    ///               If this value is null, no request to show user form should be made.
     /// @param result the [Bank] object to be returned within an [Optional]
-    ///                                           when the user form is shown
+    ///               when the user form is shown
     /// @return a mocked instance of `BankView` with the specified behaviors
     public static @NotNull BankView bankView(FormMode mode, Bank result) {
         var view = mock(BankView.class);
         stubPrompter(view);
-        when(view.showUserForm(eq(mode))).thenReturn(Optional.ofNullable(result));
+        //If mode is null, no showUserForm interaction is expected.
+        if (mode != null) {
+            when(switch (mode) {
+                case CREATE -> view.showUserForm(eq(mode));
+                case EDIT -> view.showUserForm(eq(result), eq(mode));
+                default -> view.showUserForm(nullable(Bank.class), eq(mode));
+            }).thenReturn(Optional.ofNullable(result));
+        }
         return view;
     }
 }
