@@ -24,15 +24,15 @@ import com.yupay.gangcomisiones.AppContext;
 import java.util.function.Supplier;
 
 /**
- * Abstract base class that simplifies the creation of use cases by providing utility
- * methods to access key components required for execution. Implements the {@link Supplier}
- * interface to supply a use case controller of type {@code U}.
+ * Represents a supplier interface specifically designed for use cases.
+ * Extends the standard {@link Supplier} interface and provides additional
+ * functionality tailored to use case controller management and application context access.
  *
- * @param <U> the type of the {@code UseCaseController} supplied by this use case supplier.
+ * @param <U> the type of {@code UseCaseController} supplied by this supplier
  * @author InfoYupay SACS
  * @version 1.0
  */
-public abstract class UseCaseSupplier<U> implements Supplier<U> {
+public interface UseCaseSupplier<U> extends Supplier<U> {
     /**
      * Provides a supplier that returns the default implementation of {@link UseCaseControllerRegistry}.
      * This method leverages {@code ControllerRegistries::defaultRegistry} to supply a lazily initialized,
@@ -40,7 +40,7 @@ public abstract class UseCaseSupplier<U> implements Supplier<U> {
      *
      * @return a {@link Supplier} providing the default {@link UseCaseControllerRegistry} implementation
      */
-    public Supplier<UseCaseControllerRegistry> controllerRegistry() {
+    default Supplier<UseCaseControllerRegistry> controllerRegistry() {
         return ControllerRegistries::defaultRegistry;
     }
 
@@ -49,7 +49,7 @@ public abstract class UseCaseSupplier<U> implements Supplier<U> {
      *
      * @return a {@link Supplier} that provides the singleton instance of {@code AppContext}
      */
-    public Supplier<AppContext> appContextSupplier() {
+    default Supplier<AppContext> appContextSupplier() {
         return AppContext::getInstance;
     }
 }
