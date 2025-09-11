@@ -129,7 +129,7 @@ public record ManageBankController(BankBoardView view, AppContext context) {
     /// - On cancellation or error, delegates appropriate handling to the view.
     /// The invocation is non-blocking and operates asynchronously.
     public void createBank() {
-        new CreateBankController(view.getBankView(), context)
+        new CreateBankController(context)
                 .run()
                 .thenAcceptAsync(SuccessProcessor.insert(view));
     }

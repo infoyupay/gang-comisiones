@@ -86,14 +86,13 @@ public class CreateBankController {
      * <br/>
      * The {@link AppContext} provides the required services and the current {@link UserSession}.
      *
-     * @param view the {@link BankView} used to prompt the user and show messages.
-     * @param ctx  the {@link AppContext} providing {@link UserService}, {@link BankService}, and {@link UserSession}.
+     * @param ctx the {@link AppContext} providing {@link UserService}, {@link BankService}, and {@link UserSession}.
      */
-    public CreateBankController(BankView view, @NotNull AppContext ctx) {
-        this.view = view;
+    public CreateBankController(@NotNull AppContext ctx) {
         this.userService = ctx.getUserService();
         this.bankService = ctx.getBankService();
         this.userSession = ctx.getUserSession();
+        this.view = ctx.getViewRegistry().resolve(BankView.class);
     }
 
     /**

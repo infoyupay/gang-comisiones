@@ -131,7 +131,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
         when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(sampleBank));
 
-        var controller = new CreateBankController(view, ctx);
+        var controller = new CreateBankController(ctx);
 
         // Act
         var result = controller.run().join();
@@ -169,7 +169,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         ctx.getUserSession().setCurrentUser(admin);
         when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.empty());
 
-        var controller = new CreateBankController(view, ctx);
+        var controller = new CreateBankController(ctx);
 
         // Act
         var result = controller.run().join();
@@ -205,7 +205,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(sampleBank));
         ctx.getUserSession().setCurrentUser(null);
 
-        var controller = new CreateBankController(view, ctx);
+        var controller = new CreateBankController(ctx);
 
         // Act
         var result = controller.run().join();
@@ -239,7 +239,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
         when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(sampleBank));
 
-        var controller = new CreateBankController(view, ctx);
+        var controller = new CreateBankController(ctx);
 
         // Act
         var result = controller.run().join();
@@ -280,7 +280,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         ctx.getUserSession().setCurrentUser(persisted.admin);
         when(view.showUserForm(FormMode.CREATE)).thenReturn(Optional.of(bankDuplicate));
 
-        var controller = new CreateBankController(view, ctx);
+        var controller = new CreateBankController(ctx);
 
         // Act
         var result = controller.run().join();
