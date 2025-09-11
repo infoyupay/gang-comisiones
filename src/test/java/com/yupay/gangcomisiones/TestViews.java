@@ -20,6 +20,7 @@
 package com.yupay.gangcomisiones;
 
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeysView;
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 
@@ -41,7 +42,7 @@ public class TestViews {
      * @param userInput the path to be returned by the mock when {@code showOpenDialogForZip()} is invoked
      * @return a mocked instance of {@code InstallKeysView} with the specified behavior for {@code showOpenDialogForZip()}
      */
-    public static InstallKeysView installKeysView(Path userInput) {
+    public static @NotNull InstallKeysView installKeysView(Path userInput) {
         var r = mock(InstallKeysView.class);
         when(r.showOpenDialogForZip()).thenReturn(userInput);
         return r;
