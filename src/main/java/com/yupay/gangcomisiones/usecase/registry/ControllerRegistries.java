@@ -116,7 +116,7 @@ public final class ControllerRegistries {
     public static boolean registerAllDefaults() {
         return registerDefaults(reg ->
                 reg.register(InstallKeysController.class,
-                        new InstallKeyControllerSupplier(AppContext::getInstance)));
+                        new InstallKeyControllerSupplier()));
     }
 
     /**

@@ -19,47 +19,26 @@
 
 package com.yupay.gangcomisiones.usecase.installkeys;
 
-import com.yupay.gangcomisiones.AppContext;
-import com.yupay.gangcomisiones.services.ZipInstallerService;
+import com.yupay.gangcomisiones.usecase.registry.UseCaseSupplier;
+import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import com.yupay.gangcomisiones.usecase.task.TaskMonitor;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
-import java.util.function.Supplier;
 
-/// A supplier for [InstallKeysController], which is responsible for
-/// providing an instance of the controller using a supplied application context.
-/// This class implements [Supplier] and leverages a provided [AppContext]
-/// to resolve required dependencies for the [InstallKeysController].
-/// ## Design
-/// The `InstallKeyControllerSupplier` relies on a [Supplier] of
-/// [AppContext] to retrieve the application context. Using this context,
-/// it ensures that all necessary components, such as the `ViewRegistry`,
-/// `InstallationService`, and specific views, are available to construct
-/// the [InstallKeysController].
-/// ## Validation
-/// Validation is performed to ensure that the following components are non-null:
-/// - The application context retrieved from the `contextSupplier`.
-/// - The `ViewRegistry` obtained from the application context.
-/// If these components are not available, an [IllegalArgumentException]
-/// is thrown.
-/// ## Instances Provided
-/// The supplier constructs and provides instances of [InstallKeysController]
-/// that are ready to manage installation keys. The controller is initialized with:
-/// - A resolved [InstallKeysView].
-/// - A resolved [TaskMonitor].
-/// - The [ZipInstallerService] from the application context.
+/// A supplier implementation that provides instances of [InstallKeysController].
+/// This class utilizes the application context to resolve and inject all necessary
+/// dependencies required by the `InstallKeysController`.
+/// The supplier ensures the following:
+/// - The application context is retrieved and is non-null.
+/// - The [ViewRegistry] and required view and task monitor components are available.
+/// - Proper initialization of the `InstallKeysController` with resolved dependencies.
+/// Implements [UseCaseSupplier] for structured management of use case controllers.
 ///
-/// This design ensures that each call to [#get()] returns a fully initialized,
-/// ready-to-use instance of [InstallKeysController].
-///
-/// @param contextSupplier A supplier for the [AppContext]. The provided
-///                        context must contain all necessary components, including
-///                        the `ViewRegistry` and `InstallationService`.
 /// @author InfoYupay SACS
 /// @version 1.0
-public record InstallKeyControllerSupplier(Supplier<AppContext> contextSupplier)
-        implements Supplier<InstallKeysController> {
+public final class InstallKeyControllerSupplier
+        implements UseCaseSupplier<InstallKeysController> {
     /**
      * Provides an instance of {@link InstallKeysController} by resolving its dependencies
      * from the supplied application context. The method ensures that all required components
@@ -72,7 +51,7 @@ public record InstallKeyControllerSupplier(Supplier<AppContext> contextSupplier)
      */
     @Override
     public @NotNull InstallKeysController get() throws NullPointerException {
-        var context = Objects.requireNonNull(contextSupplier.get(),
+        var context = Objects.requireNonNull(appContextSupplier().get(),
                 "Supplied context cannot be null");
         var viewRegistry =
                 Objects.requireNonNull(context.getViewRegistry(),
