@@ -32,7 +32,7 @@ import java.util.Objects;
  * @version 1.0
  */
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity

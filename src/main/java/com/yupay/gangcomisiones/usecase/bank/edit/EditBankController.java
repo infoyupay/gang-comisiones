@@ -130,12 +130,12 @@ public class EditBankController {
             }
             //4. ask user
             var input = view.showUserForm(bank, FormMode.EDIT);
-            return input.map(value -> bankService.updateBank(bank.getId(), bank.getName(), bank.getActive())
+            return input.map(value -> bankService.updateBank(value.getId(), value.getName(), value.getActive())
                             .thenApply(_ -> {
-                                LOG.info("Bank updated: {} with id {}", bank.getName(), bank.getId());
+                                LOG.info("Bank updated: {} with id {}", value.getName(), value.getId());
                                 view.showSuccess("El banco %s (código: %d) ha sido actualizado exitosamente."
                                         .formatted(value.getName(), value.getId()));
-                                return new Result<>(UseCaseResultType.OK, bank);
+                                return new Result<>(UseCaseResultType.OK, value);
                             })
                             .exceptionally(e -> {
                                 LOG.error("Unable to update bank after sending to service.", e);
