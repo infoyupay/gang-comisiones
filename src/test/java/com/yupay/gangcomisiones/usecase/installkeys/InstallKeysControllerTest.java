@@ -19,14 +19,12 @@
 
 package com.yupay.gangcomisiones.usecase.installkeys;
 
-import com.yupay.gangcomisiones.AppContext;
-import com.yupay.gangcomisiones.CompactSameThreadExecutorService;
-import com.yupay.gangcomisiones.DummyHelpers;
-import com.yupay.gangcomisiones.LocalFiles;
+import com.yupay.gangcomisiones.*;
 import com.yupay.gangcomisiones.exceptions.AppInstalationException;
 import com.yupay.gangcomisiones.logging.LogConfig;
 import com.yupay.gangcomisiones.services.ZipInstallerService;
 import com.yupay.gangcomisiones.services.impl.ZipInstallerServiceLocalImpl;
+import com.yupay.gangcomisiones.usecase.registry.DefaultViewRegistry;
 import com.yupay.gangcomisiones.usecase.task.TaskMonitor;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +40,7 @@ import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+
 /**
  * Integration-style unit tests for {@code InstallKeysController}, exercising the
  * end-to-end flow around ZIP selection, asynchronous unpacking, progress reporting,
@@ -63,7 +62,7 @@ import static org.mockito.Mockito.*;
  * <p>
  * Test execution note:
  * <ul>
- *   <li>dvidal@infoyupay.com passed the 3 tests in 2.200ms at 2025-09-07T10:00:00-05:00.</li>
+ *   <li>dvidal@infoyupay.com passed the 3 tests in 2.199ms at 2025-09-11T11:01(-05:00).</li>
  * </ul>
  *
  * @author InfoYupay SACS
@@ -146,8 +145,9 @@ class InstallKeysControllerTest {
         /*=========*
          * ARRANGE *
          *=========*/
-        var installKeyView = mock(InstallKeysView.class);
-        when(installKeyView.showOpenDialogForZip()).thenReturn(DummyHelpers.getDummyJpaZip());
+        var installKeyView = TestViews.installKeysView(DummyHelpers.getDummyJpaZip());
+        var viewRegistry = new DefaultViewRegistry();
+        viewRegistry.registerInstance(InstallKeysView.class, installKeyView);
 
         var taskMonitor = mock(TaskMonitor.class);
         doAnswer(invocation -> {
@@ -168,7 +168,7 @@ class InstallKeysControllerTest {
         /*=====*
          * ACT *
          *=====*/
-        var useCaseController = new InstallKeysController(installKeyView, taskMonitor, zipInstallerService);
+        var useCaseController = new InstallKeysController(viewRegistry, taskMonitor, zipInstallerService);
         var result = useCaseController.run().join();
 
         /*========*
@@ -200,12 +200,13 @@ class InstallKeysControllerTest {
      */
     @Test
     void testAbortedInstallationWhenViewReturnsNullPath() {
-        var installKeyView = mock(InstallKeysView.class);
-        when(installKeyView.showOpenDialogForZip()).thenReturn(null);
+        var installKeyView = TestViews.installKeysView(null);
+        var viewRegistry = new DefaultViewRegistry();
+        viewRegistry.registerInstance(InstallKeysView.class, installKeyView);
 
         var taskMonitor = mock(TaskMonitor.class);
 
-        var useCaseController = new InstallKeysController(installKeyView, taskMonitor, zipInstallerService);
+        var useCaseController = new InstallKeysController(viewRegistry, taskMonitor, zipInstallerService);
         var result = useCaseController.run().join();
 
         assertEquals(InstallKeysResult.ABORT, result);
@@ -224,8 +225,9 @@ class InstallKeysControllerTest {
      */
     @Test
     void testFailedInstallationDueCorruptedZip() {
-        var installKeyView = mock(InstallKeysView.class);
-        when(installKeyView.showOpenDialogForZip()).thenReturn(DummyHelpers.getCorruptZip());
+        var installKeyView = TestViews.installKeysView(DummyHelpers.getCorruptZip());
+        var viewRegistry = new DefaultViewRegistry();
+        viewRegistry.registerInstance(InstallKeysView.class, installKeyView);
 
         var taskMonitor = mock(TaskMonitor.class);
         doAnswer(invocation -> {
@@ -233,7 +235,7 @@ class InstallKeysControllerTest {
             return null;
         }).when(taskMonitor).showError(any(Exception.class));
 
-        var useCaseController = new InstallKeysController(installKeyView, taskMonitor, zipInstallerService);
+        var useCaseController = new InstallKeysController(viewRegistry, taskMonitor, zipInstallerService);
         var result = useCaseController.run().join();
 
         verify(mockExecutor).execute(any(Runnable.class));

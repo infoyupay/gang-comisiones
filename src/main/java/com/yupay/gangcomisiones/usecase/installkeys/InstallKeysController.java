@@ -23,6 +23,7 @@ import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.LocalFiles;
 import com.yupay.gangcomisiones.services.ZipInstallProgressListener;
 import com.yupay.gangcomisiones.services.ZipInstallerService;
+import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import com.yupay.gangcomisiones.usecase.task.TaskMonitor;
 import org.jetbrains.annotations.Contract;
 
@@ -65,6 +66,7 @@ import java.util.concurrent.CompletableFuture;
 public final class InstallKeysController implements ZipInstallProgressListener {
 
     private final InstallKeysView view;
+    private final ViewRegistry viewRegistry;
     private final TaskMonitor monitor;
     private final ZipInstallerService installer;
     private int totalEntries;
@@ -72,17 +74,18 @@ public final class InstallKeysController implements ZipInstallProgressListener {
     /**
      * Creates a new controller instance for the "Install Keys" flow.
      *
-     * @param view      the minimal UI abstraction used to request the ZIP source
-     * @param monitor   the task monitor used to show progress and report errors
-     * @param installer the service responsible for asynchronously unpacking the ZIP
+     * @param viewRegistry the registry used to resolve views
+     * @param monitor      the task monitor used to show progress and report errors
+     * @param installer    the service responsible for asynchronously unpacking the ZIP
      */
     @Contract(pure = true)
-    public InstallKeysController(InstallKeysView view,
+    public InstallKeysController(ViewRegistry viewRegistry,
                                  TaskMonitor monitor,
                                  ZipInstallerService installer) {
-        this.view = view;
+        this.viewRegistry = viewRegistry;
         this.monitor = monitor;
         this.installer = installer;
+        this.view = viewRegistry.resolve(InstallKeysView.class);
     }
 
     @Override
@@ -147,7 +150,7 @@ public final class InstallKeysController implements ZipInstallProgressListener {
         if (AppContext.isInitialized()) {
             AppContext.restart(jpaProps);
         } else {
-            AppContext.getInstance(jpaProps);
+            AppContext.getInstance(jpaProps, viewRegistry);
         }
     }
 }

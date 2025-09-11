@@ -59,7 +59,7 @@ public final class InstallKeyControllerSupplier
                 Objects.requireNonNull(context.getViewRegistry(),
                         () -> nullPointerMessage(InstallKeysController.class,
                                 ViewRegistry.class));
-        return new InstallKeysController(viewRegistry.resolve(InstallKeysView.class),
+        return new InstallKeysController(viewRegistry,
                 viewRegistry.resolve(TaskMonitor.class),
                 context.getInstallationService());
     }
