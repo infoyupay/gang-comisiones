@@ -65,10 +65,14 @@ public class DefaultTypeRegistry implements TypeRegistry {
             throw new TypeRegistryException("Unable to find a supplier for " + componentClass);
         }
         var result = supplier.get();
+        if (result == null) {
+            throw new TypeRegistryException("Retrieved instance doesn't match " + componentClass + " because is null.");
+        }
         if (componentClass.isInstance(result)) {
             return componentClass.cast(result);
         }
-        throw new TypeRegistryException("Retrieved instance doesn't match " + componentClass);
+        throw new TypeRegistryException(
+                "Retrieved instance is " + result.getClass() + " and doesn't match " + componentClass);
     }
 
     @Contract(pure = true)
