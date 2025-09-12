@@ -19,7 +19,7 @@
 
 package com.yupay.gangcomisiones;
 
-import com.yupay.gangcomisiones.board.BoardView;
+import com.yupay.gangcomisiones.usecase.commons.BoardView;
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.GlobalConfig;
 import com.yupay.gangcomisiones.model.User;

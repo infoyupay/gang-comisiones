@@ -21,7 +21,7 @@ package com.yupay.gangcomisiones.usecase.bank.manage;
 
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.usecase.bank.BankView;
-import com.yupay.gangcomisiones.board.BoardView;
+import com.yupay.gangcomisiones.usecase.commons.BoardView;
 import com.yupay.gangcomisiones.usecase.commons.ListPresenter;
 import com.yupay.gangcomisiones.usecase.commons.MessagePresenter;
 import com.yupay.gangcomisiones.usecase.commons.SecondaryView;
