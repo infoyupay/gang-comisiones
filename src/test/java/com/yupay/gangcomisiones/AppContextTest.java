@@ -21,6 +21,8 @@ package com.yupay.gangcomisiones;
 
 import com.yupay.gangcomisiones.exceptions.AppContextException;
 import com.yupay.gangcomisiones.logging.LogConfig;
+import com.yupay.gangcomisiones.usecase.registry.DefaultViewRegistry;
+import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,11 +66,11 @@ class AppContextTest {
     }
 
     /**
-     * Tests that AppContext.getInstance(Path) initializes the context.
+     * Tests that {@link AppContext#getInstance(Path, ViewRegistry)} initializes the context.
      */
     @Test
     void testGetInstanceInitializes() {
-        AppContext ctx = AppContext.getInstance(DUMMY_PATH);
+        AppContext ctx = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
         assertNotNull(ctx);
         assertNotNull(ctx.getEntityManagerFactory());
         assertNotNull(ctx.getJdbcExecutor());
@@ -76,7 +78,7 @@ class AppContextTest {
     }
 
     /**
-     * Tests that AppContext.getInstance() throws an exception
+     * Tests that {@link AppContext#getInstance()} throws an exception
      * when the context has not been initialized.
      */
     @Test
@@ -89,11 +91,11 @@ class AppContextTest {
     }
 
     /**
-     * Tests that AppContext.restart(Path) replaces the instance.
+     * Tests that {@link AppContext#restart(Path)} replaces the instance.
      */
     @Test
     void testRestartReplacesInstance() {
-        AppContext first = AppContext.getInstance(DUMMY_PATH);
+        AppContext first = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
         AppContext second = AppContext.restart(DUMMY_PATH);
         assertNotSame(first, second);
         // Old instance was shut down.
@@ -102,7 +104,7 @@ class AppContextTest {
     }
 
     /**
-     * Tests that AppContext.getInstance() returns the same instance
+     * Tests that {@link AppContext#getInstance()} returns the same instance
      * when called concurrently.
      *
      * @throws InterruptedException if test threads interrupted.
@@ -114,7 +116,7 @@ class AppContextTest {
 
         for (int i = 0; i < 10; i++) {
             int idx = i;
-            threads[i] = new Thread(() -> results[idx] = AppContext.getInstance(DUMMY_PATH));
+            threads[i] = new Thread(() -> results[idx] = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry()));
             threads[i].start();
         }
         for (Thread t : threads) t.join();
@@ -129,7 +131,7 @@ class AppContextTest {
      */
     @Test
     void testShutdownExecutors() {
-        AppContext ctx = AppContext.getInstance(DUMMY_PATH);
+        AppContext ctx = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
         ExecutorService jdbc = ctx.getJdbcExecutor();
         ExecutorService task = ctx.getTaskExecutor();
 

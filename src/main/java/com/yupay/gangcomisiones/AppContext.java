@@ -204,25 +204,6 @@ public final class AppContext {
     }
 
     /**
-     * Retrieves the unique instance of {@code AppContext}, lazily creating it if necessary.
-     * This method initializes the application context using the specified JPA properties file.
-     * If the instance has already been created, it simply returns the existing one.
-     * This method delegates to {@link #getInstance(Path, ViewRegistry)} with a {@code null} ViewRegistry.
-     *
-     * @param jpaProperties the path to the JPA properties file used to configure the {@code EntityManagerFactory}.
-     * @return the singleton instance of {@code AppContext}.
-     * @apiNote TODO: Remove this method once the adoption of new design finishes.
-     * @deprecated Use {@link #getInstance(Path, ViewRegistry)} instead. Due a change in architecture, we need to
-     * hold a view registry here, this is managed by the application initialization process, ie: if it's JavaFx,
-     * the Application.startMethod should create the view registry with javafx implementations and pass to this
-     * context. Once the adoption of new design finishes, this method will be removed.
-     */
-    @Deprecated(forRemoval = true)
-    public static AppContext getInstance(Path jpaProperties) {
-        return getInstance(jpaProperties, new DefaultViewRegistry());
-    }
-
-    /**
      * Retrieves the unique instance of {@code AppContext}.
      * This method ensures that the global context has been properly initialized
      * before returning it. If the context has not been initialized, an
@@ -235,7 +216,7 @@ public final class AppContext {
         AppContext ctx = INSTANCE.get();
         if (ctx == null) {
             throw new AppContextException("AppContext has not been initialized. " +
-                    "Call getInstance(Path jpaProperties, ViewRegistry viewRegistry) first.");
+                    "Call getInstance(Path, ViewRegistry) first.");
         }
         return ctx;
     }
