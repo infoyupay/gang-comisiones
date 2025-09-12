@@ -32,6 +32,12 @@ import com.yupay.gangcomisiones.usecase.installkeys.InstallKeyControllerSupplier
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeysController;
 import com.yupay.gangcomisiones.usecase.setglobalconfig.SetGlobalConfigController;
 import com.yupay.gangcomisiones.usecase.setglobalconfig.SetGlobalConfigControllerSupplier;
+import com.yupay.gangcomisiones.usecase.concept.create.CreateConceptController;
+import com.yupay.gangcomisiones.usecase.concept.create.CreateConceptControllerSupplier;
+import com.yupay.gangcomisiones.usecase.concept.edit.EditConceptController;
+import com.yupay.gangcomisiones.usecase.concept.edit.EditConceptControllerSupplier;
+import com.yupay.gangcomisiones.usecase.concept.manage.ManageConceptController;
+import com.yupay.gangcomisiones.usecase.concept.manage.ManageConceptControllerSupplier;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -136,6 +142,12 @@ public final class ControllerRegistries {
                     new EditBankControllerSupplier());
             reg.register(ManageBankController.class,
                     new ManageBankControllerSupplier());
+            reg.register(CreateConceptController.class,
+                    new CreateConceptControllerSupplier());
+            reg.register(EditConceptController.class,
+                    new EditConceptControllerSupplier());
+            reg.register(ManageConceptController.class,
+                    new ManageConceptControllerSupplier());
         });
     }
 
