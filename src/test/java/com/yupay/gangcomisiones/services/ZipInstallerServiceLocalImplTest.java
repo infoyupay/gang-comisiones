@@ -23,6 +23,7 @@ import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.DummyHelpers;
 import com.yupay.gangcomisiones.LocalFiles;
+import com.yupay.gangcomisiones.exceptions.AppInstalationException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,7 +139,7 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
             Path maliciousZip = createMaliciousZip(tempDir);
 
             // Act
-            zipInstallerService.unpackZip(maliciousZip);
+            assertThrows(AppInstalationException.class, () -> zipInstallerService.unpackZip(maliciousZip));
 
             // Assert: file outside project not created
             Path outsideFile = LocalFiles.PROJECT.asPath().getParent().resolve("outside.txt");
@@ -215,7 +216,7 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
             Path zip = DummyHelpers.getDummyPropertiesZip();
             Path tempProject = LocalFiles.PROJECT.asPath();
             Path pathDummy = tempProject.resolve("dummyprop.properties");
-            Path pathDummyChild = tempProject.resolve("dummydir","childdummyprop.properties");
+            Path pathDummyChild = tempProject.resolve("dummydir", "childdummyprop.properties");
 
 
             // Act
@@ -229,16 +230,16 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
             //Load properties from unpacked files
             var propDummy = new Properties();
             var propDummyChild = new Properties();
-            try(var isDummy = Files.newInputStream(pathDummy);
-            var isDummyChild = Files.newInputStream(pathDummyChild)) {
+            try (var isDummy = Files.newInputStream(pathDummy);
+                 var isDummyChild = Files.newInputStream(pathDummyChild)) {
                 propDummy.load(isDummy);
                 propDummyChild.load(isDummyChild);
             }
 
             assertTrue(propDummy.containsKey("title"));
             assertTrue(propDummyChild.containsKey("title"));
-            assertEquals("dummy",  propDummy.get("title"));
-            assertEquals("dummychild",  propDummyChild.get("title"));
+            assertEquals("dummy", propDummy.get("title"));
+            assertEquals("dummychild", propDummyChild.get("title"));
         } finally {
             System.setProperty("user.home", originalUserHome);
         }
