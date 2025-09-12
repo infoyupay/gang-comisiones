@@ -207,7 +207,7 @@ public record UserServiceImpl(EntityManagerFactory emf,
         return runWithoutTransaction(em -> {
             var r = em.createQuery("SELECT u.active FROM User u WHERE u.id = :id", Boolean.class)
                     .setParameter("id", id)
-                    .getSingleResultOrNull();
+                    .getSingleResult();
             return r != null && r;
         });
     }
