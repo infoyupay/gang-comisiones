@@ -20,19 +20,18 @@
 package com.yupay.gangcomisiones.usecase.bank.edit;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.TestViews;
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.usecase.AuditLogChecker;
-import com.yupay.gangcomisiones.usecase.PrintLineAnswer;
 import com.yupay.gangcomisiones.usecase.bank.BankView;
 import com.yupay.gangcomisiones.usecase.commons.FormMode;
-import com.yupay.gangcomisiones.usecase.commons.MessageType;
 import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
 import jakarta.persistence.EntityManagerFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Optional;
 
@@ -102,22 +101,14 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
     @BeforeEach
     void prepareTest() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
-        view = Mockito.mock(BankView.class);
-        mockViewMessages();
     }
 
-    /**
-     * Configures the mock view to print messages passed through
-     * {@link BankView#showMessage(String, MessageType)}
-     * using a {@link PrintLineAnswer}.<br/>
-     * Notes:
-     * <ul>
-     *   <li>Helps to visualize messages during test execution.</li>
-     *   <li>Keeps assertions focused on behavior rather than console output.</li>
-     * </ul>
-     */
-    private void mockViewMessages() {
-        doAnswer(PrintLineAnswer.get()).when(view).showMessage(anyString(), any());
+    @AfterEach
+    void cleanUp() {
+        view = null;
+        if (viewRegistry.isRegistered(BankView.class)) {
+            viewRegistry.unregister(BankView.class);
+        }
     }
 
     /**
@@ -160,16 +151,11 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
             var bank = TestPersistedEntities.persistBank(em);
             return new Entities(admin, bank);
         });
-
         ctx.getUserSession().setCurrentUser(persisted.admin());
 
-        // The view receives the existing bank, modifies it, and returns the modified version
-        when(view.showUserForm(persisted.bank(), FormMode.EDIT)).thenAnswer(inv -> {
-            var b = (Bank) inv.getArgument(0);
-            b.setName("Updated Name");
-            b.setActive(Boolean.TRUE);
-            return Optional.of(b);
-        });
+        //Mocking view. The view is provided with a modified version to return it upon request to simulate user input.
+        view = TestViews.bankView(FormMode.EDIT, persisted.bank.toBuilder().name("Updated Name").active(true).build());
+        viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new EditBankController(ctx);
 
@@ -182,7 +168,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
                 .extracting(Bank::getName, Bank::getActive)
                 .containsExactly("Updated Name", true);
 
-        verify(view).showUserForm(persisted.bank(), FormMode.EDIT);
+        verify(view).showUserForm(same(persisted.bank()), eq(FormMode.EDIT));
         verify(view, never()).showError(anyString());
         verify(view, atLeastOnce()).showSuccess(contains("actualizado exitosamente"));
 
@@ -209,7 +195,8 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(admin);
-        when(view.showUserForm(any(), eq(FormMode.EDIT))).thenReturn(Optional.empty());
+        view = TestViews.bankView(FormMode.EDIT, null);
+        viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new EditBankController(ctx);
 
@@ -246,7 +233,8 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(null);
-
+        view = TestViews.bankView(null, null);
+        viewRegistry.registerInstance(BankView.class, view);
         var controller = new EditBankController(ctx);
 
         // Act
@@ -280,7 +268,8 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(cashier);
-
+        view = TestViews.bankView(null, null);
+        viewRegistry.registerInstance(BankView.class, view);
         var controller = new EditBankController(ctx);
 
         // Act
@@ -328,12 +317,9 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         ctx.getUserSession().setCurrentUser(persisted.admin());
 
         // Mock the view to modify bank A to have bank B's name (duplicate)
-        when(view.showUserForm(persisted.a(), FormMode.EDIT)).thenAnswer(inv -> {
-            var b = (Bank) inv.getArgument(0);
-            b.setName(persisted.b().getName());
-            b.setActive(Boolean.TRUE);
-            return Optional.of(b);
-        });
+        BankView view = TestViews.bankView(FormMode.EDIT,
+                persisted.b().toBuilder().name(persisted.a().getName()).build());
+        viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new EditBankController(ctx);
 
@@ -344,7 +330,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         assertThat(result.result()).isEqualTo(UseCaseResultType.ERROR);
         assertThat(result.value()).isNull();
 
-        verify(view).showUserForm(persisted.a(), FormMode.EDIT);
+        verify(view).showUserForm(eq(persisted.a()), eq(FormMode.EDIT));
         verify(view).showError(contains("Error al actualizar un Banco"));
         verify(view, never()).showSuccess(anyString());
 

@@ -139,7 +139,7 @@ public class TestViews {
         if (mode != null) {
             when(switch (mode) {
                 case CREATE -> view.showUserForm(eq(mode));
-                case EDIT -> view.showUserForm(eq(result), eq(mode));
+                case EDIT -> view.showUserForm(any(Bank.class), eq(mode));
                 default -> view.showUserForm(nullable(Bank.class), eq(mode));
             }).thenReturn(Optional.ofNullable(result));
         }
