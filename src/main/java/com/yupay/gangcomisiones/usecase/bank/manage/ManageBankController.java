@@ -89,6 +89,10 @@ public final class ManageBankController {
             if (user == null) return;
 
             propagatePrivileges(user);
+
+            view.setOnInsertIntent(this::createBank);
+            view.setOnRefreshIntent(this::listBank);
+            view.setOnUpdateIntent(this::editBank);
             view.showView();
             listBank();
         } catch (RuntimeException e) {

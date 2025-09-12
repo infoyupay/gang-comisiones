@@ -21,6 +21,8 @@ package com.yupay.gangcomisiones.usecase.commons;
 
 import com.yupay.gangcomisiones.model.User;
 
+import java.util.function.Consumer;
+
 /**
  * Represents a view component for displaying a board, combining the responsibilities of presenting lists
  * and showing messages or errors. This interface extends {@code ListPresenter} to provide mechanisms for
@@ -39,4 +41,25 @@ public interface BoardView<T> extends ListPresenter<T>, MessagePresenter {
      */
     void propagatePrivileges(User user);
 
+    /**
+     * Sets a callback to be executed when an insert action is triggered within the board view.
+     *
+     * @param callback a {@link Runnable} representing the logic to be executed during the insert action
+     */
+    void setOnInsertIntent(Runnable callback);
+
+    /**
+     * Sets a callback to be executed when an update action is triggered within the board view.
+     *
+     * @param callback a {@link Consumer} that accepts a parameter of type {@code T}, representing
+     *                 the logic to be executed during the update action with the specific element.
+     */
+    void setOnUpdateIntent(Consumer<T> callback);
+
+    /**
+     * Sets a callback to be executed when a refresh action is triggered within the board view.
+     *
+     * @param callback a {@link Runnable} representing the logic to be executed during the refresh action
+     */
+    void setOnRefreshIntent(Runnable callback);
 }
