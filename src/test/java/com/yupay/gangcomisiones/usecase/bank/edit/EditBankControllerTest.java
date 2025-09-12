@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -82,6 +83,7 @@ import static org.mockito.Mockito.*;
  * @version 1.0
  */
 class EditBankControllerTest extends AbstractPostgreIntegrationTest {
+    final AtomicReference<Bank> bankRef = new AtomicReference<>(null);
     /**
      * Mocked {@link BankView} to observe interactions from {@link EditBankController}
      * without triggering real UI side effects.
@@ -103,12 +105,19 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
 
+    /// Cleans up resources and resets test environment after each test execution.
+    /// Responsibilities:
+    /// - Sets the `view` variable to null, releasing its reference.
+    /// - Removes the registration of the [BankView] class from the `viewRegistry`
+    ///   if it is currently registered.
+    /// - Resets the `bankRef` reference to null.
     @AfterEach
     void cleanUp() {
         view = null;
         if (viewRegistry.isRegistered(BankView.class)) {
             viewRegistry.unregister(BankView.class);
         }
+        bankRef.set(null);
     }
 
     /**
@@ -154,7 +163,8 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         ctx.getUserSession().setCurrentUser(persisted.admin());
 
         //Mocking view. The view is provided with a modified version to return it upon request to simulate user input.
-        view = TestViews.bankView(FormMode.EDIT, persisted.bank.toBuilder().name("Updated Name").active(true).build());
+        bankRef.set(persisted.bank.toBuilder().name("Updated Name").active(true).build());
+        view = TestViews.bankView(FormMode.EDIT, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new EditBankController(ctx);
@@ -195,7 +205,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(admin);
-        view = TestViews.bankView(FormMode.EDIT, null);
+        view = TestViews.bankView(FormMode.EDIT, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new EditBankController(ctx);
@@ -233,7 +243,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(null);
-        view = TestViews.bankView(null, null);
+        view = TestViews.bankView(null, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
         var controller = new EditBankController(ctx);
 
@@ -268,7 +278,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(cashier);
-        view = TestViews.bankView(null, null);
+        view = TestViews.bankView(null, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
         var controller = new EditBankController(ctx);
 
@@ -317,8 +327,8 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         ctx.getUserSession().setCurrentUser(persisted.admin());
 
         // Mock the view to modify bank A to have bank B's name (duplicate)
-        BankView view = TestViews.bankView(FormMode.EDIT,
-                persisted.b().toBuilder().name(persisted.a().getName()).build());
+        bankRef.set(persisted.b().toBuilder().name(persisted.a().getName()).build());
+        BankView view = TestViews.bankView(FormMode.EDIT, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new EditBankController(ctx);

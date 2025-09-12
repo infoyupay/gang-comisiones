@@ -19,7 +19,6 @@
 
 package com.yupay.gangcomisiones;
 
-import com.yupay.gangcomisiones.usecase.commons.BoardView;
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.GlobalConfig;
 import com.yupay.gangcomisiones.model.User;
@@ -35,6 +34,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import static org.mockito.Mockito.*;
@@ -68,7 +68,7 @@ public class TestViews {
     ///   encapsulated in an `Optional`, or an empty `Optional` if `userInput` is `null`.
     ///
     /// @param userInput the `GlobalConfig` instance to be returned by the
-    ///                                                                                                                                                                                                                              `showSetGlobalConfigForm` method.
+    ///                                                                                                                                                                                                                                                                `showSetGlobalConfigForm` method.
     /// @return a mocked `SetGlobalConfigView` instance with the specified behavior.
     public static @NotNull SetGlobalConfigView setGlobalConfigView(GlobalConfig userInput) {
         var view = mock(SetGlobalConfigView.class);
@@ -212,7 +212,7 @@ public class TestViews {
      * @param result the {@link Bank} entity that is used in the mock configuration to simulate user interactions.
      * @return a mocked {@link BankView} instance configured for user interaction in the specified form mode.
      */
-    public static @NotNull BankView bankView(FormMode mode, Bank result) {
+    public static @NotNull BankView bankView(FormMode mode, AtomicReference<Bank> result) {
         return bankView(mode, result, false);
     }
 
@@ -222,18 +222,19 @@ public class TestViews {
      * user interactions based on the specified {@code FormMode}, the {@code Bank} result, and the
      * {@code anyMode} flag.
      *
-     * @param mode     the {@link FormMode} that determines the context of the form: whether it is for
-     *                 creating, editing, or viewing a {@link Bank} entity. If null, no user form
-     *                 interaction is expected, except if {@code anyMode} is true.
-     * @param result   the {@link Bank} instance that is returned by the mocked view when accepting
-     *                 user input. May be {@code null}, in which case an empty {@code Optional}
-     *                 will be returned.
-     * @param anyMode  a boolean indicating whether the mock should allow any {@link FormMode} to be
-     *                 used for user interaction when the {@code mode} is null.
+     * @param mode    the {@link FormMode} that determines the context of the form: whether it is for
+     *                creating, editing, or viewing a {@link Bank} entity. If null, no user form
+     *                interaction is expected, except if {@code anyMode} is true.
+     * @param result  the {@link Bank} instance that is returned by the mocked view when accepting
+     *                user input. May be {@code null}, in which case an empty {@code Optional}
+     *                will be returned.
+     * @param anyMode a boolean indicating whether the mock should allow any {@link FormMode} to be
+     *                used for user interaction when the {@code mode} is null.
      * @return a mocked {@code BankView} instance configured with the specified behavior for user
-     *         interactions in the given form mode and result context.
+     * interactions in the given form mode and result context.
      */
-    public static @NotNull BankView bankView(FormMode mode, Bank result, boolean anyMode) {
+    public static @NotNull BankView bankView(FormMode mode, @NotNull AtomicReference<Bank> result, boolean anyMode) {
+        Objects.requireNonNull(result);
         var view = mock(BankView.class);
         stubMessagePresenter(view);
         //If mode is null, no showUserForm interaction is expected.
@@ -242,9 +243,10 @@ public class TestViews {
                 case CREATE -> view.showUserForm(eq(mode));
                 case EDIT -> view.showUserForm(any(Bank.class), eq(mode));
                 default -> view.showUserForm(nullable(Bank.class), eq(mode));
-            }).thenReturn(Optional.ofNullable(result));
+            }).thenAnswer(_ -> Optional.ofNullable(result.get()));
         } else if (anyMode) {
-            when(view.showUserForm(nullable(Bank.class), any(FormMode.class))).thenReturn(Optional.ofNullable(result));
+            when(view.showUserForm(nullable(Bank.class), any(FormMode.class))).thenAnswer(_ -> Optional.ofNullable(result.get()));
+            when(view.showUserForm(any(FormMode.class))).thenAnswer(_ -> Optional.ofNullable(result.get()));
         }
         return view;
     }

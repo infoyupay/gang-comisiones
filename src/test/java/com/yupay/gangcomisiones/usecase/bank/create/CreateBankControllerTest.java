@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -67,6 +68,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
      * without invoking UI side effects.
      */
     BankView view;
+    static final AtomicReference<Bank> bankRef = new AtomicReference<>(null);
 
     /**
      * Initializes the test fixture before each test execution.
@@ -131,7 +133,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
-        view = TestViews.bankView(FormMode.CREATE, sampleBank);
+        bankRef.set(sampleBank);
+        view = TestViews.bankView(FormMode.CREATE, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
         var controller = new CreateBankController(ctx);
 
@@ -169,7 +172,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange
         var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
-        view = TestViews.bankView(FormMode.CREATE, null);
+        bankRef.set(null);
+        view = TestViews.bankView(FormMode.CREATE, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new CreateBankController(ctx);
@@ -205,7 +209,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
     void givenNoUser_whenRun_thenErrorAndNoFormShown() {
         // Arrange
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
-        view = TestViews.bankView(FormMode.CREATE, sampleBank);
+        bankRef.set(sampleBank);
+        view = TestViews.bankView(FormMode.CREATE, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
         ctx.getUserSession().setCurrentUser(null);
 
@@ -241,7 +246,8 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
-        view = TestViews.bankView(FormMode.CREATE, sampleBank);
+        bankRef.set(sampleBank);
+        view = TestViews.bankView(FormMode.CREATE, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new CreateBankController(ctx);
@@ -282,8 +288,9 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         });
 
         var bankDuplicate = Bank.builder().name(persisted.bank().getName()).active(true).build();
+        bankRef.set(bankDuplicate);
         ctx.getUserSession().setCurrentUser(persisted.admin);
-        view = TestViews.bankView(FormMode.CREATE, bankDuplicate);
+        view = TestViews.bankView(FormMode.CREATE, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new CreateBankController(ctx);
