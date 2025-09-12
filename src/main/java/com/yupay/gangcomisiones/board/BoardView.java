@@ -17,9 +17,11 @@
  *  with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-package com.yupay.gangcomisiones.usecase.commons;
+package com.yupay.gangcomisiones.board;
 
 import com.yupay.gangcomisiones.model.User;
+import com.yupay.gangcomisiones.usecase.commons.ListPresenter;
+import com.yupay.gangcomisiones.usecase.commons.MessagePresenter;
 
 /**
  * Represents a view component for displaying a board, combining the responsibilities of presenting lists

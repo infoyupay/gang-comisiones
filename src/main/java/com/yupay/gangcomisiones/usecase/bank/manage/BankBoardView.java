@@ -20,10 +20,8 @@
 package com.yupay.gangcomisiones.usecase.bank.manage;
 
 import com.yupay.gangcomisiones.model.Bank;
-import com.yupay.gangcomisiones.model.User;
-import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.usecase.bank.BankView;
-import com.yupay.gangcomisiones.usecase.commons.BoardView;
+import com.yupay.gangcomisiones.board.BoardView;
 import com.yupay.gangcomisiones.usecase.commons.ListPresenter;
 import com.yupay.gangcomisiones.usecase.commons.MessagePresenter;
 import com.yupay.gangcomisiones.usecase.commons.SecondaryView;
@@ -52,15 +50,4 @@ public interface BankBoardView extends BoardView<Bank>, SecondaryView {
      */
     @NotNull BankView getBankView();
 
-    /**
-     * How BankBoard privileges must be propagated according to level:
-     * <ul>
-     *     <li>At least {@link UserRole#ADMIN}: User can add, view and edit banks</li>
-     *     <li>Only {@link UserRole#CASHIER}: User can view but not create or edit banks</li>
-     * </ul>
-     *
-     * @param user the user whose privileges are to be propagated
-     */
-    @Override
-    void propagatePrivileges(User user);
 }
