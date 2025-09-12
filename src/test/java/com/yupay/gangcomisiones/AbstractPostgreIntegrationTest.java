@@ -20,6 +20,7 @@
 package com.yupay.gangcomisiones;
 
 import com.yupay.gangcomisiones.logging.LogConfig;
+import com.yupay.gangcomisiones.usecase.registry.ControllerRegistries;
 import com.yupay.gangcomisiones.usecase.registry.DefaultViewRegistry;
 import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import jakarta.persistence.EntityTransaction;
@@ -54,6 +55,9 @@ public abstract class AbstractPostgreIntegrationTest {
         viewRegistry = new DefaultViewRegistry();
         LOGGER = LoggerFactory.getLogger(AbstractPostgreIntegrationTest.class);
         ctx = AppContext.getInstance(DummyHelpers.getDummyJpaProperties(), viewRegistry);
+        if(!ControllerRegistries.registerAllDefaults()){
+            throw new Error("Failed to register all defaults controller suppliers. ABORT INMEDIATELY!");
+        }
     }
 
     /**
