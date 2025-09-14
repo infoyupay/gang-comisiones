@@ -31,6 +31,7 @@ package com.yupay.gangcomisiones;
  * @version 1.0
  *
  */
+@SuitableFor(value = "stableValue", reason = "Deferred instanciation would improve tests")
 public class LocalFiles {
     /**
      * Represents the path to the root directory for Yupay important files
