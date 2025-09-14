@@ -39,7 +39,7 @@ public class CreateTransactionRequest {
     /**
      * Identifier of the bank associated with the transaction.
      */
-    private final long bankId;
+    private final int bankId;
 
     /**
      * Identifier of the concept associated with the transaction.
