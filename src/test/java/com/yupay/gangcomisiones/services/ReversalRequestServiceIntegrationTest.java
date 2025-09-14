@@ -21,9 +21,8 @@ package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.exceptions.AppSecurityException;
-import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.*;
-import com.yupay.gangcomisiones.model.TestPersistedEntities;
+import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -64,6 +63,7 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
     /// Validates that creating a reversal request:
     /// - Persists the request and assigns an id.
     /// - Updates the associated transaction status to REVERSION_REQUESTED.
+    ///
     /// @throws Exception when test catstrophically fails.
     @Test
     void testCreateReversalRequest_SetsStatusAndPersists() throws Exception {
@@ -75,15 +75,16 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
         User cashier = userService.createUser("cashier.rev.create", UserRole.CASHIER, "password").get();
         ctx.getUserSession().setCurrentUser(cashier);
 
-        Transaction tx = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
+        var request = CreateTransactionRequest
+                .builder()
                 .amount(new BigDecimal("20.00"))
-                .commission(new BigDecimal("2.00"))
-                .status(TransactionStatus.REGISTERED)
+                .bankId(bank.getId())
+                .cashierId(cashier.getId())
+                .conceptCommissionValue(concept.getValue())
+                .conceptId(concept.getId())
+                .conceptType(concept.getType())
                 .build();
-        transactionService.createTransaction(tx).get();
+        Transaction tx = transactionService.createTransaction(request).get();
 
         // when: create reversal request
         ReversalRequest req = reversalRequestService
@@ -103,6 +104,7 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
     /// - Fails for CASHIER (insufficient privileges).
     /// - Succeeds for ADMIN and sets transaction to REVERSED when APPROVED.
     /// - Succeeds for ROOT and sets transaction to REGISTERED when DENIED.
+    ///
     /// @throws Exception when test catstrophically fails.
     @Test
     void testResolveRequest_RoleEnforcedAndStatusTransitions() throws Exception {
@@ -114,15 +116,16 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
         User cashier = userService.createUser("cashier.rev.resolve", UserRole.CASHIER, "password").get();
         ctx.getUserSession().setCurrentUser(cashier);
 
-        Transaction tx = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
+        var request = CreateTransactionRequest.builder()
                 .amount(new BigDecimal("15.00"))
-                .commission(new BigDecimal("1.50"))
-                .status(TransactionStatus.REGISTERED)
+                .bankId(bank.getId())
+                .conceptId(concept.getId())
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
-        transactionService.createTransaction(tx).get();
+
+        var tx = transactionService.createTransaction(request).get();
         ReversalRequest req = reversalRequestService
                 .createReversalRequest(tx.getId(), cashier.getId(), "client cancel")
                 .get();
@@ -144,15 +147,16 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
         User root = userService.createUser("root.resolver", UserRole.ROOT, "password").get();
         // create another tx and request by cashier
         ctx.getUserSession().setCurrentUser(cashier);
-        Transaction tx2 = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
+        var request2 = CreateTransactionRequest.builder()
                 .amount(new BigDecimal("30.00"))
-                .commission(new BigDecimal("3.00"))
-                .status(TransactionStatus.REGISTERED)
+                .bankId(bank.getId())
+                .conceptId(concept.getId())
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
-        transactionService.createTransaction(tx2).get();
+
+        Transaction tx2 = transactionService.createTransaction(request2).get();
         ReversalRequest req2 = reversalRequestService
                 .createReversalRequest(tx2.getId(), cashier.getId(), "other reason")
                 .get();

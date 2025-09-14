@@ -21,7 +21,9 @@ package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.exceptions.GangComisionesException;
+import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.*;
+import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,17 +101,17 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         User cashier = userService.createUser("cashier.tx", UserRole.CASHIER, "password").get();
         ctx.getUserSession().setCurrentUser(cashier);
 
-        Transaction tx = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
+        var request = CreateTransactionRequest.builder()
                 .amount(new BigDecimal("10.00"))
-                .commission(new BigDecimal("1.00"))
-                .status(TransactionStatus.REGISTERED)
+                .bankId(bank.getId())
+                .conceptId(concept.getId())
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
 
         // when
-        transactionService.createTransaction(tx).get();
+        var tx = transactionService.createTransaction(request).get();
 
         // then: id assigned
         assertNotNull(tx.getId(), "Transaction id must be assigned by DB sequence");
@@ -151,17 +153,17 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         // logout so that AuditLogger has no actor
         ctx.getUserSession().logout();
 
-        Transaction tx = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
-                .amount(new BigDecimal("5.00"))
-                .commission(new BigDecimal("0.50"))
-                .status(TransactionStatus.REGISTERED)
+        var request = CreateTransactionRequest.builder()
+                .amount(new BigDecimal("50.00"))
+                .bankId(bank.getId())
+                .conceptId(concept.getId())
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
 
         // when/then
-        ExecutionException ex = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(tx).get());
+        ExecutionException ex = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(request).get());
         assertInstanceOf(PersistenceException.class, ex.getCause(), "Expected PersistenceException due to null audit user");
     }
 
@@ -201,77 +203,71 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         ctx.getUserSession().setCurrentUser(cashier);
 
         // bank null
-        Transaction t1 = Transaction.builder()
-                .bank(null)
-                .concept(concept)
-                .cashier(cashier)
-                .amount(new BigDecimal("1.00"))
-                .commission(new BigDecimal("0.10"))
-                .status(TransactionStatus.REGISTERED)
+        var r1 = CreateTransactionRequest.builder()
+                .amount(new BigDecimal("15.00"))
+                .bankId(0)
+                .conceptId(concept.getId())
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
-        ExecutionException ex1 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(t1).get());
-        assertInstanceOf(PersistenceException.class, ex1.getCause());
+
+        ExecutionException ex1 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r1).get());
+        assertInstanceOf(PersistenceServicesException.class, ex1.getCause());
 
         // concept null
-        Transaction t2 = Transaction.builder()
-                .bank(bank)
-                .concept(null)
-                .cashier(cashier)
-                .amount(new BigDecimal("1.00"))
-                .commission(new BigDecimal("0.10"))
-                .status(TransactionStatus.REGISTERED)
+        var r2 = CreateTransactionRequest.builder()
+                .amount(new BigDecimal("15.00"))
+                .bankId(bank.getId())
+                .conceptId(0)
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
-        ExecutionException ex2 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(t2).get());
-        assertInstanceOf(PersistenceException.class, ex2.getCause());
+
+        ExecutionException ex2 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r2).get());
+        assertInstanceOf(PersistenceServicesException.class, ex2.getCause());
 
         // cashier null
-        Transaction t3 = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(null)
+        var r3 = CreateTransactionRequest.builder()
                 .amount(new BigDecimal("1.00"))
-                .commission(new BigDecimal("0.10"))
-                .status(TransactionStatus.REGISTERED)
+                .bankId(bank.getId())
+                .conceptId(concept.getId())
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(0)
+                .conceptType(concept.getType())
                 .build();
-        ExecutionException ex3 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(t3).get());
-        assertInstanceOf(GangComisionesException.class, ex3.getCause());
 
-        // amount null
-        Transaction t4 = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
+        ExecutionException ex3 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r3).get());
+        assertInstanceOf(PersistenceServicesException.class, ex3.getCause());
+
+        //Ammount null
+        var r4 = CreateTransactionRequest.builder()
                 .amount(null)
-                .commission(new BigDecimal("0.10"))
-                .status(TransactionStatus.REGISTERED)
+                .bankId(bank.getId())
+                .conceptId(concept.getId())
+                .conceptCommissionValue(concept.getValue())
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
-        ExecutionException ex4 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(t4).get());
-        assertInstanceOf(PersistenceException.class, ex4.getCause());
+
+        ExecutionException ex4 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r4).get());
+        assertInstanceOf(PersistenceServicesException.class, ex4.getCause());
 
         // commission null
-        Transaction t5 = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
-                .amount(new BigDecimal("1.00"))
-                .commission(null)
-                .status(TransactionStatus.REGISTERED)
+        var r5 = CreateTransactionRequest.builder()
+                .amount(new BigDecimal("15.00"))
+                .bankId(bank.getId())
+                .conceptId(concept.getId())
+                .conceptCommissionValue(null)
+                .cashierId(cashier.getId())
+                .conceptType(concept.getType())
                 .build();
-        ExecutionException ex5 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(t5).get());
-        assertInstanceOf(PersistenceException.class, ex5.getCause());
 
-        // status null
-        Transaction t6 = Transaction.builder()
-                .bank(bank)
-                .concept(concept)
-                .cashier(cashier)
-                .amount(new BigDecimal("1.00"))
-                .commission(new BigDecimal("0.10"))
-                .status(null)
-                .build();
-        ExecutionException ex6 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(t6).get());
-        assertInstanceOf(PersistenceException.class, ex6.getCause());
+        ExecutionException ex5 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r5).get());
+        assertInstanceOf(PersistenceServicesException.class, ex5.getCause());
 
+        // NOTE: status is never null because it's automatically designated to REGISTERED
         // NOTE: moment is DB-managed (DEFAULT CURRENT_TIMESTAMP), cannot be set to null for insertion.
     }
 }
