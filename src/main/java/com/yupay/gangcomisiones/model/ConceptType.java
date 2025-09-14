@@ -19,6 +19,11 @@
 
 package com.yupay.gangcomisiones.model;
 
+import org.jetbrains.annotations.NotNull;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
  * Type of commission concept.<br/>
  * FIXED = fixed amount<br/>
@@ -31,10 +36,50 @@ public enum ConceptType {
     /**
      * Represents a fixed amount commission type.
      */
-    FIXED,
+    FIXED {
+        @Override
+        public BigDecimal computeCommission(@NotNull BigDecimal amount, @NotNull BigDecimal value) {
+            return value;
+        }
+    },
     /**
      * Represents a percentage-based commission type,
      * where the commission is calculated as a percentage of the transaction amount.
      */
-    RATE
+    RATE {
+        @Override
+        public BigDecimal computeCommission(@NotNull BigDecimal amount, @NotNull BigDecimal value) {
+            return amount.multiply(value).setScale(2, RoundingMode.HALF_UP);
+        }
+    };
+
+    /**
+     * Computes the commission based on the provided amount and value.
+     * <br/>
+     * The implementation of this method depends on the specific type of commission:
+     * <ul>
+     *   <li>For fixed commissions, it returns a constant value.</li>
+     *   <li>For percentage-based commissions, it calculates a percentage of the given amount.</li>
+     * </ul>
+     *
+     * @param amount The transaction amount on which the commission is calculated. Must not be null.
+     *               <br/>Examples:
+     *               <ol>
+     *                 <li>In percentage-based commissions, this value is used as the base for the calculation.</li>
+     *                 <li>In fixed commissions, this value is not used directly in the computation.</li>
+     *               </ol>
+     * @param value The rate or fixed value of the commission. Must not be null.
+     *              <br/>Examples:
+     *              <ul>
+     *                <li>In fixed commissions, this represents the predefined fixed amount to return.</li>
+     *                <li>In percentage-based commissions, this represents the rate at which the amount is calculated (e.g., 0.05 for 5%).</li>
+     *              </ul>
+     * @return The computed commission as a {@link BigDecimal}, according to the commission type.
+     *         <br/>
+     *         <ul>
+     *           <li>For a fixed commission type, the value is returned as-is.</li>
+     *           <li>For a rate commission type, the calculated percentage of the amount is returned.</li>
+     *         </ul>
+     */
+    public abstract BigDecimal computeCommission(BigDecimal amount, BigDecimal value);
 }
