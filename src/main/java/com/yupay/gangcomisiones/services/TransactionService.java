@@ -20,6 +20,7 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.model.*;
+import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
@@ -27,6 +28,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -68,11 +70,11 @@ public interface TransactionService {
     /**
      * Asynchronously creates and persists a new transaction in the system.
      *
-     * @param transaction the transaction to be created and stored, cannot be null
+     * @param request the request object containing the details of the transaction to be created
      * @return a CompletableFuture representing the asynchronous execution of the operation;
      * it completes when the transaction is successfully created or an exception is thrown
      */
-    CompletableFuture<Void> createTransaction(Transaction transaction);
+    CompletableFuture<Transaction> createTransaction(@NotNull CreateTransactionRequest request);
 
     /**
      * Represents the search criteria used to filter transactions in the system.
