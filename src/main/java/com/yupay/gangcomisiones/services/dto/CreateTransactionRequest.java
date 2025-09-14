@@ -64,13 +64,9 @@ public class CreateTransactionRequest {
      * Value of the commission associated with the concept, if
      * {@link #conceptType} is {@link ConceptType#FIXED}
      * the commisionAmount is just this value; if concept type is
-     * {@link ConceptType#RATE} then {@link #commisionAmount} is calculated as
+     * {@link ConceptType#RATE} then commisionAmount is calculated as
      * {@code conceptCommisionValue * amount}.
      */
-    private final BigDecimal conceptCommisionValue;
+    private final BigDecimal conceptCommissionValue;
 
-    /**
-     * The computed commission amount based on the concept type and value.
-     */
-    private final BigDecimal commisionAmount;
 }
