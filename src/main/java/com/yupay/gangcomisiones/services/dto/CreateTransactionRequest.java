@@ -18,6 +18,7 @@
  */
 package com.yupay.gangcomisiones.services.dto;
 
+import com.yupay.gangcomisiones.model.ConceptType;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -54,4 +55,22 @@ public class CreateTransactionRequest {
      * Monetary amount of the transaction.
      */
     private final BigDecimal amount;
+    /**
+     * Type of the concept associated with the transaction.
+     */
+    private final ConceptType conceptType;
+
+    /**
+     * Value of the commission associated with the concept, if
+     * {@link #conceptType} is {@link ConceptType#FIXED}
+     * the commisionAmount is just this value; if concept type is
+     * {@link ConceptType#RATE} then {@link #commisionAmount} is calculated as
+     * {@code conceptCommisionValue * amount}.
+     */
+    private final BigDecimal conceptCommisionValue;
+
+    /**
+     * The computed commission amount based on the concept type and value.
+     */
+    private final BigDecimal commisionAmount;
 }
