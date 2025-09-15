@@ -22,11 +22,13 @@ package com.yupay.gangcomisiones;
 import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.GlobalConfig;
 import com.yupay.gangcomisiones.model.User;
+import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
 import com.yupay.gangcomisiones.usecase.bank.BankView;
 import com.yupay.gangcomisiones.usecase.bank.manage.BankBoardView;
 import com.yupay.gangcomisiones.usecase.commons.*;
 import com.yupay.gangcomisiones.usecase.installkeys.InstallKeysView;
 import com.yupay.gangcomisiones.usecase.setglobalconfig.SetGlobalConfigView;
+import com.yupay.gangcomisiones.usecase.transaction.create.CreateTransactionView;
 import org.jetbrains.annotations.NotNull;
 import org.mockito.stubbing.Stubber;
 
@@ -68,7 +70,7 @@ public class TestViews {
     ///   encapsulated in an `Optional`, or an empty `Optional` if `userInput` is `null`.
     ///
     /// @param userInput the `GlobalConfig` instance to be returned by the
-    ///                                                                                                                                                                                                                                                                `showSetGlobalConfigForm` method.
+    ///                                                                                                                                                                                                                                                                                                  `showSetGlobalConfigForm` method.
     /// @return a mocked `SetGlobalConfigView` instance with the specified behavior.
     public static @NotNull SetGlobalConfigView setGlobalConfigView(GlobalConfig userInput) {
         var view = mock(SetGlobalConfigView.class);
@@ -269,4 +271,36 @@ public class TestViews {
         stubSecondaryView(view);
         return view;
     }
+
+    /**
+     * Creates and returns a mocked instance of the {@code TransactionView} interface.
+     * <p>
+     * The mocked instance is configured to return the specified {@link CreateTransactionRequest}
+     * (encapsulated in an {@link Optional}) when the {@code showUserForm(FormMode)} method is invoked.
+     * If the provided {@code result} contains {@code null}, the mock will return
+     * {@link Optional#empty()}, simulating a user cancelation.
+     * <p>
+     * Additionally, the returned mock is stubbed to display success, error, and warning messages
+     * to the standard output stream, consistent with the behavior defined in {@link #stubMessagePresenter}.
+     *
+     * @param mode   the {@link FormMode} that determines the interaction type (e.g., {@link FormMode#CREATE}).
+     * @param result an {@link AtomicReference} holding the {@link CreateTransactionRequest} to be
+     *               returned as the simulated user input. May contain {@code null} to represent cancelation.
+     * @return a mocked {@code TransactionView} instance configured for testing transaction creation flows.
+     */
+    public static @NotNull CreateTransactionView transactionView(
+            FormMode mode,
+            @NotNull AtomicReference<CreateTransactionRequest> result) {
+        Objects.requireNonNull(result);
+        var view = mock(CreateTransactionView.class);
+        stubMessagePresenter(view);
+
+        // Configura el form de usuario según el FormMode
+        if (mode != null) {
+            when(view.showUserForm(eq(mode)))
+                    .thenAnswer(_ -> Optional.ofNullable(result.get()));
+        }
+        return view;
+    }
+
 }

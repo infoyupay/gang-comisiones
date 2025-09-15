@@ -201,9 +201,9 @@ public class TestPersistedEntities {
         return Transaction.builder()
                 .bank(persistBank(em))
                 .concept(persistConcept(em))
-                .cashier(persistRootUser(em))
-                .amount(new BigDecimal("10.0000"))
-                .commission(new BigDecimal("1.0000"))
+                .cashier(persistCashierUser(em))
+                .amount(new BigDecimal("100.0000"))
+                .commission(new BigDecimal("10.0000"))
                 .status(TransactionStatus.REGISTERED)
                 .build();
     }
