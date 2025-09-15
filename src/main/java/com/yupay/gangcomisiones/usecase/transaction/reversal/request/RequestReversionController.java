@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static com.yupay.gangcomisiones.services.impl.ReversalRequestServiceImpl.Errors.*;
+
 /**
  * Controller for the "Request Reversion" use case. It orchestrates:
  * <ul>
@@ -58,6 +60,20 @@ public class RequestReversionController {
     public RequestReversionController(@NotNull AppContext context) {
         this.context = context;
         this.view = context.getViewRegistry().resolve(RequestReversionView.class);
+    }
+
+    /**
+     * Returns true if any of the fragments are contained in the given message (null-safe).
+     *
+     * @param message   the message to search
+     * @param fragments substrings to search for
+     * @return true if any fragment is found
+     */
+    @Contract("null, _ -> false")
+    private static boolean containsAny(String message, String... fragments) {
+        if (message == null) return false;
+        for (var f : fragments) if (message.contains(String.valueOf(f))) return true;
+        return false;
     }
 
     /**
@@ -139,32 +155,18 @@ public class RequestReversionController {
         var msg = String.valueOf(t.getMessage());
         LOG.error("Cannot request reversal. txId={}, userId={}", transactionId, userId, t);
         // Service is authoritative, controller performs best-effort mapping by message hints.
-        if (containsAny(msg, "TRANSACTION_NOT_FOUND", "Transaction not found")) {
+        if (containsAny(msg, TRANSACTION_NOT_FOUND.description(), "Transaction not found")) {
             view.showError("No se encontró la transacción.");
-        } else if (containsAny(msg, "TRANSACTION_NOT_OWNED", "not owned")) {
+        } else if (containsAny(msg, TRANSACTION_NOT_OWNED.description(), "not owned")) {
             view.showError("La transacción no le pertenece.");
-        } else if (containsAny(msg, "TRANSACTION_STATUS_INVALID", "status")) {
+        } else if (containsAny(msg, TRANSACTION_STATUS_INVALID.description(), "status")) {
             view.showError("La transacción no está en un estado válido para solicitar reversión.");
-        } else if (containsAny(msg, "REQUEST_ALREADY_EXISTS", "pending request already exists", "Ya existe")) {
+        } else if (containsAny(msg, REQUEST_ALREADY_EXISTS.description(), "Ya existe")) {
             view.showError("Ya existe una solicitud de reversión pendiente para esta transacción.");
         } else if (containsAny(msg, "AppSecurityException", "has not privileges", "not active")) {
             view.showError("No tiene permisos para solicitar reversión.");
         } else {
             view.showError("Ocurrió un error al registrar la solicitud. Intente nuevamente.");
         }
-    }
-
-    /**
-     * Returns true if any of the fragments are contained in the given message (null-safe).
-     *
-     * @param message   the message to search
-     * @param fragments substrings to search for
-     * @return true if any fragment is found
-     */
-    @Contract("null, _ -> false")
-    private static boolean containsAny(String message, String... fragments) {
-        if (message == null) return false;
-        for (var f : fragments) if (message.contains(String.valueOf(f))) return true;
-        return false;
     }
 }

@@ -27,6 +27,8 @@ import com.yupay.gangcomisiones.services.TransactionManager;
 import jakarta.persistence.EntityManagerFactory;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
+import org.jetbrains.annotations.VisibleForTesting;
 
 import java.util.List;
 import java.util.Optional;
@@ -198,7 +200,7 @@ public record ReversalRequestServiceImpl(
      * @author InfoYupay SACS
      * @version 1.0
      */
-    private enum Errors {
+    public enum Errors {
         /**
          * Error representing the scenario where a transaction could not be found.
          * This is typically associated with the "Transaction" entity and the field "Transaction.id".
@@ -254,6 +256,18 @@ public record ReversalRequestServiceImpl(
         Errors(String description, String faultyField) {
             this.description = description;
             this.faultyField = faultyField;
+        }
+
+        /**
+         * Retrieves the description associated with this error.
+         * <br/>
+         * The description provides a human-readable explanation of the error condition.
+         *
+         * @return a {@link String} representing the description of the error.
+         */
+        @Contract(pure = true)
+        public String description() {
+            return description;
         }
 
         /**
