@@ -20,7 +20,6 @@
 package com.yupay.gangcomisiones.usecase.transaction.create;
 
 import com.yupay.gangcomisiones.AppContext;
-import com.yupay.gangcomisiones.usecase.concept.manage.ManageConceptController;
 import com.yupay.gangcomisiones.usecase.registry.UseCaseControllerRegistry;
 import com.yupay.gangcomisiones.usecase.registry.UseCaseSupplier;
 
@@ -34,11 +33,11 @@ import java.util.function.Supplier;
  * @author InfoYupay SACS
  * @version 1.0
  */
-public class CreateTransactionSupplier implements UseCaseSupplier<ManageConceptController> {
+public class CreateTransactionControllerSupplier implements UseCaseSupplier<CreateTransactionController> {
     @Override
-    public ManageConceptController get() {
+    public CreateTransactionController get() {
         Supplier<AppContext> appContext = () -> Objects.requireNonNull(appContextSupplier().get(),
-                () -> nullPointerMessage(ManageConceptController.class, AppContext.class));
-        return new ManageConceptController(appContext, controllerRegistry().get());
+                () -> nullPointerMessage(CreateTransactionController.class, AppContext.class));
+        return new CreateTransactionController(appContext.get());
     }
 }
