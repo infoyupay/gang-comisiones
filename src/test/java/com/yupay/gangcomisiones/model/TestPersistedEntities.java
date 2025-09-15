@@ -38,10 +38,22 @@ import java.util.function.Function;
  * @version 1.0
  */
 public class TestPersistedEntities {
-    private static final AtomicReference<User> USER = new AtomicReference<>(null);
-    private static final AtomicReference<Concept> CONCEPT = new AtomicReference<>(null);
-    private static final AtomicReference<Bank> BANK = new AtomicReference<>(null);
-    private static final AtomicReference<Transaction> TRANSACTION = new AtomicReference<>(null);
+    /**
+     * User container.
+     */
+    public static final AtomicReference<User> USER = new AtomicReference<>(null);
+    /**
+     * Concept container.
+     */
+    public static final AtomicReference<Concept> CONCEPT = new AtomicReference<>(null);
+    /**
+     * Bank container.
+     */
+    public static final AtomicReference<Bank> BANK = new AtomicReference<>(null);
+    /**
+     * Transaction container.
+     */
+    public static final AtomicReference<Transaction> TRANSACTION = new AtomicReference<>(null);
     private static Logger LOG;
 
     /**
