@@ -40,6 +40,8 @@ import com.yupay.gangcomisiones.usecase.concept.manage.ManageConceptController;
 import com.yupay.gangcomisiones.usecase.concept.manage.ManageConceptControllerSupplier;
 import com.yupay.gangcomisiones.usecase.transaction.create.CreateTransactionController;
 import com.yupay.gangcomisiones.usecase.transaction.create.CreateTransactionControllerSupplier;
+import com.yupay.gangcomisiones.usecase.transaction.reversal.request.RequestReversionController;
+import com.yupay.gangcomisiones.usecase.transaction.reversal.request.RequestReversionControllerSupplier;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -152,6 +154,8 @@ public final class ControllerRegistries {
                     new ManageConceptControllerSupplier());
             reg.register(CreateTransactionController.class,
                     new CreateTransactionControllerSupplier());
+            reg.register(RequestReversionController.class,
+                    new RequestReversionControllerSupplier());
         });
     }
 
