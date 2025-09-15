@@ -34,7 +34,7 @@ import java.math.BigDecimal;
  * @version 1.0
  */
 @Getter
-@Builder
+@Builder(toBuilder = true)
 public class CreateTransactionRequest {
     /**
      * Identifier of the bank associated with the transaction.
