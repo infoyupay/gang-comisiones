@@ -38,6 +38,8 @@ import com.yupay.gangcomisiones.usecase.concept.edit.EditConceptController;
 import com.yupay.gangcomisiones.usecase.concept.edit.EditConceptControllerSupplier;
 import com.yupay.gangcomisiones.usecase.concept.manage.ManageConceptController;
 import com.yupay.gangcomisiones.usecase.concept.manage.ManageConceptControllerSupplier;
+import com.yupay.gangcomisiones.usecase.transaction.create.CreateTransactionController;
+import com.yupay.gangcomisiones.usecase.transaction.create.CreateTransactionControllerSupplier;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -148,6 +150,8 @@ public final class ControllerRegistries {
                     new EditConceptControllerSupplier());
             reg.register(ManageConceptController.class,
                     new ManageConceptControllerSupplier());
+            reg.register(CreateTransactionController.class,
+                    new CreateTransactionControllerSupplier());
         });
     }
 
