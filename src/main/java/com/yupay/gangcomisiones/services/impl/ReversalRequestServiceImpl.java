@@ -63,24 +63,55 @@ public record ReversalRequestServiceImpl(
             if (transaction == null) {
                 throw Errors.TRANSACTION_NOT_FOUND.exception(transactionId);
             }
+            //Validate transaction status
+            if (transaction.getStatus() != TransactionStatus.REGISTERED) {
+                throw Errors.TRANSACTION_STATUS_INVALID.exception(transaction.getStatus());
+            }
             //Check that the requesting user is the transaction owner (creator).
             if (transaction.getCashier().getId() != userId) {
                 throw Errors.TRANSACTION_NOT_OWNED.exception(userId);
             }
-            //Get user from db
+            //Get user from db and check privileges at least CASHIER
             var user = AppContext.getInstance()
                     .getUserService()
                     .checkPrivilegesOrException(em, userId, UserRole.CASHIER);
+
+            // Validate and normalize message
+            var normalizedMessage = message == null ? "" : message.trim();
+            if (normalizedMessage.isBlank()) {
+                throw Errors.MESSAGE_EMPTY.exception(normalizedMessage);
+            }
+
+            // Optional pre-check to provide better UX: ensure no pending request exists for this transaction
+            var pendingCount = em.createQuery(
+                            "SELECT COUNT(r) FROM ReversalRequest r WHERE r.transaction = :tx AND r.status = :status",
+                            Long.class)
+                    .setParameter("tx", transaction)
+                    .setParameter("status", ReversalRequestStatus.PENDING)
+                    .getSingleResult();
+            if (pendingCount != null && pendingCount > 0) {
+                throw Errors.REQUEST_ALREADY_EXISTS.exception(transactionId);
+            }
+
             //Build request.
             var request = ReversalRequest
                     .builder()
                     .transaction(transaction)
-                    .message(message)
+                    .message(normalizedMessage)
                     .requestedBy(user)
                     .status(ReversalRequestStatus.PENDING)
                     .build();
-            //persist request
-            em.persist(request);
+            try {
+                //persist request
+                em.persist(request);
+            } catch (RuntimeException e) {
+                // Map unique constraint violations to a user-friendly business exception
+                var msg = String.valueOf(e.getMessage());
+                if (msg.toLowerCase().contains("unique") || msg.toLowerCase().contains("constraint")) {
+                    throw Errors.REQUEST_ALREADY_EXISTS.exception(transactionId);
+                }
+                throw e;
+            }
             //Change transaction status
             transaction.setStatus(TransactionStatus.REVERSION_REQUESTED);
             //Log auditory.
@@ -181,6 +212,18 @@ public record ReversalRequestServiceImpl(
          * It indicates that an operation involving a transaction failed due to ownership restrictions.
          */
         TRANSACTION_NOT_OWNED("Transaction not owned by requesting user", "Transaction.cashier"),
+        /**
+         * Error representing an invalid transaction status for requesting a reversal.
+         */
+        TRANSACTION_STATUS_INVALID("Transaction status is not valid for requesting a reversal", "Transaction.status"),
+        /**
+         * Error representing an empty or blank message for a reversal request.
+         */
+        MESSAGE_EMPTY("Reversal request message cannot be blank", "ReversalRequest.message"),
+        /**
+         * Error representing that a pending request already exists for the given transaction.
+         */
+        REQUEST_ALREADY_EXISTS("Pending request already exists for this transaction", "ReversalRequest.transaction"),
         /**
          * Error representing the scenario where the resolution value for a reversal request
          * is not defined. This error is typically associated with the "ReversalRequest" entity
