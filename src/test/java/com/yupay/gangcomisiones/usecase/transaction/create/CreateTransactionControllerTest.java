@@ -163,7 +163,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
         var transaction = TestPersistedEntities
                 .performInTransaction(ctx, TestPersistedEntities::buildValidTansaction);
 
-        ctx.getUserSession().setCurrentUser(TestPersistedEntities.USER.get());
+        ctx.getUserSession().setCurrentUser(transaction.getCashier());
 
         var sampleRequest = CreateTransactionRequest.builder()
                 .amount(transaction.getAmount())

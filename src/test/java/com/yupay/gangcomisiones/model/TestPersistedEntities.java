@@ -28,6 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -41,7 +44,7 @@ public class TestPersistedEntities {
     /**
      * User container.
      */
-    public static final AtomicReference<User> USER = new AtomicReference<>(null);
+    public static final Map<UserRole, User> USER = new ConcurrentHashMap<>();
     /**
      * Concept container.
      */
@@ -74,7 +77,7 @@ public class TestPersistedEntities {
      * @param emf the entity manager factory.
      */
     public static void clean(EntityManagerFactory emf) {
-        USER.set(null);
+        USER.clear();
         CONCEPT.set(null);
         BANK.set(null);
         TRANSACTION.set(null);
@@ -94,23 +97,125 @@ public class TestPersistedEntities {
     }
 
     /**
+     * Retrieves or creates and persists a user associated with the specified role.
+     * If a user for the given role is not already stored, this method will create
+     * and persist a new user based on the specified role.
+     * <br/><br/>
+     * The following rules dictate the behavior based on the role:
+     * <ul>
+     *   <li><strong>ROOT:</strong> Creates and persists a root user.</li>
+     *   <li><strong>ADMIN:</strong> Creates and persists an admin user.</li>
+     *   <li><strong>CASHIER:</strong> Creates and persists a cashier user.</li>
+     * </ul>
+     *
+     * @param em   the {@link EntityManager} used for persistence operations. Must not be {@code null}.
+     * @param role the {@link UserRole} determining the type of user to create. Must not be {@code null}.
+     * @return the persisted {@link User} associated with the specified role.
+     * @throws NullPointerException if either {@code em} or {@code role} is {@code null}.
+     */
+    public static User persistedUserWithRole(@NotNull EntityManager em, @NotNull UserRole role) {
+        Objects.requireNonNull(em);
+        Objects.requireNonNull(role);
+        return USER.computeIfAbsent(role, k -> switch (k) {
+            case ROOT -> samplePersistedRoot(em);
+            case ADMIN -> samplePersistedAdmin(em);
+            case CASHIER -> samplePersistedCashier(em);
+        });
+    }
+
+    /**
+     * Creates and returns a pre-configured {@link User} instance representing a ROOT user.
+     * <br/><br/>
+     * The returned user object is initialized with the following attributes:
+     * <ul>
+     *   <li><strong>Username:</strong> "rootUser"</li>
+     *   <li><strong>Password:</strong> "password"</li>
+     *   <li><strong>Role:</strong> {@link UserRole#ROOT}</li>
+     *   <li><strong>Active:</strong> {@code true}</li>
+     * </ul>
+     *
+     * @return a {@link User} instance with predefined ROOT user attributes.
+     */
+    public static User sampleRoot() {
+        return User.builder()
+                .active(true)
+                .password("password")
+                .role(UserRole.ROOT)
+                .username("rootUser")
+                .build();
+    }
+
+    /**
+     * Creates and persists a sample ROOT user within the provided {@link EntityManager} context.
+     * <br/><br/>
+     * This method performs the following steps:
+     * <ol>
+     *   <li>Creates a new sample ROOT user using {@code sampleRoot()} method.</li>
+     *   <li>Persists the created user using the provided {@link EntityManager}.</li>
+     *   <li>Returns the persisted {@link User} instance.</li>
+     * </ol>
+     *
+     * @param em the {@link EntityManager} used for persistence operations. Must not be {@code null}.
+     * @return the persisted {@link User} instance representing a ROOT user.
+     * @throws NullPointerException if {@code em} is {@code null}.
+     */
+    private static User samplePersistedRoot(@NotNull EntityManager em) {
+        var r = sampleRoot();
+        em.persist(r);
+        return r;
+    }
+
+    /**
      * Creates and persists a valid test ROOT user.
      *
      * @param em the entity manager.
      * @return the created user.
      */
     public static User persistRootUser(@NotNull EntityManager em) {
-        if (USER.get() == null) {
-            var r = User.builder()
-                    .active(true)
-                    .password("password")
-                    .role(UserRole.ROOT)
-                    .username("rootUser")
-                    .build();
-            em.persist(r);
-            USER.set(r);
-        }
-        return USER.get();
+        return persistedUserWithRole(em, UserRole.ROOT);
+    }
+
+    /**
+     * Creates and returns a pre-configured {@link User} instance representing a CASHIER user.
+     * <br/><br/>
+     * The returned user object is initialized with the following attributes:
+     * <ul>
+     *   <li><strong>Username:</strong> "cashier"</li>
+     *   <li><strong>Password:</strong> "abcd1234"</li>
+     *   <li><strong>Role:</strong> {@link UserRole#CASHIER}</li>
+     *   <li><strong>Active:</strong> {@code true}</li>
+     * </ul>
+     * <br/>
+     *
+     * @return a {@link User} instance with predefined CASHIER user attributes.
+     */
+    public static User sampleCashier() {
+        return User.builder()
+                .active(true)
+                .password("abcd1234")
+                .role(UserRole.CASHIER)
+                .username("cashier")
+                .build();
+    }
+
+    /**
+     * Creates and persists a sample {@link User} instance representing a CASHIER user within the provided {@link EntityManager} context.
+     * <br/><br/>
+     * This method performs the following steps:
+     * <ol>
+     *   <li>Creates a new sample CASHIER user using the {@code sampleCashier()} method.</li>
+     *   <li>Persists the created user using the provided {@link EntityManager} instance.</li>
+     *   <li>Returns the persisted {@link User} instance.</li>
+     * </ol>
+     *
+     * @param em the {@link EntityManager} used for persistence operations. Must not be {@code null}.
+     * @return the persisted {@link User} instance representing a CASHIER user.
+     * @throws NullPointerException if {@code em} is {@code null}.
+     */
+    private static User samplePersistedCashier(@NotNull EntityManager em) {
+        var r = sampleCashier();
+        em.persist(r);
+        return r;
     }
 
     /**
@@ -120,17 +225,52 @@ public class TestPersistedEntities {
      * @return the created user.
      */
     public static User persistCashierUser(@NotNull EntityManager em) {
-        if (USER.get() == null) {
-            var r = User.builder()
-                    .active(true)
-                    .password("abcd1234")
-                    .role(UserRole.CASHIER)
-                    .username("cashier")
-                    .build();
-            em.persist(r);
-            USER.set(r);
-        }
-        return USER.get();
+        return persistedUserWithRole(em, UserRole.CASHIER);
+    }
+
+    /**
+     * Creates and returns a pre-configured {@link User} instance representing an ADMIN user.
+     * <br/><br/>
+     * The returned user object is initialized with the following attributes:
+     * <ul>
+     *   <li><strong>Username:</strong> "admin"</li>
+     *   <li><strong>Password:</strong> "12345678"</li>
+     *   <li><strong>Role:</strong> {@link UserRole#ADMIN}</li>
+     *   <li><strong>Active:</strong> {@code true}</li>
+     * </ul>
+     *
+     * @return a {@link User} instance with predefined ADMIN user attributes.
+     */
+    public static User sampleAdmin() {
+        return User.builder()
+                .active(true)
+                .password("12345678")
+                .role(UserRole.ADMIN)
+                .username("admin")
+                .build();
+    }
+
+    /**
+     * Creates and persists a sample {@link User} instance representing an ADMIN user within the provided
+     * {@link EntityManager} context.
+     * <br/><br/>
+     * This method performs the following steps:
+     * <ol>
+     *   <li>Creates a new sample ADMIN user using the {@code sampleAdmin()} method.</li>
+     *   <li>Persists the created user using the provided {@link EntityManager} instance.</li>
+     *   <li>Returns the persisted {@link User} instance.</li>
+     * </ol>
+     *
+     * @param em the {@link EntityManager} used for persistence operations. Must not be {@code null}.
+     *
+     * @return the persisted {@link User} instance representing an ADMIN user.
+     *
+     * @throws NullPointerException if {@code em} is {@code null}.
+     */
+    private static User samplePersistedAdmin(@NotNull EntityManager em) {
+        var r = sampleAdmin();
+        em.persist(r);
+        return r;
     }
 
     /**
@@ -140,17 +280,7 @@ public class TestPersistedEntities {
      * @return the created user.
      */
     public static User persistAdminUser(@NotNull EntityManager em) {
-        if (USER.get() == null) {
-            var r = User.builder()
-                    .active(true)
-                    .password("12345678")
-                    .role(UserRole.ADMIN)
-                    .username("admin")
-                    .build();
-            em.persist(r);
-            USER.set(r);
-        }
-        return USER.get();
+        return persistedUserWithRole(em, UserRole.ADMIN);
     }
 
     /**
