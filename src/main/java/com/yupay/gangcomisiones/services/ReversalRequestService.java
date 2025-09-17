@@ -206,7 +206,7 @@ public interface ReversalRequestService {
             if (status != null) {
                 ls.add(cb.equal(root.get("status"), status));
             }
-            return ls.isEmpty() ? null : cb.and(ls);
+            return ls.isEmpty() ? null : cb.and(ls.toArray(Predicate[]::new));
         }
     }
 }
