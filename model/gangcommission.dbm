@@ -5,7 +5,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 -->
 <dbmodel pgmodeler-ver="1.2.0-beta1" use-changelog="false" author="Infoyupay SACS - David Vidal" max-obj-count="9"
 	 gen-disabled-objs-code="false" show-sys-schemas-rects="true"
-	 last-position="-29,0" last-zoom="1.45" scene-rect="-20,0,3274.8,2268.8"
+	 last-position="-29,224" last-zoom="1.45" scene-rect="-20,0,3274.8,2268.8"
 	 default-schema="public"
 	 layers="Default layer"
 	 active-layers="0"
@@ -147,7 +147,7 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	<enumeration label="REVERSED"/>
 </usertype>
 
-<table name="transaction" layers="0" collapse-mode="2" max-obj-count="9" z-value="0">
+<table name="transaction" layers="0" collapse-mode="2" max-obj-count="10" z-value="0">
 	<schema name="public"/>
 	<position x="540" y="300"/>
 	<column name="id" not-null="true" sequence="public.sq_transaction_id">
@@ -164,6 +164,9 @@ CAUTION: Do not modify this file unless you know what you are doing.
 	</column>
 	<column name="status" not-null="true">
 		<type name="public.transaction_status" length="0"/>
+	</column>
+	<column name="concept_name" not-null="true">
+		<type name="varchar" length="0"/>
 	</column>
 	<constraint name="transaction_pk" type="pk-constr" table="public.transaction">
 		<columns names="id" ref-type="src-columns"/>

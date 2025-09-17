@@ -144,6 +144,7 @@ CREATE TABLE public.transaction (
 	commission decimal(14,2) NOT NULL,
 	moment timestamptz(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	status public.transaction_status NOT NULL,
+	concept_name varchar NOT NULL,
 	CONSTRAINT transaction_pk PRIMARY KEY (id),
 	CONSTRAINT chk_transaction_amount_positive CHECK (amount > 0),
 	CONSTRAINT chk_transaction_commission_nonnegative CHECK (commission >= 0)
