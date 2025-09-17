@@ -30,12 +30,14 @@ import com.yupay.gangcomisiones.usecase.installkeys.InstallKeysView;
 import com.yupay.gangcomisiones.usecase.setglobalconfig.SetGlobalConfigView;
 import com.yupay.gangcomisiones.usecase.transaction.create.CreateTransactionView;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.mockito.stubbing.Stubber;
 
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -70,7 +72,7 @@ public class TestViews {
     ///   encapsulated in an `Optional`, or an empty `Optional` if `userInput` is `null`.
     ///
     /// @param userInput the `GlobalConfig` instance to be returned by the
-    ///                                                                                                                                                                                                                                                                                                  `showSetGlobalConfigForm` method.
+    ///                                                                                                                                                                                                                                                                                                                                                                      `showSetGlobalConfigForm` method.
     /// @return a mocked `SetGlobalConfigView` instance with the specified behavior.
     public static @NotNull SetGlobalConfigView setGlobalConfigView(GlobalConfig userInput) {
         var view = mock(SetGlobalConfigView.class);
@@ -135,9 +137,12 @@ public class TestViews {
      * @param <T>       the type of elements in the list to be processed
      * @param mockView  the {@link ListPresenter} mock instance to be stubbed
      * @param formatter a {@link Function} that formats each element of the list into a string representation
+     * @param latch     a {@link CountDownLatch} to count down when the list presenter is ready allowing test cases to
+     *                  wait for this event to happen. It can be null.
      */
     @SuppressWarnings("unchecked")
-    public static <T> void stubListPresenter(ListPresenter<T> mockView, Function<T, String> formatter) {
+    public static <T> void stubListPresenter(ListPresenter<T> mockView, Function<T, String> formatter,
+                                             @Nullable CountDownLatch latch) {
         doAnswer(inv -> {
             if (inv.getArgument(0) instanceof List<?> ls) {
                 try {
@@ -148,6 +153,9 @@ public class TestViews {
                             .map(formatter
                                     .andThen(Character.toString(0x1F499)::concat))
                             .forEach(System.out::println);
+                    if (latch != null) {
+                        latch.countDown();
+                    }
                 } catch (ClassCastException e) {
                     throw new RuntimeException("Cannot cast items in mocked list presenter.", e);
                 }
@@ -191,7 +199,27 @@ public class TestViews {
      * @param formatter a {@link Function} to format each element of a list into a string representation
      */
     public static <T> void stubBoardView(BoardView<T> mockView, Function<T, String> formatter) {
-        stubListPresenter(mockView, formatter);
+        stubBoardView(mockView, formatter, null);
+    }
+
+    /**
+     * Configures the behavior of a mocked {@link BoardView} instance to stub its methods for presenting
+     * lists, displaying messages, and propagating user privileges. This includes setting up behavior
+     * for the following:
+     * <ul>
+     * <li>Presenting lists with formatted elements using a formatter function</li>
+     * <li>Handling success, error, or warning messages</li>
+     * <li>Propagating user privileges to the board's components</li>
+     * </ul>
+     *
+     * @param <T>       the type of elements that can be displayed or processed by the {@link BoardView}
+     * @param mockView  the {@link BoardView} mock instance to be configured with stubbed behaviors
+     * @param formatter a {@link Function} to format each element of a list into a string representation
+     * @param latch     a {@link CountDownLatch} to count down when the board view is ready allowing test cases to
+     *                  wait for this event to happen. It can be null.
+     */
+    public static <T> void stubBoardView(BoardView<T> mockView, Function<T, String> formatter, @Nullable CountDownLatch latch) {
+        stubListPresenter(mockView, formatter, latch);
         stubMessagePresenter(mockView);
         doAnswer(inv -> {
             if (inv.getArgument(0) instanceof User u) {
