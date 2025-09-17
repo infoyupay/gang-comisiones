@@ -115,7 +115,7 @@ public record ReversalRequestServiceImpl(
             //Change transaction status
             transaction.setStatus(TransactionStatus.REVERSION_REQUESTED);
             //Log auditory.
-            AuditAction.REVERSAL_REQUEST_CREATE.log(em, request.getId());
+            AuditAction.REVERSAL_REQUEST_CREATE.log(em, user, request.getId());
             return request;
         });
     }
@@ -186,7 +186,7 @@ public record ReversalRequestServiceImpl(
                 case APPROVED -> request.getTransaction().setStatus(TransactionStatus.REVERSED);
             }
             //Audit log
-            AuditAction.REVERSAL_REQUEST_RESOLVE.log(em, request.getId());
+            AuditAction.REVERSAL_REQUEST_RESOLVE.log(em, user, request.getId());
         });
     }
 
