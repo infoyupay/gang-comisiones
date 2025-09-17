@@ -116,6 +116,7 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         // then: id assigned
         assertNotNull(tx.getId(), "Transaction id must be assigned by DB sequence");
         assertTrue(tx.getId() > 0, "Transaction id must be positive");
+        assertEquals(tx.getConceptName(), concept.getName());
 
         // and an audit log with entityId must exist
         try (EntityManager em = ctx.getEntityManagerFactory().createEntityManager()) {
