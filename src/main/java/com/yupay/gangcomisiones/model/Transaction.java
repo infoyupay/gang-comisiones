@@ -150,6 +150,24 @@ public class Transaction {
     @Enumerated(EnumType.STRING)
     private TransactionStatus status;
 
+
+    /**
+     * Represents the name of the concept associated with a financial transaction.
+     * <br/>
+     * This field is used to store a textual descriptor or identifier for the concept and is
+     * mapped to the "concept_name" column in the database.
+     * <br/>
+     * Characteristics:
+     * <ul>
+     *   <li>Data type: String</li>
+     *   <li>Column definition: varchar, non-null</li>
+     *   <li>Mapped to the "concept_name" column in the database</li>
+     * </ul>
+     */
+    @Setter
+    @Column(name = "concept_name", columnDefinition = "varchar not null")
+    private String conceptName;
+
     @Override
     @Contract(pure = true, value = "null -> false")
     public final boolean equals(Object o) {
