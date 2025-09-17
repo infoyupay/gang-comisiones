@@ -80,14 +80,16 @@ public record TransactionServiceImpl(EntityManagerFactory emf,
                             em,
                             request.getCashierId(),
                             UserRole.CASHIER);
+            var freshConcept = em.getReference(Concept.class, request.getConceptId());
             var r = Transaction.builder()
                     .bank(em.getReference(Bank.class, request.getBankId()))
-                    .concept(em.getReference(Concept.class, request.getConceptId()))
+                    .concept(freshConcept)
                     .cashier(freshUser)
                     .amount(request.getAmount())
                     .commission(request.getConceptType()
                             .computeCommission(request.getAmount(), request.getConceptCommissionValue()))
                     .status(TransactionStatus.REGISTERED)
+                    .conceptName(freshConcept.getName())
                     .build();
             em.persist(r);
             AuditAction.TRANSACTION_CREATE.log(em, r.getId());
