@@ -324,7 +324,7 @@ class ReviewReversionControllerTest extends AbstractPostgreIntegrationTest {
         var controller = new ReviewReversionController(ctx);
 
         // when
-        var result = controller.resolveSelected(req).join();
+        controller.resolveSelected(req).join();
 
         // then
         verify(view, atLeastOnce()).showSuccess(contains("resuelta"));
