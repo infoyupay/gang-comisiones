@@ -57,7 +57,6 @@ public abstract class AbstractPostgreIntegrationTest {
         ctx = AppContext.getInstance(DummyHelpers.getDummyJpaProperties(), viewRegistry);
         if (!ControllerRegistries.registerAllDefaults()) {
             System.out.println("Controller Registry already initialized. Using shared registry.");
-            ;
         }
     }
 
