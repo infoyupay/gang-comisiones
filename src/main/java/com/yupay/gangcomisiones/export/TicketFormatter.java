@@ -97,7 +97,7 @@ public final class TicketFormatter {
         String conceptText = safe(conceptNameOf(tx));
         if (!conceptText.isBlank()) {
             //Wrap: conceptNameOf is already safe.
-            lines.addAll(wrap("Concepto: " + conceptNameOf(tx), WIDTH));
+            lines.addAll(wrap("Concepto: " + conceptNameOf(tx), WIDTH, false));
         } else {
             lines.add("Concepto:");
         }
@@ -144,7 +144,7 @@ public final class TicketFormatter {
     private static void addWrappedIfNotBlank(List<String> out, String text) {
         if (text == null) return;
         var t = text.trim();
-        if (!t.isEmpty()) out.addAll(wrap(t, WIDTH));
+        if (!t.isEmpty()) out.addAll(wrap(t, WIDTH, true));
     }
 
     /**
@@ -254,11 +254,12 @@ public final class TicketFormatter {
      * Wraps the given text into lines of at most {@code max} chars, breaking on spaces when possible.
      * Existing new lines are respected.
      *
-     * @param text text to wrap
-     * @param max  max columns
+     * @param text       text to wrap
+     * @param max        max columns
+     * @param autoCenter flag, if true wrapped line is also centered.
      * @return list of wrapped lines (never null)
      */
-    public static @NotNull List<String> wrap(String text, int max) {
+    public static @NotNull List<String> wrap(String text, int max, boolean autoCenter) {
         List<String> out = new ArrayList<>();
         if (text == null) return out;
         for (String paragraph : text.split("\r?\n")) {
@@ -273,8 +274,29 @@ public final class TicketFormatter {
                 out.add(t.substring(0, breakAt).trim());
                 t = t.substring(breakAt).trim();
             }
-            if (paragraph.isEmpty()) out.add("");
+            if (paragraph.isBlank()) out.add("");
         }
-        return out;
+        return autoCenter ? out.stream().map(TicketFormatter::centerLine).toList() : out;
+    }
+
+    /**
+     * Centers the given line within the ticket width.
+     * If the line is longer than the ticket width, it is truncated.
+     *
+     * @param line the line to center
+     * @return the centered line
+     */
+    @Contract("null -> !null")
+    private static String centerLine(String line) {
+        if (line == null || line.isBlank()) return " ".repeat(WIDTH);
+
+        var strLine = line.strip();
+        if (strLine.length() >= WIDTH) return strLine.substring(0, WIDTH);
+
+        int total = WIDTH - strLine.length();
+        int left = total / 2;
+        int right = total - left;
+
+        return " ".repeat(left) + strLine + " ".repeat(right);
     }
 }
