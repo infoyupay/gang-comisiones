@@ -331,11 +331,33 @@ public class TestPersistedEntities {
         return Transaction.builder()
                 .bank(persistBank(em))
                 .concept(persistConcept(em))
+                .conceptName(CONCEPT.get().getName())
                 .cashier(persistCashierUser(em))
                 .amount(new BigDecimal("100.0000"))
                 .commission(new BigDecimal("10.0000"))
                 .status(TransactionStatus.REGISTERED)
                 .build();
+    }
+
+    /**
+     * Creates the global config with Lorem Ipsum values.
+     * @param em entity manager.
+     * @return the persisted entity.
+     */
+    public static GlobalConfig persistGlobalConfig(@NotNull EntityManager em) {
+        var r = GlobalConfig
+                .builder()
+                .address("Jr. Neque Porro 355, Of. 1092, Quia - Consectetur")
+                .announcement("Lorem ipsum dolor sit amet, consectetur adipiscing elit.")
+                .businessName("LIPSUM S.A.C.")
+                .id((short)1)
+                .legalName("LOREM IPSUM S.A.C.")
+                .ruc("20123456780")
+                .updatedBy(persistRootUser(em))
+                .updatedFrom("lipsum-computer")
+                .build();
+        em.persist(r);
+        return r;
     }
 
     /**
@@ -348,6 +370,8 @@ public class TestPersistedEntities {
         if (TRANSACTION.get() == null) {
             var r = buildValidTansaction(em);
             em.persist(r);
+            em.flush();
+            em.refresh(r);
             TRANSACTION.set(r);
         }
         return TRANSACTION.get();
