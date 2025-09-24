@@ -185,9 +185,10 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
 
         // Assert
         verify(view).showUserForm(FormMode.CREATE);
-        assertThat(result.result()).isEqualTo(UseCaseResultType.OK);
+        assertThat(result.result()).isNotNull();
+        assertThat(result.result().result()).isEqualTo(UseCaseResultType.OK);
         //noinspection DataFlowIssue
-        assertThat(result.value()).isNotNull()
+        assertThat(result.result().value()).isNotNull()
                 .extracting(Transaction::getAmount, Transaction::getStatus, Transaction::getCashier,
                         Transaction::getBank, Transaction::getCommission)
                 .containsExactly(sampleRequest.getAmount(), TransactionStatus.REGISTERED, transaction.getCashier(),
@@ -197,7 +198,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
         verify(view, atLeastOnce()).showSuccess(contains("Se creó la transacción Nro."));
 
         assertThat(AuditLogChecker.checkAuditLogExists(
-                result.value().getId(), transaction.getCashier(), ctx.getEntityManagerFactory()))
+                result.result().value().getId(), transaction.getCashier(), ctx.getEntityManagerFactory()))
                 .isTrue();
     }
 
@@ -240,8 +241,8 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
         var result = controller.startUseCase().join();
 
         // Assert
-        assertThat(result.result()).isEqualTo(UseCaseResultType.CANCEL);
-        assertThat(result.value()).isNull();
+        assertThat(result.result().result()).isEqualTo(UseCaseResultType.CANCEL);
+        assertThat(result.result().value()).isNull();
 
         verify(view).showUserForm(FormMode.CREATE);
         verify(view, never()).showError(anyString());
@@ -309,8 +310,8 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
         var result = controller.startUseCase().join();
 
         // Assert
-        assertThat(result.result()).isEqualTo(UseCaseResultType.ERROR);
-        assertThat(result.value()).isNull();
+        assertThat(result.result().result()).isEqualTo(UseCaseResultType.ERROR);
+        assertThat(result.result().value()).isNull();
 
         verify(view, never()).showUserForm(any());
         verify(view).showError(contains("debes iniciar sesión"));
@@ -375,8 +376,8 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
         var result = controller.startUseCase().join();
 
         // Assert
-        assertThat(result.result()).isEqualTo(UseCaseResultType.ERROR);
-        assertThat(result.value()).isNull();
+        assertThat(result.result().result()).isEqualTo(UseCaseResultType.ERROR);
+        assertThat(result.result().value()).isNull();
 
         verify(view).showUserForm(FormMode.CREATE);
         verify(view).showError(contains("Error al momento de registrar la transacción"));
