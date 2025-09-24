@@ -21,8 +21,6 @@ package com.yupay.gangcomisiones.model;
 
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -56,12 +54,12 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldPersistAuditLogWithUser() {
-        EntityManager em = ctx.getEntityManagerFactory().createEntityManager();
-        EntityTransaction tx = em.getTransaction();
+        var em = ctx.getEntityManagerFactory().createEntityManager();
+        var tx = em.getTransaction();
         tx.begin();
 
         // Arrange: create a User (assuming minimal constructor/setters available)
-        User user = User.builder()
+        var user = User.builder()
                 .username("tester")
                 .password("secret25")
                 .role(UserRole.ROOT)
@@ -69,7 +67,7 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
                 .build();
         em.persist(user);
 
-        AuditLog log = AuditLog.builder()
+        var log = AuditLog.builder()
                 .user(user)
                 .action("LOGIN")
                 .entity("User")
@@ -98,11 +96,11 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldFailWhenUserIsNull() {
-        EntityManager em = ctx.getEntityManagerFactory().createEntityManager();
-        EntityTransaction tx = em.getTransaction();
+        var em = ctx.getEntityManagerFactory().createEntityManager();
+        var tx = em.getTransaction();
         tx.begin();
 
-        AuditLog log = AuditLog.builder()
+        var log = AuditLog.builder()
                 .action("DELETE")
                 .computerName("pc01")
                 .build();
@@ -121,18 +119,18 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldFailWhenActionIsEmpty() {
-        EntityManager em = ctx.getEntityManagerFactory().createEntityManager();
-        EntityTransaction tx = em.getTransaction();
+        var em = ctx.getEntityManagerFactory().createEntityManager();
+        var tx = em.getTransaction();
         tx.begin();
 
-        User user = User.builder()
+        var user = User.builder()
                 .username("tester2")
                 .password("secret25")
                 .role(UserRole.ROOT)
                 .active(true)
                 .build();
 
-        AuditLog log = AuditLog.builder()
+        var log = AuditLog.builder()
                 .user(user)
                 .action("") // violates CHECK constraint
                 .computerName("pc02")
@@ -154,7 +152,7 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
     void shouldQueryLogsOrderedByEventStampDescForUser() {
         // Arrange: create user (single transaction)
         User user;
-        try (EntityManager em = ctx.getEntityManagerFactory().createEntityManager();) {
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             em.getTransaction().begin();
 
             user = User.builder()
@@ -203,7 +201,7 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             em.getTransaction().begin();
 
-            AuditLog log = AuditLog.builder()
+            var log = AuditLog.builder()
                     .user(user)
                     .action(action)
                     .computerName("pc1")
