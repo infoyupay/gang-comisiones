@@ -89,7 +89,7 @@ the business or security reason** that justifies such decision.
   */
   @Column(name = "active", nullable = false)
   @Setter
-  private Boolean active = false;
+  private final Boolean active = false;
 ```
 
 **Styling notes**
@@ -113,7 +113,7 @@ Example:
 ```java
 @Override
 @Contract(pure = true, value = "null -> false")
-public final boolean equals(Object o) {
+public boolean equals(Object o) {
 if (o == this) return true;
 if (!(o instanceof Bank bank)) return false;
 if (getId() == null || bank.getId() == null) return false;
