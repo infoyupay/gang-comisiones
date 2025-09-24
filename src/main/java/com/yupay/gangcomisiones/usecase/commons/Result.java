@@ -77,6 +77,27 @@ public record Result<T>(@NotNull UseCaseResultType result,
     }
 
     /**
+     * Creates a new {@link Result} instance representing a successful outcome
+     * of a use case process, with the specified value.
+     * <br/>
+     *
+     * <ul>
+     *    <li>If the operation successfully completes, this method wraps the provided value
+     *        within a {@link Result} object, with the result type set to {@code OK}.</li>
+     *    <li>The associated value may be {@code null}, depending on the use case scenario.</li>
+     * </ul>
+     *
+     * @param <T> the type of the value associated with the result
+     * @param value the value to be associated with the {@link Result}, can be {@code null}.
+     *
+     * @return a new {@link Result} instance with the result type {@code OK} and the given value.
+     */
+    @Contract("_ -> new")
+    public static <T> @NotNull Result<T> ok(@Nullable T value) {
+        return new Result<>(UseCaseResultType.OK, value);
+    }
+
+    /**
      * Creates a completed CompletableFuture with a result indicating an error outcome.
      *
      * @param <T> the type of the value associated with the result
