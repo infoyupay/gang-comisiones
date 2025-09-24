@@ -21,12 +21,11 @@ package com.yupay.gangcomisiones.usecase.transaction.create;
 
 import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.SuitableFor;
-import com.yupay.gangcomisiones.model.Transaction;
+import com.yupay.gangcomisiones.export.ExportableTransaction;
+import com.yupay.gangcomisiones.export.OutputType;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
 import com.yupay.gangcomisiones.usecase.commons.FormMode;
-import com.yupay.gangcomisiones.usecase.commons.Result;
-import com.yupay.gangcomisiones.usecase.commons.UseCaseResultType;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,55 +33,58 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * The {@code CreateTransactionController} class serves as the main controller for managing the creation
- * of transactions within the application. It is responsible for orchestrating user interactions,
- * validating inputs, enforcing privilege checks, and delegating the transaction persistence to the
- * appropriate service layer.
- * <p>
+ * The {@code CreateTransactionController} class is responsible for handling the "Create Transaction" use case.
+ * This includes managing user interactions, performing business logic, and integrating with the service layer
+ * to perform the transaction creation and subsequent operations like exporting tickets.
  * <br/>
+ * The controller ensures that proper user context is set, validates input, and handles errors gracefully.
  *
- * <strong>Responsibilities:</strong>
+ * <h2>Responsibilities:</h2>
  * <ul>
- *   <li>
- *       Coordinate the user interface logic with the view ({@link CreateTransactionView})
- *       during the transaction creation process.
- *   </li>
- *   <li>
- *       Validate that the user is logged in before initiating any transaction-related actions.
- *   </li>
- *   <li>
- *       Enforce privilege checks to ensure that only authorized users (e.g., those with the {@code CASHIER} role)
- *       can create transactions.
- *   </li>
- *   <li>
- *       Handle transaction form interactions with users to capture input data.
- *   </li>
- *   <li>
- *       Delegate transaction creation to the appropriate transaction service within the application context.
- *   </li>
- *   <li>
- *       Respond to user cancellations, transaction errors, or system failures
- *       appropriately by providing feedback via the view.
- *   </li>
+ *   <li>Initialize and manage the view associated with this use case.</li>
+ *   <li>Handle user interactions during the transaction creation process (e.g., form submission, cancellation).</li>
+ *   <li>Inject user-related metadata (e.g., cashier ID) into the transaction request.</li>
+ *   <li>Communicate with the service layer to execute the transaction logic.</li>
+ *   <li>Provide feedback to the user on success or failure of the transaction operation.</li>
+ *   <li>Generate a ticket preview and facilitate ticket export operations.</li>
  * </ul>
- * <p>
- * <br/>
+ *
+ * <h2>Error Handling:</h2>
+ * The controller ensures that any errors encountered during the transaction creation or export process are handled
+ * appropriately:
+ * <ul>
+ *   <li>Logs the error details for further investigation and debugging.</li>
+ *   <li>Displays user-friendly error messages in the view.</li>
+ *   <li>Returns error states in the {@link ExportableTransaction} to indicate process failures.</li>
+ * </ul>
+ *
+ * <h2>Initialization:</h2>
+ * To construct an instance of {@code CreateTransactionController}, the following is required:
+ * <ul>
+ *   <li>{@link AppContext} to provide access to the shared application context, services, configurations, and view registry.</li>
+ *   <li>An initialized {@link CreateTransactionView} that handles user interactions.</li>
+ * </ul>
+ *
+ * <h2>Primary Methods:</h2>
+ * <ul>
+ *   <li>{@link #startUseCase()} - Orchestrates the complete "Create Transaction" workflow, including form handling,
+ *       transaction submission, and ticket export.</li>
+ *   <li>{@link #injectCashierId(CreateTransactionRequest, User)} - Injects user metadata (e.g., cashier ID)
+ *       into the transaction request.</li>
+ *   <li>{@link #sendToService(CreateTransactionRequest)} - Sends the transaction request to the service layer and
+ *       manages subsequent steps like ticket export and user feedback.</li>
+ * </ul>
+ *
+ * <h2>Concurrency:</h2>
+ * <ul>
+ *   <li>The controller utilizes {@link CompletableFuture} to handle asynchronous operations, ensuring non-blocking
+ *       execution while interacting with service layers and ticket exporters.</li>
+ *   <li>Any exceptions occurring within asynchronous operations are appropriately handled using {@code exceptionally} and
+ *       {@code thenCompose} to provide error handling and fallback mechanisms.</li>
+ * </ul>
  *
  * @author InfoYupay SACS
  * @version 1.0
- * @implNote <ul>
- * <li>
- * The class depends on the {@link AppContext} to provide application-wide services and utilities,
- * including the {@link CreateTransactionView} and transaction service.
- * </li>
- * <li>
- * Uses {@link Logger} to log significant system events, errors, and informational messages.
- * </li>
- * <li>
- * Handles exceptions gracefully at various points in the transaction creation process to ensure a
- * robust user experience.
- * </li>
- * </ul>
  */
 public class CreateTransactionController {
     @SuitableFor("stableValue")
@@ -104,63 +106,59 @@ public class CreateTransactionController {
     }
 
     /**
-     * Initiates the use case for creating a transaction. This method validates the user session,
-     * checks for appropriate user privileges, captures the necessary input for transaction creation,
-     * and invokes the transaction service to persist the transaction. It handles various outcomes such
-     * as user cancellation or errors during processing.
+     * Initiates the "Create Transaction" use case by interacting with the user to gather necessary input,
+     * associating the transaction with the currently logged-in user, and sending the request to the service layer.
      * <br/>
-     * The method operates through the following steps:
+     * This method executes the following steps:
      * <ol>
-     *   <li>
-     *       Validates whether a user is logged in. If no user is active, logs an error
-     *       and shows an error message to the view.
+     *   <li>Checks if there is a logged-in user:
+     *       <ul>
+     *         <li>If no user is logged in, logs an error message, displays an error to the user,
+     *         and returns an error {@link ExportableTransaction}.</li>
+     *       </ul>
      *   </li>
-     *   <li>
-     *       Checks if the logged-in user has sufficient privileges (e.g., must be a cashier).
-     *       Returns an error result if privileges are insufficient.
+     *   <li>Displays a form for user input:
+     *       <ul>
+     *         <li>If the user submits the form, injects the cashier ID into the transaction request
+     *         and sends the request to the service layer.</li>
+     *         <li>If the user cancels the form, returns a canceled state {@link ExportableTransaction}.</li>
+     *       </ul>
      *   </li>
-     *   <li>Captures input from the user through a form view to provide data necessary for transaction creation.</li>
-     *   <li>Invokes the transaction service with the captured input to create a transaction:
-     *     <ul>
-     *       <li>
-     *           If successful, logs the transaction creation, displays a success message, and returns
-     *           the transaction details in the result.
-     *       </li>
-     *       <li>If an error occurs, logs the failure, displays an error message, and returns an error result.</li>
-     *       <li>If the user cancels the operation, returns a cancellation result.</li>
-     *     </ul>
-     *   </li>
-     *   <li>
-     *       Handles unexpected runtime exceptions, logging the errors
-     *       and showing an appropriate error message to the view.
+     *   <li>Handles unexpected runtime exceptions:
+     *       <ul>
+     *         <li>Logs the error, displays an error message to the user,
+     *         and returns an error {@link ExportableTransaction}.</li>
+     *       </ul>
      *   </li>
      * </ol>
      *
-     * @return A {@code CompletableFuture} that resolves to a {@code Result<Transaction>} object:
+     * @return A {@link CompletableFuture} resolving to an {@link ExportableTransaction}:
      * <ul>
-     *   <li>{@code Result.ok(transaction)} - if the transaction is successfully created.</li>
-     *   <li>{@code Result.cancel()} - if the user cancels the form input.</li>
-     *   <li>{@code Result.error()} - if an error occurs at any point during the process.</li>
+     *   <li>{@code ExportableTransaction.ok(transaction, outputType, payload)} - if the transaction is
+     *       successfully created and processed.</li>
+     *   <li>{@code ExportableTransaction.cancelCompleted()} - if the user cancels the transaction
+     *       creation process.</li>
+     *   <li>{@code ExportableTransaction.errorCompleted()} - if an error occurs during the process.</li>
      * </ul>
      */
-    public CompletableFuture<Result<Transaction>> startUseCase() {
+    public CompletableFuture<ExportableTransaction> startUseCase() {
         try {
             var user = context.getUserSession().getCurrentUser();
             if (user == null) {
                 LOG.error("A valid user is not logged in.");
                 view.showError("Para crear una transacción debes iniciar sesión primero.");
-                return Result.errorCompleted();
+                return ExportableTransaction.errorCompleted();
             }
 
             return view.showUserForm(FormMode.CREATE)
                     .map(input -> injectCashierId(input, user))
                     .map(this::sendToService)
-                    .orElseGet(Result::cancelCompleted);
+                    .orElseGet(ExportableTransaction::cancelCompleted);
 
         } catch (RuntimeException e) {
             LOG.error("Error sending Transaction to service layer.", e);
             view.showError("No pudimos enviar tu solicitud de crear una transacción al servicio de persistencia.");
-            return Result.errorCompleted();
+            return ExportableTransaction.errorCompleted();
         }
     }
 
@@ -185,52 +183,83 @@ public class CreateTransactionController {
     }
 
     /**
-     * Sends the provided {@link CreateTransactionRequest} to the transaction service for processing.
-     * Upon successful execution, logs the transaction creation and displays a success message via the view.
-     * In case of an error, logs the failure and displays an error message.
+     * Sends a {@link CreateTransactionRequest} to the transaction service to create a new transaction.
+     * Upon successful creation, additional steps such as generating a transaction preview and exporting
+     * the transaction are performed based on user interaction.
      * <br/>
-     * <br/>
-     * The method processes the request as follows:
+     * The process involves the following steps:
      * <ol>
-     *   <li>The transaction service is invoked to create a transaction using the provided request.</li>
+     *   <li>Invoke the transaction service to create a transaction using the provided request.</li>
      *   <li>
-     *       If the transaction is successfully created:
+     *       If successful:
      *       <ul>
-     *           <li>Logs the transaction ID.</li>
-     *           <li>Displays a success message through the associated view.</li>
-     *           <li>Wraps the transaction in a {@link Result} object and returns it.</li>
+     *           <li>Log the transaction creation and display a success message to the user.</li>
+     *           <li>Generate a preview of the transaction ticket in HTML format and display it on the view.</li>
+     *           <li>Prompt the user to select the desired export format for the transaction ticket.</li>
+     *           <li>Export the ticket in the chosen format and return the transaction as an {@link ExportableTransaction}.</li>
      *       </ul>
      *   </li>
      *   <li>
-     *       If an error occurs during transaction creation:
-     *       <ul>
-     *           <li>Logs the error along with the request details.</li>
-     *           <li>Displays an error message through the associated view.</li>
-     *           <li>Returns a {@link Result#error()} object.</li>
-     *       </ul>
+     *       If an error occurs during ticket export, log the error and return the transaction
+     *       without the exportable payload.
      *   </li>
      * </ol>
-     *
-     * @param request The {@link CreateTransactionRequest} containing the details of the transaction to be created.
-     *                Must not be {@code null}.
-     * @return A {@link CompletableFuture} that resolves to a {@link Result<Transaction>} object:
+     * In case of failure at any step of the process (e.g., transaction creation or ticket generation):
      * <ul>
-     *   <li>{@code Result.ok(transaction)} - if the transaction is successfully created.</li>
-     *   <li>{@code Result.error()} - if an error occurs during transaction creation.</li>
+     *   <li>The error is logged.</li>
+     *   <li>An error message is displayed to the user.</li>
+     *   <li>An error state {@link ExportableTransaction} is returned.</li>
+     * </ul>
+     * <br/>
+     *
+     * @param request The {@link CreateTransactionRequest} containing details for the transaction creation.
+     *                Must not be {@code null}.
+     * @return A {@link CompletableFuture} resolving to an {@link ExportableTransaction}:
+     * <ul>
+     *   <li>{@code ExportableTransaction.ok(transaction, outputType, payload)} - if the transaction is
+     *       successfully created and the ticket is exported in the selected format.</li>
+     *   <li>{@code ExportableTransaction.okWithoutPayloadCompleted(transaction)} - if the ticket export
+     *       fails or the user does not select an export format.</li>
+     *   <li>{@code ExportableTransaction.error()} - if an error occurs during the creation or processing
+     *       of the transaction.</li>
      * </ul>
      */
-    private @NotNull CompletableFuture<Result<Transaction>> sendToService(CreateTransactionRequest request) {
+    private @NotNull CompletableFuture<ExportableTransaction> sendToService(CreateTransactionRequest request) {
         return context.getTransactionService()
                 .createTransaction(request)
-                .thenApply(transaction -> {
+                .thenCompose(transaction -> {
                     LOG.info("Transaction created with id {}.", transaction.getId());
                     view.showSuccess("Se creó la transacción Nro. %d".formatted(transaction.getId()));
-                    return new Result<>(UseCaseResultType.OK, transaction);
+
+                    try {
+                        //1. Create HTML preview
+                        var cfg = context.getGlobalConfigCache().getOrFetchGlobalConfig();
+                        var exporter = new com.yupay.gangcomisiones.export.impl.TicketExporterImpl(context.getTaskExecutor());
+
+                        return exporter.export(transaction, OutputType.PREVIEW_HTML, cfg)
+                                .thenCompose(htmlBytes -> {
+                                    view.showExportPreview(htmlBytes);
+
+                                    //2. Ask end user the final target
+                                    var choice = view.askTicketOutputType();
+                                    if (choice != null && choice.isPresent()) {
+                                        return exporter.export(transaction, choice.get(), cfg)
+                                                .thenApply(bytes ->
+                                                        ExportableTransaction.ok(transaction, choice.get(), bytes));
+                                    } else {
+                                        return ExportableTransaction.okWithoutPayloadCompleted(transaction);
+                                    }
+                                });
+
+                    } catch (Exception ex) {
+                        LOG.error("Error during ticket export for transaction {}.", transaction.getId(), ex);
+                        return ExportableTransaction.okWithoutPayloadCompleted(transaction);
+                    }
                 })
                 .exceptionally(e -> {
                     LOG.error("Error creating Transaction for request {}.", request, e);
                     view.showError("Error al momento de registrar la transacción en la base de datos.");
-                    return Result.error();
+                    return ExportableTransaction.error();
                 });
     }
 
