@@ -19,8 +19,13 @@
 
 package com.yupay.gangcomisiones.usecase.transaction.create;
 
+import com.yupay.gangcomisiones.export.OutputType;
 import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
 import com.yupay.gangcomisiones.usecase.commons.UserPrompter;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.Optional;
+
 /**
  * Interface to interact with {@link CreateTransactionController}.
  *
@@ -30,4 +35,18 @@ import com.yupay.gangcomisiones.usecase.commons.UserPrompter;
 public interface CreateTransactionView
         extends UserPrompter<CreateTransactionRequest> {
 
+    /**
+     * Asks the user where to send the ticket after creating a transaction.
+     * The default implementation returns an empty Optional (meaning "none").
+     *
+     * @return Optional with the desired output type, or empty to skip export
+     */
+    Optional<OutputType> askTicketOutputType();
+
+    /**
+     * Shows a preview of the ticket to be exported.
+     *
+     * @param htmlBytes the html bytes to be used as a preview to show to user
+     */
+    void showExportPreview(byte @NotNull [] htmlBytes);
 }
