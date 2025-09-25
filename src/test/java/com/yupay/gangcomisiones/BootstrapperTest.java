@@ -67,8 +67,8 @@ class BootstrapperTest {
     /// @throws IOException if an error occurs during file operations.
     @Test
     void testBootstrap_CreatesDirectoriesAndInitializesLogging() throws IOException {
-        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class);
-             MockedStatic<LogConfig> logMock = Mockito.mockStatic(LogConfig.class)) {
+        try (var filesMock = Mockito.mockStatic(Files.class);
+             var logMock = Mockito.mockStatic(LogConfig.class)) {
 
             // Simulate non-existent directories
             filesMock.when(() -> Files.notExists(any(Path.class))).thenReturn(true);
@@ -78,17 +78,17 @@ class BootstrapperTest {
             logMock.when(LogConfig::initLogging).thenAnswer(_ -> null);
 
             // Run bootstrap
-            Bootstrapper.bootstrap();
+            Bootstrapper.bootstrap(AppMode.TEST);
 
             // Verify directories were correctly checked and created.
-            filesMock.verify(() -> Files.notExists(LocalFiles.YUPAY.asPath()));
-            filesMock.verify(() -> Files.createDirectories(LocalFiles.YUPAY.asPath()));
+            filesMock.verify(() -> Files.notExists(LocalFiles.yupay()));
+            filesMock.verify(() -> Files.createDirectories(LocalFiles.yupay()));
 
-            filesMock.verify(() -> Files.notExists(LocalFiles.PROJECT.asPath()));
-            filesMock.verify(() -> Files.createDirectories(LocalFiles.PROJECT.asPath()));
+            filesMock.verify(() -> Files.notExists(LocalFiles.project()));
+            filesMock.verify(() -> Files.createDirectories(LocalFiles.project()));
 
-            filesMock.verify(() -> Files.notExists(LocalFiles.LOGS.asPath()));
-            filesMock.verify(() -> Files.createDirectories(LocalFiles.LOGS.asPath()));
+            filesMock.verify(() -> Files.notExists(LocalFiles.logs()));
+            filesMock.verify(() -> Files.createDirectories(LocalFiles.logs()));
 
             // Verifying loggin initialization.
             logMock.verify(LogConfig::initLogging);
@@ -118,19 +118,19 @@ class BootstrapperTest {
     /// @throws IOException if an error occurs during execution of mocked file operations.
     @Test
     void testBootstrap_DirectoriesExist_NoCreation() throws IOException {
-        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class);
-             MockedStatic<LogConfig> logMock = Mockito.mockStatic(LogConfig.class)) {
+        try (var filesMock = Mockito.mockStatic(Files.class);
+             var logMock = Mockito.mockStatic(LogConfig.class)) {
 
             // Simulate existing directories
             filesMock.when(() -> Files.notExists(any(Path.class))).thenReturn(false);
             logMock.when(LogConfig::initLogging).thenAnswer(_ -> null);
 
-            Bootstrapper.bootstrap();
+            Bootstrapper.bootstrap(AppMode.TEST);
 
             // Verify directories were correctly checked.
-            filesMock.verify(() -> Files.notExists(LocalFiles.YUPAY.asPath()));
-            filesMock.verify(() -> Files.notExists(LocalFiles.PROJECT.asPath()));
-            filesMock.verify(() -> Files.notExists(LocalFiles.LOGS.asPath()));
+            filesMock.verify(() -> Files.notExists(LocalFiles.yupay()));
+            filesMock.verify(() -> Files.notExists(LocalFiles.project()));
+            filesMock.verify(() -> Files.notExists(LocalFiles.logs()));
 
             // Check that no directory was created
             filesMock.verify(() -> Files.createDirectories(any(Path.class)), times(0));
@@ -172,18 +172,18 @@ class BootstrapperTest {
      */
     @Test
     void testBootstrap_ThrowsIOException() {
-        try (MockedStatic<Files> filesMock = Mockito.mockStatic(Files.class);
-             MockedStatic<LogConfig> logMock = Mockito.mockStatic(LogConfig.class)) {
+        try (var filesMock = Mockito.mockStatic(Files.class);
+             var logMock = Mockito.mockStatic(LogConfig.class)) {
 
             filesMock.when(() -> Files.notExists(any(Path.class))).thenReturn(true);
             filesMock.when(() -> Files.createDirectories(any(Path.class)))
                     .thenThrow(new IOException("Test IOException"));
 
-            IOException exception = assertThrows(IOException.class, Bootstrapper::bootstrap);
+            var exception = assertThrows(IOException.class, () -> Bootstrapper.bootstrap(AppMode.TEST));
             assertEquals("Test IOException", exception.getMessage());
 
             // Verifies that directories were created prior to failure.
-            filesMock.verify(() -> Files.notExists(LocalFiles.YUPAY.asPath()));
+            filesMock.verify(() -> Files.notExists(LocalFiles.yupay()));
             filesMock.verify(() -> Files.createDirectories(any(Path.class)));
 
             //Verify no logging initialization was attempted.

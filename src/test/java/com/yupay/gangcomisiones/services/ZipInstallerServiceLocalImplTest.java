@@ -34,7 +34,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -85,24 +84,19 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUnpackZip_createsDirectoriesAndFiles(@TempDir @NotNull Path tempDir) throws IOException {
-        String originalUserHome = System.getProperty("user.home");
+        var originalUserHome = System.getProperty("user.home");
         try {
             // Redirect LocalFiles to use tempDir
             System.setProperty("user.home", tempDir.toString());
-            LocalFiles.YUPAY.reset();
-            LocalFiles.PROJECT.reset();
-            LocalFiles.LOGS.reset();
-            LocalFiles.JPA_PROPERTIES.reset();
-            Files.createDirectories(LocalFiles.PROJECT.asPath());
 
 
-            Path zip = createTestZip(tempDir);
+            var zip = createTestZip(tempDir);
 
             // Act
             zipInstallerService.unpackZip(zip);
 
             // Assert
-            Path projectDir = LocalFiles.PROJECT.asPath();
+            var projectDir = LocalFiles.project();
             assertTrue(Files.exists(projectDir.resolve("subdir")));
             assertTrue(Files.exists(projectDir.resolve("subdir/file.txt")));
         } finally {
@@ -125,28 +119,23 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUnpackZip_preventsZipSlip(@TempDir @NotNull Path tempDir) throws IOException {
-        String originalUserHome = System.getProperty("user.home");
+        var originalUserHome = System.getProperty("user.home");
         try {
             // Redirect LocalFiles to use tempDir
             System.setProperty("user.home", tempDir.toString());
-            LocalFiles.YUPAY.reset();
-            LocalFiles.PROJECT.reset();
-            LocalFiles.LOGS.reset();
-            LocalFiles.JPA_PROPERTIES.reset();
-            Files.createDirectories(LocalFiles.PROJECT.asPath());
 
 
-            Path maliciousZip = createMaliciousZip(tempDir);
+            var maliciousZip = createMaliciousZip(tempDir);
 
             // Act
             assertThrows(AppInstalationException.class, () -> zipInstallerService.unpackZip(maliciousZip));
 
             // Assert: file outside project not created
-            Path outsideFile = LocalFiles.PROJECT.asPath().getParent().resolve("outside.txt");
+            var outsideFile = LocalFiles.project().getParent().resolve("outside.txt");
             assertFalse(Files.exists(outsideFile), "Malicious entry should be skipped");
 
             // Also, check PROJECT folder is still intact
-            assertTrue(Files.exists(LocalFiles.PROJECT.asPath()));
+            assertTrue(Files.exists(LocalFiles.project()));
         } finally {
             System.setProperty("user.home", originalUserHome);
         }
@@ -169,24 +158,19 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUnpackZipAsync_completesSuccessfully(@TempDir @NotNull Path tempDir) throws Exception {
-        String originalUserHome = System.getProperty("user.home");
+        var originalUserHome = System.getProperty("user.home");
         try {
             System.setProperty("user.home", tempDir.toString());
-            LocalFiles.YUPAY.reset();
-            LocalFiles.PROJECT.reset();
-            LocalFiles.LOGS.reset();
-            LocalFiles.JPA_PROPERTIES.reset();
-            Files.createDirectories(LocalFiles.PROJECT.asPath());
 
 
-            Path zip = createTestZip(tempDir);
+            var zip = createTestZip(tempDir);
 
             // Act
-            CompletableFuture<Void> future = zipInstallerService.unpackZipAsync(zip);
+            var future = zipInstallerService.unpackZipAsync(zip);
             future.join(); // wait for task to end
 
             // Assert
-            Path projectDir = LocalFiles.PROJECT.asPath();
+            var projectDir = LocalFiles.project();
             assertTrue(Files.exists(projectDir.resolve("subdir")));
             assertTrue(Files.exists(projectDir.resolve("subdir/file.txt")));
         } finally {
@@ -203,24 +187,19 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUnpackDummyZipAsync_completesSuccessfully(@TempDir @NotNull Path tempDir) throws Exception {
-        String originalUserHome = System.getProperty("user.home");
+        var originalUserHome = System.getProperty("user.home");
         try {
             System.setProperty("user.home", tempDir.toString());
-            LocalFiles.YUPAY.reset();
-            LocalFiles.PROJECT.reset();
-            LocalFiles.LOGS.reset();
-            LocalFiles.JPA_PROPERTIES.reset();
-            Files.createDirectories(LocalFiles.PROJECT.asPath());
 
 
-            Path zip = DummyHelpers.getDummyPropertiesZip();
-            Path tempProject = LocalFiles.PROJECT.asPath();
-            Path pathDummy = tempProject.resolve("dummyprop.properties");
-            Path pathDummyChild = tempProject.resolve("dummydir", "childdummyprop.properties");
+            var zip = DummyHelpers.getDummyPropertiesZip();
+            var tempProject = LocalFiles.project();
+            var pathDummy = tempProject.resolve("dummyprop.properties");
+            var pathDummyChild = tempProject.resolve("dummydir", "childdummyprop.properties");
 
 
             // Act
-            CompletableFuture<Void> future = zipInstallerService.unpackZipAsync(zip);
+            var future = zipInstallerService.unpackZipAsync(zip);
             future.join(); // wait for task to end
 
             // Assert
@@ -257,8 +236,8 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      * @throws IOException if an error occurs while creating or writing to the ZIP file
      */
     private @NotNull Path createTestZip(@NotNull Path tempDir) throws IOException {
-        Path zipPath = tempDir.resolve("test.zip");
-        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+        var zipPath = tempDir.resolve("test.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
             // Folder
             zos.putNextEntry(new ZipEntry("subdir/"));
             zos.closeEntry();
@@ -280,8 +259,8 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      * @throws IOException if an error occurs while creating or writing to the ZIP file
      */
     private @NotNull Path createMaliciousZip(@NotNull Path tempDir) throws IOException {
-        Path zipPath = tempDir.resolve("malicious.zip");
-        try (ZipOutputStream zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
+        var zipPath = tempDir.resolve("malicious.zip");
+        try (var zos = new ZipOutputStream(Files.newOutputStream(zipPath))) {
             // Zip Slip mock
             zos.putNextEntry(new ZipEntry("../outside.txt"));
             zos.write("Malicious content".getBytes(StandardCharsets.UTF_8));

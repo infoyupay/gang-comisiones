@@ -90,17 +90,13 @@ class InstallKeysControllerTest {
         //Modify user home
         originalHome = System.getProperty("user.home");
         System.setProperty("user.home", target.toString());
-        LocalFiles.YUPAY.reset();
-        LocalFiles.PROJECT.reset();
-        LocalFiles.LOGS.reset();
-        LocalFiles.JPA_PROPERTIES.reset();
 
         //Setup services
         mockExecutor = spy(new CompactSameThreadExecutorService());
         zipInstallerService = new ZipInstallerServiceLocalImpl(mockExecutor);
 
         //Prepare the directories structure
-        Files.createDirectories(LocalFiles.PROJECT.asPath());
+        Files.createDirectories(LocalFiles.project());
     }
 
     /**
@@ -116,10 +112,6 @@ class InstallKeysControllerTest {
     void landing() {
         //Restore user home
         System.setProperty("user.home", originalHome);
-        LocalFiles.YUPAY.reset();
-        LocalFiles.PROJECT.reset();
-        LocalFiles.LOGS.reset();
-        LocalFiles.JPA_PROPERTIES.reset();
 
         //Shutdown services
         zipInstallerService = null;
@@ -177,7 +169,7 @@ class InstallKeysControllerTest {
         assertEquals(InstallKeysResult.SUCCESS, result);
 
         LogConfig.initLogging();
-        AppContext.getInstance(LocalFiles.JPA_PROPERTIES.asPath(), new DefaultViewRegistry());
+        AppContext.getInstance(LocalFiles.jpaProperties(), new DefaultViewRegistry());
 
         assertEquals("jdbc:postgresql://localhost:5432/gang_comision_test?stringtype=unspecified&ApplicationName=gangcomision_test",
                 AppContext.getInstance()
@@ -243,7 +235,7 @@ class InstallKeysControllerTest {
         verify(installKeyView).showOpenDialogForZip();
 
         // Capturamos la excepción y comprobamos su mensaje
-        ArgumentCaptor<AppInstalationException> captor = ArgumentCaptor.forClass(AppInstalationException.class);
+        var captor = ArgumentCaptor.forClass(AppInstalationException.class);
         verify(taskMonitor).showError(captor.capture());
         assertEquals("No files found in the zip.", captor.getValue().getMessage());
     }
