@@ -19,7 +19,6 @@
 
 package com.yupay.gangcomisiones;
 
-import com.yupay.gangcomisiones.logging.LogConfig;
 import com.yupay.gangcomisiones.usecase.registry.ControllerRegistries;
 import com.yupay.gangcomisiones.usecase.registry.DefaultViewRegistry;
 import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
@@ -28,8 +27,12 @@ import jakarta.persistence.PersistenceException;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,13 +48,34 @@ public abstract class AbstractPostgreIntegrationTest {
     protected static ViewRegistry viewRegistry;
     protected static AppContext ctx;
     protected static Logger LOGGER;
+    protected static Path tmp;
 
     /**
-     * Initialize the application context and logging configuration.
+     * Initializes the testing environment before all tests are executed.
+     * <br/>
+     * This method performs the following key operations:
+     * <ul>
+     *     <li>Sets up a temporary directory for testing purposes using the {@code @TempDir} annotation.</li>
+     *     <li>Bootstraps the application's local file structure in test mode by invoking {@link TestBootstrap#bootstrap(Path)}.</li>
+     *     <li>Initializes a default view registry instance using {@link DefaultViewRegistry}.</li>
+     *     <li>Configures a logger for the integration testing process using {@link LoggerFactory#getLogger(Class)}.</li>
+     *     <li>Initializes the application context using {@link AppContext#getInstance(Path, ViewRegistry)} with
+     *         dummy JPA properties.</li>
+     *     <li>Registers all default controller registries using {@link ControllerRegistries#registerAllDefaults()} and
+     *         outputs a status message if already initialized.</li>
+     * </ul>
+     *
+     * @param tempDir A temporary directory provided by JUnit for configuring the application's testing environment.
+     *                <ul>
+     *                    <li>Must not be {@code null}.</li>
+     *                    <li>Automatically managed and cleaned up by JUnit after the test execution.</li>
+     *                </ul>
+     * @throws IOException If an I/O error occurs during the bootstrapping process.
      */
     @BeforeAll
-    static void init() {
-        LogConfig.initLogging();
+    static void init(@TempDir Path tempDir) throws IOException {
+        tmp = tempDir;
+        TestBootstrap.bootstrap(tmp);
         viewRegistry = new DefaultViewRegistry();
         LOGGER = LoggerFactory.getLogger(AbstractPostgreIntegrationTest.class);
         ctx = AppContext.getInstance(DummyHelpers.getDummyJpaProperties(), viewRegistry);
