@@ -26,9 +26,9 @@ import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,10 +45,27 @@ class AppContextTest {
     private static final Path DUMMY_PATH = DummyHelpers.getDummyJpaProperties();
 
     /**
-     * Initializes logging for the test class.
+     * Initializes the logging environment for the test context. <br/>
+     * This method sets up the necessary file configurations and logging setup required for running test cases.
+     * It ensures that all test-specific paths and logging configurations are initialized correctly.
+     * <br/><br/>
+     * The initialization involves:
+     * <ol>
+     *     <li>Configuring application-specific paths using {@link LocalFiles#init(AppMode, Path)}
+     *     with <strong>TEST</strong> mode as context.</li>
+     *     <li>Initializing the logging system using {@link LogConfig#initLogging()}.</li>
+     * </ol>
+     *
+     * @param tempDir The temporary directory path provided by the test framework where
+     *                test-specific files and logs will be configured.
+     *                <ul>
+     *                    <li>Must not be {@code null}.</li>
+     *                    <li>Generated dynamically for the duration of the test lifecycle.</li>
+     *                </ul>
      */
     @BeforeAll
-    static void initializeLogging() {
+    static void initializeLogging(@TempDir Path tempDir) {
+        LocalFiles.init(AppMode.TEST, tempDir);
         LogConfig.initLogging();
     }
 
@@ -66,11 +83,30 @@ class AppContextTest {
     }
 
     /**
-     * Tests that {@link AppContext#getInstance(Path, ViewRegistry)} initializes the context.
+     * Tests the initialization of the {@link AppContext} instance.
+     * <br/><br/>
+     * This method verifies that the {@link AppContext#getInstance(Path, ViewRegistry)} method:
+     * <ul>
+     *     <li>Succeeds in creating a non-null instance of {@link AppContext} when valid parameters are provided.</li>
+     *     <li>
+     *         Correctly initializes essential components of the {@link AppContext}, including:
+     *         <ul>
+     *              <li>{@link AppContext#getEntityManagerFactory()}</li>
+     *              <li>{@link AppContext#getJdbcExecutor()}</li>
+     *              <li>{@link AppContext#getTaskExecutor()}</li>
+     *         </ul>
+     *     </li>
+     * </ul>
+     * <br/>
+     * Assertions ensure that:
+     * <ol>
+     *     <li>An instance of {@link AppContext} is not null after initialization.</li>
+     *     <li>All core components of the context are initialized and functional, verified by non-null checks.</li>
+     * </ol>
      */
     @Test
     void testGetInstanceInitializes() {
-        AppContext ctx = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
+        var ctx = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
         assertNotNull(ctx);
         assertNotNull(ctx.getEntityManagerFactory());
         assertNotNull(ctx.getJdbcExecutor());
@@ -95,8 +131,8 @@ class AppContextTest {
      */
     @Test
     void testRestartReplacesInstance() {
-        AppContext first = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
-        AppContext second = AppContext.restart(DUMMY_PATH);
+        var first = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
+        var second = AppContext.restart(DUMMY_PATH);
         assertNotSame(first, second);
         // Old instance was shut down.
         assertTrue(first.getJdbcExecutor().isShutdown());
@@ -111,17 +147,17 @@ class AppContextTest {
      */
     @Test
     void testSingletonConcurrent() throws InterruptedException {
-        final AppContext[] results = new AppContext[10];
-        Thread[] threads = new Thread[10];
+        final var results = new AppContext[10];
+        var threads = new Thread[10];
 
-        for (int i = 0; i < 10; i++) {
-            int idx = i;
+        for (var i = 0; i < 10; i++) {
+            var idx = i;
             threads[i] = new Thread(() -> results[idx] = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry()));
             threads[i].start();
         }
-        for (Thread t : threads) t.join();
+        for (var t : threads) t.join();
 
-        for (int i = 1; i < results.length; i++) {
+        for (var i = 1; i < results.length; i++) {
             assertSame(results[0], results[i]);
         }
     }
@@ -131,9 +167,9 @@ class AppContextTest {
      */
     @Test
     void testShutdownExecutors() {
-        AppContext ctx = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
-        ExecutorService jdbc = ctx.getJdbcExecutor();
-        ExecutorService task = ctx.getTaskExecutor();
+        var ctx = AppContext.getInstance(DUMMY_PATH, new DefaultViewRegistry());
+        var jdbc = ctx.getJdbcExecutor();
+        var task = ctx.getTaskExecutor();
 
         AppContext.shutdown();
 

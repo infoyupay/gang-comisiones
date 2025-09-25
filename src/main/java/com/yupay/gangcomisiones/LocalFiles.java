@@ -118,6 +118,7 @@ public final class LocalFiles {
             case WORK -> PROJECT = yupay.resolve("gang-comisiones");
             case TOY -> PROJECT = yupay.resolve("gang-comisiones", "sandbox.0");
             case GHOST -> PROJECT = yupay.resolve("gang-comisiones", "sandbox.tmp");
+            case TEST -> PROJECT = USER_HOME.resolve("gang-comisiones");
         }
     }
 
