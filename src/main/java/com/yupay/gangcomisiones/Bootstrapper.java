@@ -157,15 +157,27 @@ public final class Bootstrapper {
     }
 
     /**
-     * Ensures the existence of a directory represented by the provided {@code PathHolder}.
-     * If the directory does not exist, it is created, including any necessary but non-existent
-     * parent directories.
+     * Ensures that the directory at the specified path exists by creating it if it is missing.
+     * <br/><br/>
+     * This method checks for the existence of the directory and creates all nonexistent parent
+     * directories as necessary. It is primarily used to prepare the required directory structure
+     * for the application before performing operations that depend on its presence.
+     * <br/><br/>
+     * <b>Key behavior:</b>
+     * <ul>
+     *     <li>If the directory already exists, no action is taken.</li>
+     *     <li>If the directory does not exist, it is created, including any missing parent directories.</li>
+     * </ul>
      *
-     * @param path the {@code PathHolder} instance representing the directory path to check
-     *             or create. The {@link PathHolder#asPath()} method is used to resolve the
-     *             actual path.
-     * @throws IOException if an I/O error occurs while checking for the directory or attempting
-     *                     to create it.
+     * @param path The {@code Path} representing the directory to check or create.
+     *             <br/><br/>
+     *             Requirements:
+     *             <ul>
+     *                 <li>Must not be {@code null}. A {@link NullPointerException} will be thrown if {@code null} is passed.</li>
+     *                 <li>Should specify a valid file system path. Relative paths are resolved based on the working directory.</li>
+     *             </ul>
+     *
+     * @throws IOException If an I/O error occurs while checking or creating the directory.
      */
     private static void createDirIfMissing(@NotNull Path path) throws IOException {
         if (Files.notExists(path)) {
