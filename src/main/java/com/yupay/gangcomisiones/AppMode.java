@@ -19,6 +19,10 @@
 
 package com.yupay.gangcomisiones;
 
+import com.yupay.gangcomisiones.exceptions.GangComisionesException;
+import org.jetbrains.annotations.TestOnly;
+import org.jetbrains.annotations.VisibleForTesting;
+
 /**
  * The {@code AppMode} enum represents different operational modes of an application.
  * These modes determine how the application interacts with data and its underlying structure.
@@ -59,7 +63,14 @@ public enum AppMode {
      * app execution. Each time the app is started in this mode
      * is like the first time.
      */
-    GHOST;
+    GHOST,
+    /**
+     * Represents the test mode, for JUnit testing purposes.
+     * DON'T USE IN REAL LIFE.
+     */
+    @TestOnly
+    @VisibleForTesting
+    TEST;
 
     /**
      * Converts a given string to its corresponding {@link AppMode} enumeration constant.
@@ -77,11 +88,17 @@ public enum AppMode {
      * <ul>
      *     <li>Returns {@link AppMode#WORK} if the input is invalid or null.</li>
      * </ul>
+     * @throws GangComisionesException if the input value is "TEST" and the method is called in a non-test environment.
      */
     public static AppMode from(String value) {
+        if (value == null) return WORK;
+        var normalized = value.strip().toUpperCase();
+        if ("TEST".equals(normalized)) {
+            throw new GangComisionesException("TEST mode is not allowed for real app execution.");
+        }
         try {
-            return AppMode.valueOf(value.strip().toUpperCase());
-        } catch (Exception _) {
+            return AppMode.valueOf(normalized);
+        } catch (IllegalArgumentException _) {
             return WORK;
         }
     }
