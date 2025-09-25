@@ -141,7 +141,7 @@ public final class AppContext {
     private AppContext(Path jpaProperties, ViewRegistry viewRegistry) {
         this.emf = buildEntityManagerFactory(jpaProperties);
         this.jdbcExecutor = Executors.newSingleThreadExecutor(r -> {
-            Thread t = new Thread(r, "AppContext-JDBC");
+            var t = new Thread(r, "AppContext-JDBC");
             t.setDaemon(true);
             return t;
         });
@@ -181,7 +181,7 @@ public final class AppContext {
      * </ul>
      */
     public static AppContext getInstance(Path jpaProperties, ViewRegistry viewRegistry) {
-        AppContext ctx = INSTANCE.get();
+        var ctx = INSTANCE.get();
         if (ctx == null) {
             ctx = new AppContext(jpaProperties, viewRegistry);
             if (!INSTANCE.compareAndSet(null, ctx)) {
@@ -213,7 +213,7 @@ public final class AppContext {
      * @throws AppContextException if the context has not been initialized prior to this call.
      */
     public static @NotNull AppContext getInstance() {
-        AppContext ctx = INSTANCE.get();
+        var ctx = INSTANCE.get();
         if (ctx == null) {
             throw new AppContextException("AppContext has not been initialized. " +
                     "Call getInstance(Path, ViewRegistry) first.");
@@ -231,12 +231,12 @@ public final class AppContext {
      * @return the new instance (restarted).
      */
     public static synchronized @NotNull AppContext restart(Path jpaProperties, ViewRegistry viewRegistry) {
-        AppContext old = INSTANCE.getAndSet(null);
+        var old = INSTANCE.getAndSet(null);
         if (old == null) {
             throw new AppContextException("Cannot restart AppContext because it was not initialized.");
         }
         AppContext.shutdown(old);
-        AppContext fresh = new AppContext(jpaProperties, viewRegistry);
+        var fresh = new AppContext(jpaProperties, viewRegistry);
         INSTANCE.set(fresh);
         return fresh;
     }
@@ -326,7 +326,7 @@ public final class AppContext {
      * @throws AppContextException if the JPA properties file cannot be read or loaded properly.
      */
     private static EntityManagerFactory buildEntityManagerFactory(Path jpaProperties) {
-        Properties props = new Properties();
+        var props = new Properties();
         try (var reader = Files.newBufferedReader(jpaProperties)) {
             props.load(reader);
         } catch (IOException e) {
@@ -340,7 +340,7 @@ public final class AppContext {
      * Called from Application.stop() or the JVM shutdown hook.
      */
     public static synchronized void shutdown() {
-        AppContext ctx = INSTANCE.getAndSet(null);
+        var ctx = INSTANCE.getAndSet(null);
         shutdown(ctx);
     }
 
