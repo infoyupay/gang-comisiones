@@ -146,7 +146,7 @@ public final class InstallKeysController implements ZipInstallProgressListener {
      * Intended to be invoked once the ZIP processing has completed successfully.
      */
     private void reloadAppContext() {
-        Path jpaProps = LocalFiles.JPA_PROPERTIES.asPath();
+        Path jpaProps = LocalFiles.jpaProperties();
         if (AppContext.isInitialized()) {
             AppContext.restart(jpaProps);
         } else {

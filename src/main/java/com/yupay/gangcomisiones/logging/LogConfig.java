@@ -93,13 +93,13 @@ public final class LogConfig {
             var rollingFileAppender = new RollingFileAppender<ILoggingEvent>();
             rollingFileAppender.setContext(context);
             rollingFileAppender.setName("FILE");
-            rollingFileAppender.setFile(LocalFiles.LOGS.asPath().resolve("gang-comisiones.log").toString());
+            rollingFileAppender.setFile(LocalFiles.logs().resolve("gang-comisiones.log").toString());
             rollingFileAppender.setEncoder(fileEncoder);
 
             FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
             rollingPolicy.setContext(context);
             rollingPolicy.setParent(rollingFileAppender);
-            rollingPolicy.setFileNamePattern(LocalFiles.LOGS.asPath().resolve("gang-comisiones.%i.log").toString());
+            rollingPolicy.setFileNamePattern(LocalFiles.logs().resolve("gang-comisiones.%i.log").toString());
             rollingPolicy.setMinIndex(1);
             rollingPolicy.setMaxIndex(5); // keep 5 old logs
             rollingPolicy.start();

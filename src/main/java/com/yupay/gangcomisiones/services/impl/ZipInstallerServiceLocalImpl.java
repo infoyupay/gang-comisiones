@@ -56,7 +56,7 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
         try (var is = Files.newInputStream(zipPath);
              var zis = new ZipInputStream(is)) {
 
-            var installDir = LocalFiles.PROJECT.asPath();
+            var installDir = LocalFiles.project();
             listener.onStart(-1); // con ZipInputStream no sabemos el total de entradas
 
             ZipEntry entry;
@@ -103,6 +103,6 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
 
     @Override
     public boolean persistenceExists() {
-        return Files.exists(LocalFiles.JPA_PROPERTIES.asPath());
+        return Files.exists(LocalFiles.jpaProperties());
     }
 }
