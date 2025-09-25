@@ -46,7 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author InfoYupay SACS
  * @version 1.0
  */
-class TextFormatsTest {
+class TextFormatsTests {
 
     /**
      * Tests the formatting of currency values for the Peruvian locale to ensure proper compliance
@@ -77,9 +77,9 @@ class TextFormatsTest {
             "0.99, 'S/ 0.99'"
     })
     void testCurrencyFormatForPeru(double input, String expected) {
-        DecimalFormat format = TextFormats.getCurrencyFormat();
+        var format = TextFormats.getCurrencyFormat();
 
-        String result = format.format(input).replace('\u00A0', ' ');
+        var result = format.format(input).replace('\u00A0', ' ');
 
         // Contract validation.
         assertThat(result)
@@ -120,8 +120,8 @@ class TextFormatsTest {
             "12.3456, 1234.56%"
     })
     void testPercentageFormatForPeru(double input, String expected) {
-        DecimalFormat format = TextFormats.getPercentFormat();
-        String result = format.format(input);
+        var format = TextFormats.getPercentFormat();
+        var result = format.format(input);
 
         assertThat(result).isEqualTo(expected);
     }
