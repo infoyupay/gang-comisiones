@@ -38,9 +38,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -109,29 +110,29 @@ public abstract class AbstractPostgreIntegrationTest {
      *
      * @param <C>               The type of {@code Throwable} that is expected to be thrown during the flush operation.
      * @param expectedException The class of the exception expected to occur during the flush operation.
-     *                           <ul>
-     *                               <li>Must not be {@code null}.</li>
-     *                               <li>Specifies the type or a superclass of the exception to be caught.</li>
-     *                           </ul>
+     *                          <ul>
+     *                              <li>Must not be {@code null}.</li>
+     *                              <li>Specifies the type or a superclass of the exception to be caught.</li>
+     *                          </ul>
      * @param expectedMessage   The expected text that should be part of the message of the thrown exception.
-     *                           <ul>
-     *                               <li>Must not be {@code null}.</li>
-     *                               <li>Used to ensure that the exception's message contains the specified text.</li>
-     *                           </ul>
+     *                          <ul>
+     *                              <li>Must not be {@code null}.</li>
+     *                              <li>Used to ensure that the exception's message contains the specified text.</li>
+     *                          </ul>
      * @param consumer          A lambda expression or method reference that provides the persistence operations
-     *                           within the active transaction using the {@code EntityManager}.
-     *                           <ul>
-     *                               <li>Must not be {@code null}.</li>
-     *                               <li>Includes operations like persisting, merging, or removing entities.</li>
-     *                           </ul>
-     *
+     *                          within the active transaction using the {@code EntityManager}.
+     *                          <ul>
+     *                              <li>Must not be {@code null}.</li>
+     *                              <li>Includes operations like persisting, merging, or removing entities.</li>
+     *                          </ul>
      * @return An assertion object for further verification of properties in the thrown exception.
-     *         <ul>
-     *             <li>Allows validation that the exception message matches the expected content (ignoring case sensitivity).</li>
-     *             <li>Enables chaining of additional assertions about the exception beyond the message.</li>
-     *         </ul>
+     * <ul>
+     *     <li>Allows validation that the exception message matches the expected content (ignoring case sensitivity).</li>
+     *     <li>Enables chaining of additional assertions about the exception beyond the message.</li>
+     * </ul>
      */
-    protected static <C extends Throwable> AbstractStringAssert<?> performAndExpectFlushFailure(
+    @SuppressWarnings("UnusedReturnValue")
+    public <C extends Throwable> AbstractStringAssert<?> performAndExpectFlushFailure(
             @NotNull Class<C> expectedException,
             @NotNull String expectedMessage,
             @NotNull Consumer<EntityManager> consumer) {
@@ -144,45 +145,44 @@ public abstract class AbstractPostgreIntegrationTest {
      * Executes a specific set of persistence operations within a transaction, simulates a flush,
      * and ensures that the expected exception is thrown during the flush. Rolls back the transaction
      * following the operation and provides detailed assertions about the encountered exception.
-     *
+     * <p>
      * <br/>
      * This method is useful for testing scenarios where an exception is expected to occur
      * during the flush operation of an {@code EntityManager}.
      *
-     * @param <C>               The expected type of {@code Throwable} that should be thrown on flush.
-     * @param expectedException The class of the exception to expect during the flush operation.
-     *                           <ul>
-     *                               <li>Must not be {@code null}.</li>
-     *                               <li>The thrown exception must be of this type or a subclass of it.</li>
-     *                           </ul>
-     * @param consumer          A lambda or method reference that performs the transaction logic
-     *                           using the {@code EntityManager}. It is executed before an attempted
-     *                           flush operation.
-     *                           <ul>
-     *                               <li>Must not be {@code null}.</li>
-     *                               <li>Includes persistence operations like merge, persist, or remove if applicable.</li>
-     *                           </ul>
-     *
+     * @param <C>           The expected type of {@code Throwable} that should be thrown on flush.
+     * @param expectedCause The class of the exception to expect during the flush operation.
+     *                      <ul>
+     *                          <li>Must not be {@code null}.</li>
+     *                          <li>The thrown exception must be of this type or a subclass of it.</li>
+     *                      </ul>
+     * @param consumer      A lambda or method reference that performs the transaction logic
+     *                      using the {@code EntityManager}. It is executed before an attempted
+     *                      flush operation.
+     *                      <ul>
+     *                          <li>Must not be {@code null}.</li>
+     *                          <li>Includes persistence operations like merge, persist, or remove if applicable.</li>
+     *                      </ul>
      * @return An assertion object that enables further checks on the thrown exception.
-     *         <ul>
-     *             <li>Provides tools to assert the type, message, or cause of the exception.</li>
-     *             <li>Allows for chaining further exception-related assertions.</li>
-     *         </ul>
+     * <ul>
+     *     <li>Provides tools to assert the type, message, or cause of the exception.</li>
+     *     <li>Allows for chaining further exception-related assertions.</li>
+     * </ul>
      */
-    protected static <C extends Throwable> AbstractThrowableAssert<?, C> performAndExpectFlushFailure(
-            @NotNull Class<C> expectedException,
+    public <C extends Throwable> AbstractThrowableAssert<?, C> performAndExpectFlushFailure(
+            @NotNull Class<C> expectedCause,
             @NotNull Consumer<EntityManager> consumer) {
         EntityTransaction et = null;
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             et = em.getTransaction();
             et.begin();
             consumer.accept(em);
-            var ex = catchThrowableOfType(expectedException, em::flush);
+            var ex = catchThrowable(em::flush);
             assertThat(ex)
-                    .as("Expected exception of type " + expectedException + " on flush, found null.")
+                    .as("Expected exception of type " + expectedCause + " on flush, found null.")
                     .isNotNull();
             return CauseAssertions
-                    .assertExpectedCause(expectedException)
+                    .assertExpectedCause(expectedCause)
                     .assertCause(ex);
         } finally {
             if (et != null && et.isActive()) et.rollback();
@@ -196,11 +196,38 @@ public abstract class AbstractPostgreIntegrationTest {
      *
      * @param et the entity transaction to test.
      */
-    protected static void expectCommitFailure(@NotNull EntityTransaction et) {
+    public void expectCommitFailure(@NotNull EntityTransaction et) {
         var ex = assertThrows(RuntimeException.class, et::commit);
         if (et.isActive()) et.rollback();
         assertTrue(ex instanceof IllegalStateException
                         || ex instanceof PersistenceException,
                 "Expected a persistence-related failure but got: " + ex);
+    }
+
+    /**
+     * Executes a given operation within a transactional context.
+     * An EntityManager is provided to the operation, and the transaction
+     * is committed if the operation completes successfully or rolled back
+     * in case of a runtime exception.
+     *
+     * @param <T>       the type of the result produced by the operation performed within the transaction
+     * @param ctx       the application context containing the EntityManagerFactory
+     * @param performer a function that takes an EntityManager, performs an operation, and produces a result
+     * @return the result of the operation performed within the transaction
+     * @throws RuntimeException if an exception occurs during the transaction, after rolling back the transaction
+     */
+    public <T> T performInTransaction(@NotNull AppContext ctx,
+                                      @NotNull Function<EntityManager, T> performer) {
+        EntityTransaction tx = null;
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            tx = em.getTransaction();
+            tx.begin();
+            var r = performer.apply(em);
+            tx.commit();
+            return r;
+        } catch (RuntimeException e) {
+            if (tx != null && tx.isActive()) tx.rollback();
+            throw e;
+        }
     }
 }
