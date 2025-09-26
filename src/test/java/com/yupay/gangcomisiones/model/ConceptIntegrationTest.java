@@ -59,7 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>Utility methods are used for transaction management and exception expectations.</li>
  * </ul>
  * <div style="border: 1px solid black; padding: 2px">
- *     <strong>Execution note:</strong> tested by dvidal@infoyupay.com passed 9 in 1.329ms at 2025-09-25 22:18 UTC-5.
+ *     <strong>Execution note:</strong> tested by dvidal@infoyupay.com passed 10 in 1.385ms at 2025-09-25 22:23 UTC-5.
  * </div>
  *
  * @author InfoYupay SACS
@@ -220,5 +220,51 @@ class ConceptIntegrationTest extends AbstractPostgreIntegrationTest {
                         .value(new BigDecimal("5.00"))
                         .active(null)
                         .build()));
+    }
+
+
+    /**
+     * Tests the failure of persisting two {@link Concept} entities with identical names due to a database
+     * constraint violation.
+     * <br/>
+     * This method attempts to persist two {@link Concept} objects with the same {@code name} value ("Telephone Bill")
+     * but with different {@code type} and {@code value}.
+     * <br/>
+     * The operation is expected to result in a {@code SQLException}, triggered by the unique constraint violation
+     * on the {@code name} column (likely enforced by the {@code uq_concept_name} constraint).
+     * <br/>
+     * <br/>
+     * <b>Expected Behavior:</b>
+     * <ul>
+     *   <li>The operation fails during flush due to a unique constraint violation.</li>
+     *   <li>A {@link SQLException} is thrown.</li>
+     *   <li>The exception message contains the constraint name {@code uq_concept_name}.</li>
+     * </ul>
+     * <br/>
+     * <b>Purpose:</b>
+     * <ol>
+     *   <li>Ensure duplication of names in {@link Concept} entities is prohibited.</li>
+     *   <li>Validate the database handles unique constraint violations as expected.</li>
+     *   <li>Automatically roll back the transaction to maintain data integrity.</li>
+     * </ol>
+     */
+    @Test
+    void persistConceptWithDuplicatedName_shouldFail() {
+        performAndExpectFlushFailure(SQLException.class,
+                "uq_concept_name",
+                em -> {
+                    em.persist(Concept.builder()
+                            .name("Telephone Bill")
+                            .type(ConceptType.FIXED)
+                            .value(new BigDecimal("5.00"))
+                            .active(true)
+                            .build());
+                    em.persist(Concept.builder()
+                            .name("Telephone Bill")
+                            .type(ConceptType.RATE)
+                            .value(new BigDecimal("0.20"))
+                            .active(true)
+                            .build());
+                });
     }
 }
