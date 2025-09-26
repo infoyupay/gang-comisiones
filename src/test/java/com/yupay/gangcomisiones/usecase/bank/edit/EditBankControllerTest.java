@@ -155,7 +155,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank bank) {
         }
-        Entities persisted = TestPersistedEntities.performInTransaction(ctx, em -> {
+        Entities persisted = performInTransaction(ctx, em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var bank = TestPersistedEntities.persistBank(em);
             return new Entities(admin, bank);
@@ -202,8 +202,8 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminAndCancel_whenRun_thenCancelled() {
         // Arrange
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
-        var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var bank = performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(admin);
         view = TestViews.bankView(FormMode.EDIT, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
@@ -241,7 +241,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenNoUser_whenRun_thenErrorAndNoFormShown() {
         // Arrange
-        var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
+        var bank = performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(null);
         view = TestViews.bankView(null, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
@@ -275,8 +275,8 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUser_whenRun_thenErrorAndNoFormShown() {
         // Arrange
-        var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
-        var bank = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistBank);
+        var cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        var bank = performInTransaction(ctx, TestPersistedEntities::persistBank);
         ctx.getUserSession().setCurrentUser(cashier);
         view = TestViews.bankView(null, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
@@ -313,7 +313,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank a, Bank b) {
         }
-        Entities persisted = TestPersistedEntities.performInTransaction(ctx, em -> {
+        Entities persisted = performInTransaction(ctx, em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var a = TestPersistedEntities.persistBank(em);
             var b = Bank.builder()

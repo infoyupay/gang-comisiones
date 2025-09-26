@@ -21,17 +21,18 @@ package com.yupay.gangcomisiones.model;
 
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import jakarta.persistence.EntityManager;
+import com.yupay.gangcomisiones.assertions.CauseAssertions;
+import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.PersistenceException;
-import org.junit.jupiter.api.AfterEach;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import java.math.BigDecimal;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Integration test for {@link Concept} entity.
@@ -41,29 +42,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConceptIntegrationTest extends AbstractPostgreIntegrationTest {
-    /**
-     * Shared entity manager.
-     */
-    private EntityManager em;
 
     /**
      * Cleans the table before each test.
      */
     @BeforeEach
     void setUp() {
-        em = ctx.getEntityManagerFactory().createEntityManager();
-        em.getTransaction().begin();
-        em.createNativeQuery("TRUNCATE TABLE public.concept CASCADE").executeUpdate();
-        em.getTransaction().commit();
-    }
-
-    /**
-     * Rolls back any pending transaction and closes entity manager after each test.
-     */
-    @AfterEach
-    void tearDown() {
-        if (em.getTransaction().isActive()) em.getTransaction().rollback();
-        em.close();
+        TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
 
     /**
@@ -71,156 +56,252 @@ class ConceptIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistValidConcept_shouldPass() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("Telephone Bill")
                 .type(ConceptType.FIXED)
                 .value(new BigDecimal("12.4567"))
                 .active(true)
                 .build();
-        em.persist(c);
-        em.flush();
-        em.getTransaction().commit();
-
-        assertNotNull(c.getId());
+        EntityTransaction et = null;
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et = em.getTransaction();
+            et.begin();
+            em.persist(c);
+            em.flush();
+            et.commit();
+        } catch (Exception e) {
+            if (et != null && et.isActive()) et.rollback();
+            fail(e);
+        }
+        Assertions.assertThat(c.getId())
+                .as("The Concept ID must not be null.")
+                .isNotNull();
     }
 
     /**
      * Tests that a concept with null name fails.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithNullName_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name(null)
                 .type(ConceptType.FIXED)
                 .value(new BigDecimal("12.4567"))
                 .active(true)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                            .assertCauseWithMessage(
+                                    catchThrowableOfType(PersistenceException.class, em::flush),
+                                    "null, FIXED, 12.4567, t");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 
     /**
      * Tests that a concept with empty name fails.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithEmptyName_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("")
                 .type(ConceptType.FIXED)
                 .value(new BigDecimal("12.4567"))
                 .active(true)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                    .assertCauseWithMessage(
+                            catchThrowableOfType(PersistenceException.class, em::flush),
+                            "chk_concept_name_nonempty");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 
     /**
      * Tests that a concept with null type fails.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithNullType_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("Telephone Bill")
                 .type(null)
                 .value(new BigDecimal("12.4567"))
                 .active(true)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                    .assertCauseWithMessage(
+                            catchThrowableOfType(PersistenceException.class, em::flush),
+                            "Telephone Bill, null, 12.4567, t");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 
     /**
      * Tests that a concept with null value fails.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithNullValue_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("Telephone Bill")
                 .type(ConceptType.FIXED)
                 .value(null)
                 .active(true)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                    .assertCauseWithMessage(
+                            catchThrowableOfType(PersistenceException.class, em::flush),
+                            "Telephone Bill, FIXED, null, t");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 
     /**
      * Tests that a {@link ConceptType#FIXED} concept with negative value fails
      * due a constraint check rejection.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithInvalidValueForFixed_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("Telephone Bill")
                 .type(ConceptType.FIXED)
                 .value(new BigDecimal("-1.0"))
                 .active(true)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                    .assertCauseWithMessage(
+                            catchThrowableOfType(PersistenceException.class, em::flush),
+                            "chk_concept_value_valid");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 
     /**
      * Tests that a {@link ConceptType#RATE} concept with value > 1.0 fails
      * due a constraint check rejection.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithInvalidValueForRate_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("Telephone Bill")
                 .type(ConceptType.RATE)
                 .value(new BigDecimal("1.5"))
                 .active(true)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                    .assertCauseWithMessage(
+                            catchThrowableOfType(PersistenceException.class, em::flush),
+                            "chk_concept_value_valid");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 
     /**
      * Tests that a concept with value > 99.9999 fails
      * due an overflow of DECIMAL(6,4).
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithInvalidValueOverflow_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("Telephone Bill")
                 .type(ConceptType.RATE)
                 .value(new BigDecimal("123.4567"))
                 .active(true)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                    .assertCauseWithMessage(
+                            catchThrowableOfType(PersistenceException.class, em::flush),
+                            "10^2");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 
     /**
      * Tests that a {@link Concept} with null active fails due a not null directive in db.
      */
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     void persistConceptWithNullActive_shouldFail() {
-        em.getTransaction().begin();
-        Concept c = Concept.builder()
+        var c = Concept.builder()
                 .name("Telephone Bill")
                 .type(ConceptType.FIXED)
-                .value(new BigDecimal("23.4567"))
+                .value(new BigDecimal("12.4567"))
                 .active(null)
                 .build();
-        em.persist(c);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try(var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et= em.getTransaction();
+            et.begin();
+            em.persist(c);
+            CauseAssertions.assertExpectedCause(PersistenceException.class)
+                    .assertCauseWithMessage(
+                            catchThrowableOfType(PersistenceException.class, em::flush),
+                            "Telephone Bill, FIXED, 12.4567, null");
+            et.rollback();
+        } catch (RuntimeException e) {
+            if (et != null && et.isActive()) et.rollback();
+            Assertions.fail(e);
+        }
     }
 }

@@ -141,12 +141,12 @@ class ReviewReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminUser_whenStartUseCase_thenLoadsPendingAndShowsBoard() throws InterruptedException {
         // given: create a pending request
-        var tx = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistTransaction);
+        var tx = performInTransaction(ctx, TestPersistedEntities::persistTransaction);
         var cashier = tx.getCashier();
         ctx.getUserSession().setCurrentUser(cashier);
         var req = reversalRequestService.createReversalRequest(tx.getId(), cashier.getId(), "mistake 7864e6").join();
         // and: admin in session
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         var controller = new ReviewReversionController(ctx);
 
@@ -188,10 +188,10 @@ class ReviewReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminUser_whenCancelOnResolve_thenNoChangesAndInfoShown() {
         // given
-        var tx = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistTransaction);
+        var tx = performInTransaction(ctx, TestPersistedEntities::persistTransaction);
         var cashier = tx.getCashier();
         var req = reversalRequestService.createReversalRequest(tx.getId(), cashier.getId(), "mistake").join();
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         when(view.showResolveDialog(any(ReversalRequest.class))).thenReturn(Optional.empty());
         var controller = new ReviewReversionController(ctx);
@@ -248,10 +248,10 @@ class ReviewReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminUserAndBlankJustification_whenResolve_thenCancelled() {
         // given
-        var tx = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistTransaction);
+        var tx = performInTransaction(ctx, TestPersistedEntities::persistTransaction);
         var cashier = tx.getCashier();
         var req = reversalRequestService.createReversalRequest(tx.getId(), cashier.getId(), "mistake").join();
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         when(view.showResolveDialog(any(ReversalRequest.class)))
                 .thenReturn(Optional.of(new ReviewReversionView.ResolutionInput(
@@ -313,10 +313,10 @@ class ReviewReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenApprovedResolution_whenResolve_thenTxReversed() {
         // given
-        var tx = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistTransaction);
+        var tx = performInTransaction(ctx, TestPersistedEntities::persistTransaction);
         var cashier = tx.getCashier();
         var req = reversalRequestService.createReversalRequest(tx.getId(), cashier.getId(), "mistake").join();
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         when(view.showResolveDialog(any(ReversalRequest.class)))
                 .thenReturn(Optional.of(new ReviewReversionView.ResolutionInput(
@@ -370,10 +370,10 @@ class ReviewReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenRejectedResolution_whenResolve_thenTxRegistered() {
         // given
-        var tx = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistTransaction);
+        var tx = performInTransaction(ctx, TestPersistedEntities::persistTransaction);
         var cashier = tx.getCashier();
         var req = reversalRequestService.createReversalRequest(tx.getId(), cashier.getId(), "mistake").join();
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         when(view.showResolveDialog(any(ReversalRequest.class)))
                 .thenReturn(Optional.of(new ReviewReversionView.ResolutionInput(
@@ -468,13 +468,13 @@ class ReviewReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenNotPendingAnymore_whenResolve_thenShowsErrorAndDoesNotProceed() {
         // given
-        var tx = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistTransaction);
+        var tx = performInTransaction(ctx, TestPersistedEntities::persistTransaction);
         var cashier = tx.getCashier();
         var req = reversalRequestService.createReversalRequest(tx.getId(), cashier.getId(), "mistake").join();
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         // simulate already resolved by changing status directly
-        TestPersistedEntities.performInTransaction(ctx, em -> {
+        performInTransaction(ctx, em -> {
             var managed = em.find(ReversalRequest.class, req.getId());
             managed.setStatus(ReversalRequestStatus.APPROVED);
             return null;

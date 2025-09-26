@@ -109,7 +109,7 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange persisted admin and concept
         //noinspection MissingJavadoc
         record Entities(User admin, Concept concept) {}
-        Entities persisted = TestPersistedEntities.performInTransaction(ctx, em -> {
+        Entities persisted = performInTransaction(ctx, em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var concept = TestPersistedEntities.persistConcept(em);
             return new Entities(admin, concept);
@@ -155,8 +155,8 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void givenAdminAndCancel_whenRun_thenCancelled() {
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
-        var concept = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistConcept);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var concept = performInTransaction(ctx, TestPersistedEntities::persistConcept);
         ctx.getUserSession().setCurrentUser(admin);
 
         view = mock(ConceptView.class);
@@ -181,7 +181,7 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void givenNoUser_whenRun_thenErrorAndNoFormShown() {
-        var concept = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistConcept);
+        var concept = performInTransaction(ctx, TestPersistedEntities::persistConcept);
         ctx.getUserSession().setCurrentUser(null);
 
         view = mock(ConceptView.class);
@@ -205,8 +205,8 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void givenCashierUser_whenRun_thenErrorAndNoFormShown() {
-        var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
-        var concept = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistConcept);
+        var cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        var concept = performInTransaction(ctx, TestPersistedEntities::persistConcept);
         ctx.getUserSession().setCurrentUser(cashier);
 
         view = mock(ConceptView.class);
@@ -233,7 +233,7 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange admin and two concepts with different names
         //noinspection MissingJavadoc
         record Entities(User admin, Concept c1, Concept c2) {}
-        Entities persisted = TestPersistedEntities.performInTransaction(ctx, em -> {
+        Entities persisted = performInTransaction(ctx, em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var c1 = TestPersistedEntities.persistConcept(em);
             // create a second different concept

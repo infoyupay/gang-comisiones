@@ -159,7 +159,7 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_rootUser_canCreate() {
-        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistRootUser);
+        User currentUser = performInTransaction(ctx, TestPersistedEntities::persistRootUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var dto = new CreateUserDTO("cashier", "12345678", UserRole.CASHIER);
@@ -196,7 +196,7 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_nonRootUser_cannotCreate() {
-        User currentUser = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        User currentUser = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var controller = new CreateUserController(view, ctx.getUserService(), false);
@@ -221,7 +221,7 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_errorOnDuplicateUsername() {
-        var current = TestPersistedEntities.performInTransaction(ctx, em -> {
+        var current = performInTransaction(ctx, em -> {
             var _current = TestPersistedEntities.persistRootUser(em);
             em.persist(User.builder()
                     .username("dupUser")

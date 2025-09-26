@@ -194,7 +194,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndCancel_whenStartUseCase_thenCancelled() {
         // given
-        User cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        User cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         when(view.showReasonDialog()).thenReturn(Optional.empty());
         var controller = new RequestReversionController(ctx);
@@ -238,7 +238,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndBlankReason_whenStartUseCase_thenCancelled() {
         // given
-        User cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        User cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         when(view.showReasonDialog()).thenReturn(Optional.of("   \t   "));
         var controller = new RequestReversionController(ctx);
@@ -288,7 +288,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
         //noinspection MissingJavadoc
         record InnerDTO(User ownerB, Transaction trx) {
         }
-        var objects = TestPersistedEntities.performInTransaction(ctx, em -> {
+        var objects = performInTransaction(ctx, em -> {
             var ownerB = User.builder()
                     .username("cashier.ownerB")
                     .role(UserRole.CASHIER)
@@ -348,7 +348,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndNonRegisteredTransaction_whenStartUseCase_thenStatusError() {
         // given
-        Transaction tx = TestPersistedEntities.performInTransaction(ctx, em -> {
+        Transaction tx = performInTransaction(ctx, em -> {
             var r = TestPersistedEntities.buildValidTansaction(em);
             // force different status
             r.setStatus(TransactionStatus.REVERSED);
@@ -412,7 +412,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndValidReason_whenStartUseCase_thenDelegatesAndShowsSuccess() {
         // given
-        Transaction tx = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistTransaction);
+        Transaction tx = performInTransaction(ctx, TestPersistedEntities::persistTransaction);
         User cashier = tx.getCashier();
         ctx.getUserSession().setCurrentUser(cashier);
         when(view.showReasonDialog()).thenReturn(Optional.of("mistyped amount"));

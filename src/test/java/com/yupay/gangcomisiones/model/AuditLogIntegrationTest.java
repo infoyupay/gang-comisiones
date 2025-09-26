@@ -87,7 +87,7 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
         record UserAndLog(User user, AuditLog log) {
         }
         //Create a user and log
-        var userAndLog = TestPersistedEntities.performInTransaction(ctx, em -> {
+        var userAndLog = performInTransaction(ctx, em -> {
             var user = TestPersistedEntities.persistRootUser(em);
             var log = AuditLog.builder()
                     .user(user)

@@ -123,7 +123,7 @@ class CreateConceptControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminAndValidConcept_whenRun_thenCreated() {
         // Arrange
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         var input = Concept.builder()
                 .name("Internet")
@@ -173,7 +173,7 @@ class CreateConceptControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void givenAdminAndCancel_whenRun_thenCancelled() {
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
 
         view = mock(ConceptView.class);
@@ -258,7 +258,7 @@ class CreateConceptControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void givenCashierUser_whenRun_thenErrorAndNoFormShown() {
-        var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        var cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
 
         var input = Concept.builder()
@@ -312,7 +312,7 @@ class CreateConceptControllerTest extends AbstractPostgreIntegrationTest {
         //noinspection MissingJavadoc
         record Entities(User admin, Concept concept) {
         }
-        Entities persisted = TestPersistedEntities.performInTransaction(ctx, em -> {
+        Entities persisted = performInTransaction(ctx, em -> {
             var user = TestPersistedEntities.persistAdminUser(em);
             var concept = TestPersistedEntities.persistConcept(em);
             return new Entities(user, concept);

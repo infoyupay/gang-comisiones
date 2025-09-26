@@ -20,16 +20,13 @@
 package com.yupay.gangcomisiones.model;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import com.yupay.gangcomisiones.AppContext;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
-import org.junit.jupiter.api.AfterEach;
+import jakarta.persistence.EntityTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Integration test class for {@link Bank} JPA entity.
@@ -39,30 +36,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BankIntegrationTest extends AbstractPostgreIntegrationTest {
-    /**
-     * The entity manager object.
-     */
-    private EntityManager em;
 
     /**
      * Sets up the test environment, and cleans tables.
      */
     @BeforeEach
     void setUp() {
-        em = AppContext.getInstance().getEntityManagerFactory().createEntityManager();
-        em.getTransaction().begin();
-        // Cleans the table.
-        em.createNativeQuery("TRUNCATE TABLE public.bank CASCADE").executeUpdate();
-        em.getTransaction().commit();
-    }
-
-    /**
-     * Rollsback and releases entity manager object.
-     */
-    @AfterEach
-    void tearDown() {
-        if (em.getTransaction().isActive()) em.getTransaction().rollback();
-        em.close();
+        TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
 
     /**
@@ -70,15 +50,14 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistValidBank_shouldPass() {
-        em.getTransaction().begin();
-        Bank bank = Bank.builder()
-                .name("BCP")
-                .active(true)
-                .build();
-        em.persist(bank);
-        em.flush();
-        em.getTransaction().commit();
-
+        var bank = performInTransaction(ctx, em -> {
+            var r = Bank.builder()
+                    .name("BCP")
+                    .active(true)
+                    .build();
+            em.persist(r);
+            return r;
+        });
         assertNotNull(bank.getId());
     }
 
@@ -87,15 +66,22 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistBankWithNullName_shouldFail() {
-        em.getTransaction().begin();
-        Bank bank = Bank.builder()
-                .name(null)
-                .active(true)
-                .build();
 
-        em.persist(bank);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+        EntityTransaction et = null;
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et = em.getTransaction();
+            et.begin();
+            var bank = Bank.builder()
+                    .name(null)
+                    .active(true)
+                    .build();
+
+            em.persist(bank);
+            expectCommitFailure(et);
+        } catch (Exception e) {
+            if (et != null && et.isActive()) et.rollback();
+            fail(e);
+        }
     }
 
     /**
@@ -103,15 +89,21 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistBankWithEmptyName_shouldFail() {
-        em.getTransaction().begin();
-        Bank bank = Bank.builder()
-                .name("")
-                .active(true)
-                .build();
+        EntityTransaction et = null;
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et = em.getTransaction();
+            et.begin();
+            var bank = Bank.builder()
+                    .name("")
+                    .active(true)
+                    .build();
 
-        em.persist(bank);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+            em.persist(bank);
+            expectCommitFailure(et);
+        } catch (Exception e) {
+            if (et != null && et.isActive()) et.rollback();
+            fail(e);
+        }
     }
 
     /**
@@ -119,15 +111,21 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistBankWithNullActive_shouldFail() {
-        em.getTransaction().begin();
-        Bank bank = Bank.builder()
-                .name("BCP")
-                .active(null)
-                .build();
+        EntityTransaction et = null;
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            et = em.getTransaction();
+            et.begin();
+            var bank = Bank.builder()
+                    .name("BCP")
+                    .active(null)
+                    .build();
 
-        em.persist(bank);
-        assertThrows(PersistenceException.class, em::flush);
-        em.getTransaction().rollback();
+            em.persist(bank);
+            expectCommitFailure(et);
+        } catch (Exception e) {
+            if (et != null && et.isActive()) et.rollback();
+            fail(e);
+        }
     }
 }
 

@@ -77,7 +77,7 @@ class ManageBankControllerTest extends AbstractPostgreIntegrationTest {
     @BeforeEach
     void arrange() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
-        user = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        user = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         bank.set(Bank.builder().name("My New Bank").build());
         board = TestViews.bankBoardView();
         bankView = TestViews.bankView(null, bank, true);

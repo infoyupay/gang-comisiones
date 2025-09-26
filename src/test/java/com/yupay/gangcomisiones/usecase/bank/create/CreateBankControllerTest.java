@@ -130,7 +130,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminAndValidBank_whenRun_thenBankCreated() {
         // Arrange
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
         bankRef.set(sampleBank);
@@ -170,7 +170,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminAndCancel_whenRun_thenCancelled() {
         // Arrange
-        var admin = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        var admin = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(admin);
         bankRef.set(null);
         view = TestViews.bankView(FormMode.CREATE, bankRef);
@@ -243,7 +243,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUser_whenRun_thenErrorAndNoFormShown() {
         // Arrange
-        var cashier = TestPersistedEntities.performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        var cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         var sampleBank = Bank.builder().name("Random Bank").active(true).build();
         bankRef.set(sampleBank);
@@ -281,7 +281,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank bank) {
         }
-        Entities persisted = TestPersistedEntities.performInTransaction(ctx, em -> {
+        Entities persisted = performInTransaction(ctx, em -> {
             var user = TestPersistedEntities.persistAdminUser(em);
             var bank = TestPersistedEntities.persistBank(em);
             return new Entities(user, bank);
