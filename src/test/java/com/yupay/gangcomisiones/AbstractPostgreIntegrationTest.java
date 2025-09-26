@@ -196,6 +196,7 @@ public abstract class AbstractPostgreIntegrationTest {
      *
      * @param et the entity transaction to test.
      */
+    @Deprecated
     public void expectCommitFailure(@NotNull EntityTransaction et) {
         var ex = assertThrows(RuntimeException.class, et::commit);
         if (et.isActive()) et.rollback();
