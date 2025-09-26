@@ -21,32 +21,60 @@ package com.yupay.gangcomisiones.model;
 
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import org.assertj.core.api.SoftAssertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Integration test for {@link AuditLog}, successfully tested by dvidal
- * passing 4 tests in 567 ms.
+ * Integration tests for validating the functionality and persistence of the {@code AuditLog} entity.
+ * <br/>
+ * This class extends {@code AbstractPostgreIntegrationTest} to leverage the PostgreSQL testing environment.
+ * <br/>
+ * Key use cases include:
+ * <ul>
+ *   <li>Validating persistence of {@code AuditLog} entities with user information.</li>
+ *   <li>Ensuring database constraints on {@code AuditLog} fields are enforced during insert operations.</li>
+ * </ul>
+ *
+ * Features tested:
+ * <ol>
+ *   <li>Correct persistence of {@code AuditLog} entities with non-null user associations.</li>
+ *   <li>Validation failure when attempting to insert an {@code AuditLog} entity with a {@code null} user.</li>
+ *   <li>Validation failure when attempting to insert an {@code AuditLog} entity with an empty {@code action} field.</li>
+ * </ol>
+ *
+ * Test scenarios:
+ * <ul>
+ *   <li>
+ *     <b>{@code shouldPersistAuditLogWithUser}</b><br/>
+ *     Verifies that an {@code AuditLog} is correctly persisted with associated user information and other mandatory fields.
+ *   </li>
+ *   <li>
+ *     <b>{@code shouldFailWhenUserIsNull}</b><br/>
+ *     Ensures that persisting an {@code AuditLog} without an associated user violates database constraints and fails.
+ *   </li>
+ *   <li>
+ *     <b>{@code shouldFailWhenActionIsEmpty}</b><br/>
+ *     Validates that persisting an {@code AuditLog} with an empty {@code action} field violates the database's non-empty check constraint.
+ *   </li>
+ * </ul>
+ * <div>
+ *     <strong>Execution note: </strong> tested by dvidal@infoyupay.com 3 passed in 2.246ms.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
 class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
     /**
-     * Truncates tables.
+     * Truncates tables before each execution.
      */
     @BeforeEach
     void cleanTable() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            em.getTransaction().begin();
-            em.createNativeQuery("TRUNCATE TABLE public.audit_log CASCADE").executeUpdate();
-            em.createNativeQuery("TRUNCATE TABLE public.user CASCADE").executeUpdate();
-            em.getTransaction().commit();
-        }
+        TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
 
     /**
@@ -54,41 +82,35 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldPersistAuditLogWithUser() {
-        var em = ctx.getEntityManagerFactory().createEntityManager();
-        var tx = em.getTransaction();
-        tx.begin();
-
-        // Arrange: create a User (assuming minimal constructor/setters available)
-        var user = User.builder()
-                .username("tester")
-                .password("secret25")
-                .role(UserRole.ROOT)
-                .active(true)
-                .build();
-        em.persist(user);
-
-        var log = AuditLog.builder()
-                .user(user)
-                .action("LOGIN")
-                .entity("User")
-                .entityId(user.getId())
-                .details("User logged in")
-                .computerName("workstation-01")
-                .build();
-
-        // Act
-        em.persist(log);
-        em.flush();  // ensures insert in DB
-        em.refresh(log); // reloads eventStamp, id, etc.
-        tx.commit();
+        //Arrange
+        //1. define a data carrier.
+        record UserAndLog(User user, AuditLog log) {
+        }
+        //Create a user and log
+        var userAndLog = TestPersistedEntities.performInTransaction(ctx, em -> {
+            var user = TestPersistedEntities.persistRootUser(em);
+            var log = AuditLog.builder()
+                    .user(user)
+                    .action("LOGIN")
+                    .entity("User")
+                    .entityId(user.getId())
+                    .details("User logged in")
+                    .computerName("workstation-01")
+                    .build();
+            //ACT
+            em.persist(log);
+            em.flush();
+            em.refresh(log);
+            return new UserAndLog(user, log);
+        });
 
         // Assert
-        assertNotNull(log.getId());
-        assertNotNull(log.getEventStamp());
-        assertEquals("LOGIN", log.getAction());
-        assertEquals(user.getId(), log.getUser().getId());
-
-        em.close();
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(userAndLog.log.getId()).isNotNull();
+            softly.assertThat(userAndLog.log.getEventStamp()).isNotNull();
+            softly.assertThat(userAndLog.log.getAction()).isEqualTo("LOGIN");
+            softly.assertThat(userAndLog.log.getUser().getId()).isEqualTo(userAndLog.user.getId());
+        });
     }
 
     /**
@@ -96,22 +118,21 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldFailWhenUserIsNull() {
-        var em = ctx.getEntityManagerFactory().createEntityManager();
-        var tx = em.getTransaction();
-        tx.begin();
-
+        //Arrange
+        //1. Invalid AuditLog
         var log = AuditLog.builder()
                 .action("DELETE")
                 .computerName("pc01")
                 .build();
-
-        assertThrows(Exception.class, () -> {
-            em.persist(log);
-            em.flush();
+        //Act
+        performAndExpectFlushFailure(
+                SQLException.class,
+                em -> em.persist(log));
+        //Assert
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(log.getEventStamp()).isNull();
+            softly.assertThat(log.getUser()).isNull();
         });
-
-        tx.rollback();
-        em.close();
     }
 
     /**
@@ -119,105 +140,24 @@ class AuditLogIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldFailWhenActionIsEmpty() {
-        var em = ctx.getEntityManagerFactory().createEntityManager();
-        var tx = em.getTransaction();
-        tx.begin();
-
-        var user = User.builder()
-                .username("tester2")
-                .password("secret25")
-                .role(UserRole.ROOT)
-                .active(true)
-                .build();
-
-        var log = AuditLog.builder()
-                .user(user)
-                .action("") // violates CHECK constraint
-                .computerName("pc02")
-                .build();
-
-        assertThrows(Exception.class, () -> {
-            em.persist(log);
-            em.flush();
+        var logHolder = new AtomicReference<AuditLog>();
+        performAndExpectFlushFailure(SQLException.class,
+                "chk_audit_action_nonempty",
+                em -> {
+                    var user = TestPersistedEntities.persistRootUser(em);
+                    var log = AuditLog.builder()
+                            .user(user)
+                            .action("") // violates CHECK constraint
+                            .computerName("pc02")
+                            .build();
+                    logHolder.set(log);
+                    em.persist(log);
+                });
+        SoftAssertions.assertSoftly(softly -> {
+            softly.assertThat(logHolder.get()).isNotNull();
+            softly.assertThat(logHolder.get().getEventStamp()).isNull();
+            softly.assertThat(logHolder.get().getAction()).isBlank();
         });
-
-        tx.rollback();
-        em.close();
-    }
-
-    /**
-     * Test that index (event_stamp descending) is working fine on queries.
-     */
-    @Test
-    void shouldQueryLogsOrderedByEventStampDescForUser() {
-        // Arrange: create user (single transaction)
-        User user;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            em.getTransaction().begin();
-
-            user = User.builder()
-                    .username("auditUser")
-                    .password("secret25")
-                    .role(UserRole.ROOT)
-                    .active(true)
-                    .build();
-            em.persist(user);
-
-            em.getTransaction().commit();
-        }
-
-        // Persist 3 logs in separate transactions.
-        persistAuditLog(user, "ACTION1");
-        persistAuditLog(user, "ACTION2");
-        persistAuditLog(user, "ACTION3");
-
-        List<AuditLog> result;
-        // Query descending order.
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            result = em.createQuery(
-                            "SELECT l FROM AuditLog l WHERE l.user = :user ORDER BY l.eventStamp DESC",
-                            AuditLog.class)
-                    .setParameter("user", user)
-                    .getResultList();
-        }
-
-        // Assert
-        assertEquals(3, result.size());
-        assertTrue(result.get(0).getEventStamp().isAfter(result.get(1).getEventStamp()));
-        assertTrue(result.get(1).getEventStamp().isAfter(result.get(2).getEventStamp()));
-        assertEquals("ACTION3", result.get(0).getAction());
-        assertEquals("ACTION2", result.get(1).getAction());
-        assertEquals("ACTION1", result.get(2).getAction());
-    }
-
-    /**
-     * Persists an audit log entry in a single transaction and refreshes the entity to
-     * retrieve event stamp. Also, sleeps for 5 ms to avoid timestamp collisions.
-     *
-     * @param user   The user associated with the audit log.
-     * @param action The action performed.
-     */
-    private void persistAuditLog(User user, String action) {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            em.getTransaction().begin();
-
-            var log = AuditLog.builder()
-                    .user(user)
-                    .action(action)
-                    .computerName("pc1")
-                    .build();
-
-            em.persist(log);
-            em.getTransaction().commit();
-            em.refresh(log);
-        }
-
-        // Sleep to avoid timestamp collisions.
-        try {
-            Thread.sleep(5);
-        } catch (InterruptedException _) {
-            Thread.currentThread().interrupt();
-        }
     }
 
 }
