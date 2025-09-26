@@ -38,14 +38,14 @@ import java.util.concurrent.atomic.AtomicReference;
  *   <li>Validating persistence of {@code AuditLog} entities with user information.</li>
  *   <li>Ensuring database constraints on {@code AuditLog} fields are enforced during insert operations.</li>
  * </ul>
- *
+ * <p>
  * Features tested:
  * <ol>
  *   <li>Correct persistence of {@code AuditLog} entities with non-null user associations.</li>
  *   <li>Validation failure when attempting to insert an {@code AuditLog} entity with a {@code null} user.</li>
  *   <li>Validation failure when attempting to insert an {@code AuditLog} entity with an empty {@code action} field.</li>
  * </ol>
- *
+ * <p>
  * Test scenarios:
  * <ul>
  *   <li>
@@ -61,8 +61,8 @@ import java.util.concurrent.atomic.AtomicReference;
  *     Validates that persisting an {@code AuditLog} with an empty {@code action} field violates the database's non-empty check constraint.
  *   </li>
  * </ul>
- * <div>
- *     <strong>Execution note: </strong> tested by dvidal@infoyupay.com 3 passed in 2.246ms.
+ * <div style="border: 1px solid black; padding: 2px;">
+ *     <strong>Execution note: </strong> tested by dvidal@infoyupay.com 3 passed in 2.246s at 2025-09-25 20:30 UTC-5.
  * </div>
  *
  * @author InfoYupay SACS
