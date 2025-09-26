@@ -150,6 +150,7 @@ public record CauseAssertions<C extends Throwable>(Class<C> expected) {
                 return expected.cast(cause);
             }
         }
+        t.printStackTrace();
         return null;
     }
 }
