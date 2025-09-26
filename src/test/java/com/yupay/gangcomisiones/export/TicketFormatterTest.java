@@ -107,7 +107,7 @@ public class TicketFormatterTest extends AbstractPostgreIntegrationTest {
 
         record Pulled(Transaction tx, GlobalConfig cfg) {
         }
-        var samples = performInTransaction(ctx, em -> {
+        var samples = performInTransaction(em -> {
             var tx = TestPersistedEntities.persistTransaction(em);
             var cfg = TestPersistedEntities.persistGlobalConfig(em);
             return new Pulled(tx, cfg);

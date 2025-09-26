@@ -74,7 +74,7 @@ class ManageConceptControllerTest extends AbstractPostgreIntegrationTest {
     @BeforeEach
     void arrange() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
-        user = performInTransaction(ctx, TestPersistedEntities::persistAdminUser);
+        user = performInTransaction(TestPersistedEntities::persistAdminUser);
         conceptRef.set(Concept.builder()
                 .name("Internet")
                 .type(ConceptType.RATE)

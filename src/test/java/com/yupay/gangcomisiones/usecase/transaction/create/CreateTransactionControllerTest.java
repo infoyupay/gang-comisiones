@@ -20,7 +20,6 @@
 package com.yupay.gangcomisiones.usecase.transaction.create;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.TestViews;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import com.yupay.gangcomisiones.model.Transaction;
@@ -160,7 +159,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenLoggedInUserAndValidRequest_whenStartUseCase_thenTransactionCreated() {
         // Arrange
-        var transaction = performInTransaction(ctx, TestPersistedEntities::buildValidTansaction);
+        var transaction = performInTransaction(TestPersistedEntities::buildValidTansaction);
 
         ctx.getUserSession().setCurrentUser(transaction.getCashier());
 
@@ -227,7 +226,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenLoggedInUserAndCancel_whenStartUseCase_thenCancelled() {
         // Arrange
-        var cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        var cashier = performInTransaction(TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         requestRef.set(null);
 
@@ -331,7 +330,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
      * The test performs the following steps:
      * <ol>
      *     <li>Sets up a logged-in user session by creating and assigning a cashier user using
-     *         {@link AbstractPostgreIntegrationTest#performInTransaction(AppContext, Function)}.</li>
+     *         {@link AbstractPostgreIntegrationTest#performInTransaction(Function)}.</li>
      *     <li>Prepares an invalid {@link CreateTransactionRequest} with a negative amount
      *         to trigger a persistence layer error.</li>
      *     <li>Initializes the transaction creation view with {@link FormMode#CREATE} mode.</li>
@@ -358,7 +357,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenPersistenceError_whenStartUseCase_thenErrorShown() {
         // Arrange
-        var cashier = performInTransaction(ctx, TestPersistedEntities::persistCashierUser);
+        var cashier = performInTransaction(TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
 
         var invalidRequest = CreateTransactionRequest.builder()

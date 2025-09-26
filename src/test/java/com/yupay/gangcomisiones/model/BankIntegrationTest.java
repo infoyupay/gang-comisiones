@@ -20,13 +20,13 @@
 package com.yupay.gangcomisiones.model;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import jakarta.persistence.EntityTransaction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import java.sql.SQLException;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 /**
  * Integration test class for {@link Bank} JPA entity.
@@ -50,7 +50,7 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistValidBank_shouldPass() {
-        var bank = performInTransaction(ctx, em -> {
+        var bank = performInTransaction(em -> {
             var r = Bank.builder()
                     .name("BCP")
                     .active(true)
@@ -58,7 +58,10 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
             em.persist(r);
             return r;
         });
-        assertNotNull(bank.getId());
+        assertThat(bank.getId())
+                .describedAs("Bank ID must be positive and non-null, found {}", bank.getId())
+                .isNotNull()
+                .isGreaterThan(0);
     }
 
     /**
@@ -66,22 +69,16 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistBankWithNullName_shouldFail() {
+        //Arrange
+        var bank = Bank.builder()
+                .name(null)
+                .active(true)
+                .build();
+        //Act and assert
+        performAndExpectFlushFailure(SQLException.class,
+                "null",
+                em -> em.persist(bank));
 
-        EntityTransaction et = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            et = em.getTransaction();
-            et.begin();
-            var bank = Bank.builder()
-                    .name(null)
-                    .active(true)
-                    .build();
-
-            em.persist(bank);
-            expectCommitFailure(et);
-        } catch (Exception e) {
-            if (et != null && et.isActive()) et.rollback();
-            fail(e);
-        }
     }
 
     /**
@@ -89,21 +86,15 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistBankWithEmptyName_shouldFail() {
-        EntityTransaction et = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            et = em.getTransaction();
-            et.begin();
-            var bank = Bank.builder()
-                    .name("")
-                    .active(true)
-                    .build();
-
-            em.persist(bank);
-            expectCommitFailure(et);
-        } catch (Exception e) {
-            if (et != null && et.isActive()) et.rollback();
-            fail(e);
-        }
+        //Arrange
+        var bank = Bank.builder()
+                .name("")
+                .active(true)
+                .build();
+        //Act and assert
+        performAndExpectFlushFailure(SQLException.class,
+                "chk_bank_name_nonempty",
+                em -> em.persist(bank));
     }
 
     /**
@@ -111,21 +102,54 @@ class BankIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistBankWithNullActive_shouldFail() {
-        EntityTransaction et = null;
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            et = em.getTransaction();
-            et.begin();
-            var bank = Bank.builder()
-                    .name("BCP")
-                    .active(null)
-                    .build();
+        //Arrange
+        var bank = Bank.builder()
+                .name("BCP")
+                .active(null)
+                .build();
+        //Act and assert
+        performAndExpectFlushFailure(SQLException.class,
+                "null",
+                em -> em.persist(bank));
+    }
 
-            em.persist(bank);
-            expectCommitFailure(et);
-        } catch (Exception e) {
-            if (et != null && et.isActive()) et.rollback();
-            fail(e);
-        }
+    /**
+     * Tests that two banks with same name fails.
+     */
+    void persistBankWithDuplicateName_shouldFail() {
+        //Arrange
+        //Given 2 banks with same name.
+        var bank1 = Bank.builder()
+                .name("BCP")
+                .active(true)
+                .build();
+        var bank2 = Bank.builder()
+                .name("BCP")
+                .active(true)
+                .build();
+        //Act and assert
+        performAndExpectFlushFailure(SQLException.class,
+                "uq_bank_name",
+                em -> {
+                    em.persist(bank1);
+                    em.persist(bank2);
+                });
+    }
+
+    void mergeBankWithDuplicateName_shouldFail(){
+        //Arrange
+        var bank1 = Bank.builder()
+                .name("BCP")
+                .active(true)
+                .build();
+        var bank2 = Bank.builder()
+                .name("IBK")
+                .active(true)
+                .build();
+        runInTransaction(em->{
+            em.persist(bank1);
+            em.persist(bank2);
+        });
     }
 }
 

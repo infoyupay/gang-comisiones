@@ -211,13 +211,11 @@ public abstract class AbstractPostgreIntegrationTest {
      * in case of a runtime exception.
      *
      * @param <T>       the type of the result produced by the operation performed within the transaction
-     * @param ctx       the application context containing the EntityManagerFactory
      * @param performer a function that takes an EntityManager, performs an operation, and produces a result
      * @return the result of the operation performed within the transaction
      * @throws RuntimeException if an exception occurs during the transaction, after rolling back the transaction
      */
-    public <T> T performInTransaction(@NotNull AppContext ctx,
-                                      @NotNull Function<EntityManager, T> performer) {
+    public <T> T performInTransaction(@NotNull Function<EntityManager, T> performer) {
         EntityTransaction tx = null;
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
             tx = em.getTransaction();
@@ -229,5 +227,29 @@ public abstract class AbstractPostgreIntegrationTest {
             if (tx != null && tx.isActive()) tx.rollback();
             throw e;
         }
+    }
+
+    /**
+     * Executes a set of persistence operations within a transactional context.
+     * The provided {@link Consumer} is invoked with an {@code EntityManager}
+     * to perform the desired operations, and the transaction is committed if
+     * successful or rolled back in case of a runtime exception.
+     * <br/>
+     * This method simplifies the handling of transactions by encapsulating
+     * the boilerplate code for transaction management.
+     *
+     * @param performer A {@link Consumer} that performs the persistence logic
+     *                  within the transaction using the {@code EntityManager}.
+     *                  <ul>
+     *                      <li>Must not be {@code null}.</li>
+     *                      <li>Accepts an {@code EntityManager} to execute operations
+     *                          such as persisting, merging, or removing entities.</li>
+     *                  </ul>
+     */
+    public void runInTransaction(@NotNull Consumer<EntityManager> performer) {
+        performInTransaction(em -> {
+            performer.accept(em);
+            return (Void) null;
+        });
     }
 }
