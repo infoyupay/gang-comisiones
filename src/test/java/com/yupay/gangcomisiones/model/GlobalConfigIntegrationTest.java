@@ -21,34 +21,44 @@ package com.yupay.gangcomisiones.model;
 
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.PersistenceException;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.sql.SQLException;
 
 /**
- * The integration test for GlobalConfiguration.
+ * Integration tests for the {@code GlobalConfig} entity, focusing on validation and persistence requirements.
+ * This test class ensures that the {@code GlobalConfig} entity adheres to design constraints when persisted
+ * to the database.
+ * <br/>
+ * The following are the test cases included in this integration test:
+ * <ul>
+ *     <li>Validation of {@code id} field constraints.</li>
+ *     <li>Validation of {@code ruc} format and length constraints.</li>
+ *     <li>Validation of mandatory fields against {@code null} values.</li>
+ * </ul>
+ * <br/>
+ * Utilizes {@code AbstractPostgreIntegrationTest} as the base test class for shared setup and database handling.
+ * <br/>
+ * <div style="border: 1px solid black; padding: 2px">
+ *     <strong>Execution Note: </strong> tested-by dvidal@infoyupay.com passed 7 in 2.026s at 2025-09-25 23:31 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
 class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
 
-    private EntityManager em;
-
     /**
      * Initialize the EntityManager.
      */
     @BeforeEach
     void setup() {
-        em = ctx.getEntityManagerFactory().createEntityManager();
+        TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
 
     /**
@@ -56,9 +66,7 @@ class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @AfterEach
     void cleanup() {
-        if (em != null) {
-            em.close();
-        }
+
     }
 
     /**
@@ -74,7 +82,6 @@ class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
                 .legalName("Empresa Legal SAC")
                 .businessName("Empresa Comercial")
                 .address("Av. Principal 123")
-                .updatedBy(User.forTest(1L))
                 .updatedFrom("mylaptop");
     }
 
@@ -83,20 +90,12 @@ class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistConfig_withIdNotOne_shouldFail() {
-        var gc = buildValidConfig().id((short) 2).build();
-
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        var ex = assertThrows(RuntimeException.class, () -> {
-            em.persist(gc);
-            em.flush();
-        });
-        assertTrue(
-                ex instanceof PersistenceException ||
-                        ex instanceof IllegalStateException,
-                "Expected a persistence-related failure but got: " + ex
-        );
-        tx.rollback();
+        performAndExpectFlushFailure(SQLException.class,
+                "chk_id_one",
+                em -> {
+                    var root = TestPersistedEntities.persistRootUser(em);
+                    em.persist(buildValidConfig().id((short) 2).updatedBy(root).build());
+                });
     }
 
     /**
@@ -104,52 +103,12 @@ class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistConfig_withInvalidRucLength_shouldFail() {
-        GlobalConfig gc = buildValidConfig().ruc("123").build();
-
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        var ex = assertThrows(RuntimeException.class, () -> {
-            em.persist(gc);
-            em.flush();
-        });
-        assertTrue(
-                ex instanceof PersistenceException ||
-                        ex instanceof IllegalStateException,
-                "Expected a persistence-related failure but got: " + ex
-        );
-        tx.rollback();
-    }
-
-    /**
-     * Tests that persisting GlobalConfig with null mandatory fields fails.
-     */
-    @Test
-    void persistConfig_withNullMandatoryFields_shouldFail() {
-        String[] nullFields = {"legalName", "businessName", "address", "updatedBy", "updatedFrom"};
-
-        for (String field : nullFields) {
-            GlobalConfig gc = buildValidConfig().build();
-            switch (field) {
-                case "legalName" -> gc.setLegalName(null);
-                case "businessName" -> gc.setBusinessName(null);
-                case "address" -> gc.setAddress(null);
-                case "updatedBy" -> gc.setUpdatedBy(null);
-                case "updatedFrom" -> gc.setUpdatedFrom(null);
-            }
-
-            EntityTransaction tx = em.getTransaction();
-            tx.begin();
-            var ex = assertThrows(RuntimeException.class, () -> {
-                em.persist(gc);
-                em.flush();
-            }, "Expected failure when " + field + " is null");
-            assertTrue(
-                    ex instanceof PersistenceException ||
-                            ex instanceof IllegalStateException,
-                    "Expected a persistence-related failure but got: " + ex
-            );
-            tx.rollback();
-        }
+        performAndExpectFlushFailure(SQLException.class,
+                "chk_ruc_digits",
+                em -> {
+                    var root = TestPersistedEntities.persistRootUser(em);
+                    em.persist(buildValidConfig().ruc("123").updatedBy(root).build());
+                });
     }
 
     /**
@@ -159,28 +118,25 @@ class GlobalConfigIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @ParameterizedTest
     @ValueSource(strings = {"legalName", "businessName", "address", "updatedBy", "updatedFrom"})
-    void persistConfig_withNullMandatoryField_shouldFail(String field) {
-        GlobalConfig gc = buildValidConfig().build();
-
+    void persistConfig_withNullMandatoryField_shouldFail(@NotNull String field) {
+        var builder = buildValidConfig();
+        System.out.println("Nullifying field " + field);
+        var ref = new Object() {
+            boolean nullifyUpdatedBy;
+        };
         switch (field) {
-            case "legalName" -> gc.setLegalName(null);
-            case "businessName" -> gc.setBusinessName(null);
-            case "address" -> gc.setAddress(null);
-            case "updatedBy" -> gc.setUpdatedBy(null);
-            case "updatedFrom" -> gc.setUpdatedFrom(null);
+            case "legalName" -> builder.legalName(null);
+            case "businessName" -> builder.businessName(null);
+            case "address" -> builder.address(null);
+            case "updatedBy" -> ref.nullifyUpdatedBy = true;
+            case "updatedFrom" -> builder.updatedFrom(null);
         }
 
-        EntityTransaction tx = em.getTransaction();
-        tx.begin();
-        var ex = assertThrows(RuntimeException.class, () -> {
-            em.persist(gc);
-            em.flush();
-        }, "Expected failure when " + field + " is null");
-        assertTrue(
-                ex instanceof PersistenceException ||
-                        ex instanceof IllegalStateException,
-                "Expected a persistence-related failure but got: " + ex
-        );
-        tx.rollback();
+        performAndExpectFlushFailure(SQLException.class,
+                "null",
+                em -> {
+                    var root = TestPersistedEntities.persistRootUser(em);
+                    em.persist(builder.updatedBy(ref.nullifyUpdatedBy ? null : root).build());
+                });
     }
 }
