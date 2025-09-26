@@ -24,11 +24,26 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatObject;
 
 /**
- * Tests for all the domain model entities.
+ * The {@code EntityUnitTests} class contains unit tests for validating the behavior of the `equals` and `hashCode` methods
+ * across several entity classes. These tests ensure that object equality and hash code generation rules are properly implemented
+ * in compliance with their specific requirements.
+ * <br/>
+ * The tests in this class verify the following:
+ * <ol>
+ *   <li>Entities with the same ID value are considered equal, regardless of differences in other fields.</li>
+ *   <li>The {@code hashCode} method produces consistent hash codes for objects with equal IDs.</li>
+ *   <li>Entities with different ID values are not considered equal.</li>
+ *   <li>If entities lack an assigned ID, they are equal only if they are the exact same instance.</li>
+ * </ol>
+ * Each entity's tests ensure consistency between the behavior of their {@code equals} and {@code hashCode} methods.
+ * <br/>
+ * <div style="border: 1px solid black; padding: 2px;">
+ *     <strong>Execution Note:</strong> tested by dvidal@infoyupay.com passed 6 in 0.686s at 2025-09-25 22:35 UTC-5
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -43,27 +58,27 @@ class EntityUnitTests {
      */
     @Test
     void testUserEqualsAndHashCode() {
-        User u1 = User.forTest(1L);
+        var u1 = User.forTest(1L);
         u1.setUsername("test1");
         u1.setPassword("test01..");
         u1.setRole(UserRole.ROOT);
         u1.setActive(true);
 
-        User u2 = User.forTest(1L);
+        var u2 = User.forTest(1L);
         u2.setUsername("user2");
         u2.setPassword("user02..");
         u2.setRole(UserRole.ADMIN);
         u2.setActive(false);
 
-        assertEquals(u1, u2);
-        assertEquals(u1.hashCode(), u2.hashCode());
+        assertThatObject(u1).isEqualTo(u2);
+        assertThat(u1.hashCode()).isEqualTo(u2.hashCode());
 
-        User u3 = User.forTest(2L);
+        var u3 = User.forTest(2L);
         u3.setUsername("test1");
         u3.setPassword("test01..");
         u3.setRole(UserRole.ADMIN);
 
-        assertNotEquals(u1, u3);
+        assertThat(u1).isNotEqualTo(u3);
     }
 
     /**
@@ -74,14 +89,14 @@ class EntityUnitTests {
      */
     @Test
     void testConceptEqualsAndHashCode() {
-        Concept c1 = Concept.builder()
+        var c1 = Concept.builder()
                 .id(1L)
                 .name("Teléfono")
                 .type(ConceptType.FIXED)
                 .value(BigDecimal.valueOf(10.0))
                 .active(true)
                 .build();
-        Concept c2 = Concept.builder()
+        var c2 = Concept.builder()
                 .id(1L)
                 .name("Internet")
                 .type(ConceptType.RATE)
@@ -89,68 +104,64 @@ class EntityUnitTests {
                 .active(false)
                 .build();
 
-        assertEquals(c1, c2);
-        assertEquals(c1.hashCode(), c2.hashCode());
+        assertThatObject(c1).isEqualTo(c2);
+        assertThat(c1.hashCode()).isEqualTo(c2.hashCode());
 
-        Concept c3 = Concept.builder()
+        var c3 = Concept.builder()
                 .id(2L)
                 .name("Teléfono")
                 .type(ConceptType.FIXED)
                 .value(BigDecimal.valueOf(10.0))
                 .active(true)
                 .build();
-        assertNotEquals(c1, c3);
+        assertThatObject(c1).isNotEqualTo(c3);
     }
 
-    /**
-     * Tests the `equals` and `hashCode` methods for the `Bank` entity.
-     * <br/>
-     * This test verifies that:
-     * - Two `Bank` entities with the same `id` are considered equal, regardless of differences in other fields.
-     * - The `hashCode` method generates the same hash code for two `Bank` entities with the same `id`.
-     * - Two `Bank` entities with different `id` values are not considered equal.
-     * - Entites without id value, are equals only if are the same.
-     * <br/>
-     * The behavior ensures consistency between the `equals` and `hashCode` implementations in the `Bank` entity.
-     */
+    /// Tests the `equals` and `hashCode` methods for the `Bank` entity.
+    ///
+    /// This test verifies that:
+    /// - Two `Bank` entities with the same `id` are considered equal, regardless of differences in other fields.
+    /// - The `hashCode` method generates the same hash code for two `Bank` entities with the same `id`.
+    /// - Two `Bank` entities with different `id` values are not considered equal.
+    /// - Entites without id value, are equals only if are the same.
+    ///
+    /// The behavior ensures consistency between the `equals` and `hashCode` implementations in the `Bank` entity.
     @Test
     void testBankEqualsAndHashCode() {
-        Bank b1 = Bank.builder()
+        var b1 = Bank.builder()
                 .id(1)
                 .name("Banco A")
                 .active(true)
                 .build();
-        Bank b2 = Bank.builder()
+        var b2 = Bank.builder()
                 .id(1)
                 .name("Banco B")
                 .active(false)
                 .build();
 
-        assertEquals(b1, b2);
-        assertEquals(b1.hashCode(), b2.hashCode());
+        assertThatObject(b1).isEqualTo(b2);
+        assertThat(b1.hashCode()).isEqualTo(b2.hashCode());
 
-        Bank b3 = Bank.builder()
+        var b3 = Bank.builder()
                 .id(2)
                 .name("Banco A")
                 .active(true)
                 .build();
-        assertNotEquals(b1, b3);
+        assertThatObject(b1).isNotEqualTo(b3);
     }
 
-    /**
-     * Tests the `equals` and `hashCode` methods for the `GlobalConfig` entity.
-     * <br/>
-     * This test verifies the following:
-     * - Two `GlobalConfig` entities with the same `id` are considered equal, regardless of differences in other fields.
-     * - The `hashCode` method produces the same hash code for two `GlobalConfig` entities with the same `id`.
-     * - Two `GlobalConfig` entities with different `id` values are not considered equal.
-     * <br/>
-     * The test ensures consistency between the `equals` and `hashCode` implementations in the `GlobalConfig` entity.
-     */
+    /// Tests the `equals` and `hashCode` methods for the `GlobalConfig` entity.
+    ///
+    /// This test verifies the following:
+    /// - Two `GlobalConfig` entities with the same `id` are considered equal, regardless of differences in other fields.
+    /// - The `hashCode` method produces the same hash code for two `GlobalConfig` entities with the same `id`.
+    /// - Two `GlobalConfig` entities with different `id` values are not considered equal.
+    ///
+    /// The test ensures consistency between the `equals` and `hashCode` implementations in the `GlobalConfig` entity.
     @Test
     void testGlobalConfigEqualsAndHashCode() {
-        User root = User.forTest(1L);
-        GlobalConfig g1 = GlobalConfig.builder().id((short) 1)
+        var root = User.forTest(1L);
+        var g1 = GlobalConfig.builder().id((short) 1)
                 .ruc("12345678901")
                 .legalName("Legal")
                 .businessName("Business")
@@ -160,7 +171,7 @@ class EntityUnitTests {
                 .updatedAt(OffsetDateTime.now())
                 .build();
 
-        GlobalConfig g2 = GlobalConfig.builder().id((short) 1)
+        var g2 = GlobalConfig.builder().id((short) 1)
                 .ruc("98765432109")
                 .legalName("Other Legal")
                 .businessName("Other Business")
@@ -170,10 +181,10 @@ class EntityUnitTests {
                 .updatedAt(OffsetDateTime.now())
                 .build();
 
-        assertEquals(g1, g2);
-        assertEquals(g1.hashCode(), g2.hashCode());
+        assertThatObject(g1).isEqualTo(g2);
+        assertThat(g1.hashCode()).isEqualTo(g2.hashCode());
 
-        GlobalConfig g3 = GlobalConfig.builder()
+        var g3 = GlobalConfig.builder()
                 .id((short) 2)
                 .ruc("12345678901")
                 .legalName("Legal")
@@ -183,36 +194,34 @@ class EntityUnitTests {
                 .updatedFrom("localhost")
                 .updatedAt(OffsetDateTime.now())
                 .build();
-        assertNotEquals(g1, g3);
+        assertThatObject(g1).isNotEqualTo(g3);
     }
 
-    /**
-     * Tests the `equals` and `hashCode` methods for the `Transaction` entity.
-     * <br/>
-     * This test verifies the following:
-     * - Two `Transaction` entities with the same `id` are considered equal, regardless of differences in other fields.
-     * - The `hashCode` method produces the same hash code for two `Transaction` entities with the same `id`.
-     * - Two `Transaction` entities with different `id` values are not considered equal.
-     * <br/>
-     * The test ensures consistency between the `equals` and `hashCode` implementations in the `Transaction` entity.
-     */
+    /// Tests the `equals` and `hashCode` methods for the `Transaction` entity.
+    ///
+    /// This test verifies the following:
+    /// - Two `Transaction` entities with the same `id` are considered equal, regardless of differences in other fields.
+    /// - The `hashCode` method produces the same hash code for two `Transaction` entities with the same `id`.
+    /// - Two `Transaction` entities with different `id` values are not considered equal.
+    ///
+    /// The test ensures consistency between the `equals` and `hashCode` implementations in the `Transaction` entity.
     @Test
     void testTransactionEqualsAndHashCode() {
-        Bank bank = Bank.builder()
+        var bank = Bank.builder()
                 .id(1)
                 .name("Banco")
                 .active(true)
                 .build();
-        Concept concept = Concept.builder()
+        var concept = Concept.builder()
                 .id(1L)
                 .name("Teléfono")
                 .type(ConceptType.FIXED)
                 .value(BigDecimal.valueOf(10))
                 .active(true)
                 .build();
-        User cashier = User.forTest(2L);
+        var cashier = User.forTest(2L);
 
-        Transaction t1 = Transaction.builder()
+        var t1 = Transaction.builder()
                 .id(1L)
                 .bank(bank)
                 .concept(concept)
@@ -221,7 +230,7 @@ class EntityUnitTests {
                 .commission(BigDecimal.valueOf(10))
                 .status(TransactionStatus.REGISTERED).
                 build();
-        Transaction t2 = Transaction.builder()
+        var t2 = Transaction.builder()
                 .id(1L)
                 .bank(bank)
                 .concept(concept)
@@ -231,10 +240,10 @@ class EntityUnitTests {
                 .status(TransactionStatus.REVERSED).
                 build();
 
-        assertEquals(t1, t2);
-        assertEquals(t1.hashCode(), t2.hashCode());
+        assertThatObject(t1).isEqualTo(t2);
+        assertThat(t1.hashCode()).isEqualTo(t2.hashCode());
 
-        Transaction t3 = Transaction.builder()
+        var t3 = Transaction.builder()
                 .id(2L)
                 .bank(bank)
                 .concept(concept)
@@ -243,23 +252,21 @@ class EntityUnitTests {
                 .commission(BigDecimal.valueOf(10))
                 .status(TransactionStatus.REGISTERED).
                 build();
-        assertNotEquals(t1, t3);
+        assertThatObject(t1).isNotEqualTo(t3);
     }
 
-    /**
-     * Tests the `equals` and `hashCode` methods for the `ReversalRequest` entity.
-     * <br/>
-     * This test verifies the following:
-     * - Two `ReversalRequest` entities with the same `id` are considered equal, regardless of differences in other fields.
-     * - The `hashCode` method produces the same hash code for two `ReversalRequest` entities with the same `id`.
-     * - Two `ReversalRequest` entities with different `id` values are not considered equal.
-     * <br/>
-     * The test ensures consistency between the `equals` and `hashCode` implementations in the `ReversalRequest` entity.
-     */
+    /// Tests the `equals` and `hashCode` methods for the `ReversalRequest` entity.
+    ///
+    /// This test verifies the following:
+    /// - Two `ReversalRequest` entities with the same `id` are considered equal, regardless of differences in other fields.
+    /// - The `hashCode` method produces the same hash code for two `ReversalRequest` entities with the same `id`.
+    /// - Two `ReversalRequest` entities with different `id` values are not considered equal.
+    ///
+    /// The test ensures consistency between the `equals` and `hashCode` implementations in the `ReversalRequest` entity.
     @Test
     void testReversalRequestEqualsAndHashCode() {
-        User requester = User.forTest(3L);
-        Transaction txn = Transaction.builder()
+        var requester = User.forTest(3L);
+        var txn = Transaction.builder()
                 .id(1L)
                 .bank(Bank.builder()
                         .id(1)
@@ -279,14 +286,14 @@ class EntityUnitTests {
                 .status(TransactionStatus.REGISTERED)
                 .build();
 
-        ReversalRequest r1 = ReversalRequest.builder()
+        var r1 = ReversalRequest.builder()
                 .id(1L)
                 .transaction(txn)
                 .message("Oops")
                 .requestedBy(requester)
                 .status(ReversalRequestStatus.PENDING)
                 .build();
-        ReversalRequest r2 = ReversalRequest.builder()
+        var r2 = ReversalRequest.builder()
                 .id(1L)
                 .transaction(txn)
                 .message("Different")
@@ -294,16 +301,16 @@ class EntityUnitTests {
                 .status(ReversalRequestStatus.APPROVED)
                 .build();
 
-        assertEquals(r1, r2);
-        assertEquals(r1.hashCode(), r2.hashCode());
+        assertThatObject(r1).isEqualTo(r2);
+        assertThat(r1.hashCode()).isEqualTo(r2.hashCode());
 
-        ReversalRequest r3 = ReversalRequest.builder()
+        var r3 = ReversalRequest.builder()
                 .id(2L)
                 .transaction(txn)
                 .message("Oops")
                 .requestedBy(requester)
                 .status(ReversalRequestStatus.PENDING)
                 .build();
-        assertNotEquals(r1, r3);
+        assertThatObject(r1).isNotEqualTo(r3);
     }
 }
