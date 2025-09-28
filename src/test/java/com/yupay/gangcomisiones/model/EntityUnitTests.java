@@ -24,8 +24,9 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatObject;
+import static com.yupay.gangcomisiones.assertions.ComparisonAssertions.assertEqualityContractAndHashcode;
+import static com.yupay.gangcomisiones.assertions.ComparisonAssertions.assertEqualityContractNotEquals;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
  * The {@code EntityUnitTests} class contains unit tests for validating the behavior of the `equals` and `hashCode` methods
@@ -70,15 +71,17 @@ class EntityUnitTests {
         u2.setRole(UserRole.ADMIN);
         u2.setActive(false);
 
-        assertThatObject(u1).isEqualTo(u2);
-        assertThat(u1.hashCode()).isEqualTo(u2.hashCode());
 
         var u3 = User.forTest(2L);
         u3.setUsername("test1");
         u3.setPassword("test01..");
         u3.setRole(UserRole.ADMIN);
 
-        assertThat(u1).isNotEqualTo(u3);
+        assertSoftly(
+                assertEqualityContractAndHashcode(u1, u2)
+                        .andThen(assertEqualityContractNotEquals(u1, u3))
+                        .andThen(assertEqualityContractNotEquals(User.forTest(null), User.forTest(null)))
+        );
     }
 
     /**
@@ -104,9 +107,6 @@ class EntityUnitTests {
                 .active(false)
                 .build();
 
-        assertThatObject(c1).isEqualTo(c2);
-        assertThat(c1.hashCode()).isEqualTo(c2.hashCode());
-
         var c3 = Concept.builder()
                 .id(2L)
                 .name("Teléfono")
@@ -114,7 +114,8 @@ class EntityUnitTests {
                 .value(BigDecimal.valueOf(10.0))
                 .active(true)
                 .build();
-        assertThatObject(c1).isNotEqualTo(c3);
+        assertSoftly(assertEqualityContractAndHashcode(c1, c2)
+                .andThen(assertEqualityContractNotEquals(c1, c3)));
     }
 
     /// Tests the `equals` and `hashCode` methods for the `Bank` entity.
@@ -139,15 +140,14 @@ class EntityUnitTests {
                 .active(false)
                 .build();
 
-        assertThatObject(b1).isEqualTo(b2);
-        assertThat(b1.hashCode()).isEqualTo(b2.hashCode());
-
         var b3 = Bank.builder()
                 .id(2)
                 .name("Banco A")
                 .active(true)
                 .build();
-        assertThatObject(b1).isNotEqualTo(b3);
+
+        assertSoftly(assertEqualityContractAndHashcode(b1, b2)
+                .andThen(assertEqualityContractNotEquals(b1, b3)));
     }
 
     /// Tests the `equals` and `hashCode` methods for the `GlobalConfig` entity.
@@ -181,9 +181,6 @@ class EntityUnitTests {
                 .updatedAt(OffsetDateTime.now())
                 .build();
 
-        assertThatObject(g1).isEqualTo(g2);
-        assertThat(g1.hashCode()).isEqualTo(g2.hashCode());
-
         var g3 = GlobalConfig.builder()
                 .id((short) 2)
                 .ruc("12345678901")
@@ -194,7 +191,9 @@ class EntityUnitTests {
                 .updatedFrom("localhost")
                 .updatedAt(OffsetDateTime.now())
                 .build();
-        assertThatObject(g1).isNotEqualTo(g3);
+
+        assertSoftly(assertEqualityContractAndHashcode(g1, g2)
+                .andThen(assertEqualityContractNotEquals(g1, g3)));
     }
 
     /// Tests the `equals` and `hashCode` methods for the `Transaction` entity.
@@ -240,9 +239,6 @@ class EntityUnitTests {
                 .status(TransactionStatus.REVERSED).
                 build();
 
-        assertThatObject(t1).isEqualTo(t2);
-        assertThat(t1.hashCode()).isEqualTo(t2.hashCode());
-
         var t3 = Transaction.builder()
                 .id(2L)
                 .bank(bank)
@@ -252,7 +248,9 @@ class EntityUnitTests {
                 .commission(BigDecimal.valueOf(10))
                 .status(TransactionStatus.REGISTERED).
                 build();
-        assertThatObject(t1).isNotEqualTo(t3);
+
+        assertSoftly(assertEqualityContractAndHashcode(t1, t2)
+                .andThen(assertEqualityContractNotEquals(t1, t3)));
     }
 
     /// Tests the `equals` and `hashCode` methods for the `ReversalRequest` entity.
@@ -301,9 +299,6 @@ class EntityUnitTests {
                 .status(ReversalRequestStatus.APPROVED)
                 .build();
 
-        assertThatObject(r1).isEqualTo(r2);
-        assertThat(r1.hashCode()).isEqualTo(r2.hashCode());
-
         var r3 = ReversalRequest.builder()
                 .id(2L)
                 .transaction(txn)
@@ -311,6 +306,8 @@ class EntityUnitTests {
                 .requestedBy(requester)
                 .status(ReversalRequestStatus.PENDING)
                 .build();
-        assertThatObject(r1).isNotEqualTo(r3);
+
+        assertSoftly(assertEqualityContractAndHashcode(r1, r2)
+                .andThen(assertEqualityContractNotEquals(r1, r3)));
     }
 }
