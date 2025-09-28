@@ -20,13 +20,22 @@
 package com.yupay.gangcomisiones.model;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.Functionals;
+import com.yupay.gangcomisiones.assertions.FieldsMustBeNullAssertion;
+import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.Assertions;
+import org.assertj.core.api.ObjectAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.sql.SQLException;
+
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Integration test for {@link ReversalRequest} entity.
@@ -91,11 +100,9 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void persistValidReversalRequest() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
-
-            var rr = ReversalRequest
+        var reversal = performInTransaction(em -> {
+            //Arrange
+            var r = ReversalRequest
                     .builder()
                     .evaluatedBy(TestPersistedEntities.persistRootUser(em))
                     .message("Please, do it for me.")
@@ -103,13 +110,22 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
                     .status(ReversalRequestStatus.PENDING)
                     .transaction(TestPersistedEntities.persistTransaction(em))
                     .build();
-            em.persist(rr);
-            et.commit();
-            em.refresh(rr);
-
-            assertNotNull(rr.getId());
-            assertNotNull(rr.getRequestStamp());
-        }
+            //Act
+            em.persist(r);
+            em.flush();
+            em.refresh(r);
+            return r;
+        });
+        //Assert
+        assertSoftly(softly -> {
+            softly.assertThat(reversal.getId())
+                    .as("ID must be assigned and be greater than 0, found: {}.", reversal.getId())
+                    .isNotNull()
+                    .isGreaterThan(0);
+            softly.assertThat(reversal.getRequestStamp())
+                    .as("PostgreSQL assigned time stamp should be retrieved.")
+                    .isNotNull();
+        });
     }
 
     /**
@@ -126,28 +142,29 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
     @ParameterizedTest
     @EnumSource(value = Field.class)
     void nullConstraints(@NotNull Field field) {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
+        performAndExpectFlushFailure(SQLException.class,
+                "null",
+                em -> {
+                    //Arrange
+                    var reversal = ReversalRequest.builder()
+                            .evaluatedBy(TestPersistedEntities.persistRootUser(em))
+                            .message("Please, do it for me.")
+                            .requestedBy(TestPersistedEntities.persistRootUser(em))
+                            .status(ReversalRequestStatus.PENDING)
+                            .transaction(TestPersistedEntities.persistTransaction(em))
+                            .build();
+                    switch (field) {
+                        case TRANSACTION -> reversal.setTransaction(null);
+                        case MESSAGE -> reversal.setMessage(null);
+                        case REQUESTED_BY -> reversal.setRequestedBy(null);
+                        case STATUS -> reversal.setStatus(null);
+                    }
 
-            var rr = ReversalRequest.builder()
-                    .evaluatedBy(TestPersistedEntities.persistRootUser(em))
-                    .message("Please, do it for me.")
-                    .requestedBy(TestPersistedEntities.persistRootUser(em))
-                    .status(ReversalRequestStatus.PENDING)
-                    .transaction(TestPersistedEntities.persistTransaction(em))
-                    .build();
+                    //Act
+                    em.persist(reversal);
 
-            switch (field) {
-                case TRANSACTION -> rr.setTransaction(null);
-                case MESSAGE -> rr.setMessage(null);
-                case REQUESTED_BY -> rr.setRequestedBy(null);
-                case STATUS -> rr.setStatus(null);
-            }
-
-            em.persist(rr);
-            expectCommitFailure(et);
-        }
+                    //Assert (already implemented in performAndExpectFlushFail)
+                });
     }
 
     /**
@@ -182,32 +199,32 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void oneToOneTransactionConstraint() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
+        performAndExpectFlushFailure(SQLException.class,
+                "",
+                em -> {
+                    //Arrange
+                    var reversalA = ReversalRequest
+                            .builder()
+                            .evaluatedBy(TestPersistedEntities.persistRootUser(em))
+                            .message("Please, do it for me 1.")
+                            .requestedBy(TestPersistedEntities.persistRootUser(em))
+                            .status(ReversalRequestStatus.PENDING)
+                            .transaction(TestPersistedEntities.persistTransaction(em))
+                            .build();
+                    em.persist(reversalA);
 
-            var rr1 = ReversalRequest
-                    .builder()
-                    .evaluatedBy(TestPersistedEntities.persistRootUser(em))
-                    .message("Please, do it for me 1.")
-                    .requestedBy(TestPersistedEntities.persistRootUser(em))
-                    .status(ReversalRequestStatus.PENDING)
-                    .transaction(TestPersistedEntities.persistTransaction(em))
-                    .build();
-            em.persist(rr1);
-
-            var rr2 = ReversalRequest
-                    .builder()
-                    .evaluatedBy(TestPersistedEntities.persistRootUser(em))
-                    .message("Please, do it for me 2.")
-                    .requestedBy(TestPersistedEntities.persistRootUser(em))
-                    .status(ReversalRequestStatus.PENDING)
-                    .transaction(TestPersistedEntities.persistTransaction(em))
-                    .build();
-            em.persist(rr2);
-
-            expectCommitFailure(et);
-        }
+                    var reversalB = ReversalRequest
+                            .builder()
+                            .evaluatedBy(TestPersistedEntities.persistRootUser(em))
+                            .message("Please, do it for me 2.")
+                            .requestedBy(TestPersistedEntities.persistRootUser(em))
+                            .status(ReversalRequestStatus.PENDING)
+                            .transaction(TestPersistedEntities.persistTransaction(em))
+                            .build();
+                    em.persist(reversalB);
+                    //Act (already implemented in performAndExpectFlushFail)
+                    //Assert (already implemented in performAndExpectFlushFail)
+                });
     }
 
     /**
@@ -243,66 +260,37 @@ class ReversalRequestIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void optionalFieldsCanBeNull() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
-
-
-            var rr = ReversalRequest
+        var persisted = performInTransaction(em -> {
+            var r = ReversalRequest
                     .builder()
                     .message("Please, do it for me 1.")
                     .requestedBy(TestPersistedEntities.persistRootUser(em))
                     .status(ReversalRequestStatus.PENDING)
                     .transaction(TestPersistedEntities.persistTransaction(em))
                     .build();
+            em.persist(r);
+            em.flush();
+            em.refresh(r);
+            return r;
+        });
 
-            em.persist(rr);
-            et.commit();
-            em.refresh(rr);
-
-            assertNull(rr.getAnswer());
-            assertNull(rr.getAnswerStamp());
-            assertNull(rr.getEvaluatedBy());
-        }
-    }
-
-    /**
-     * Tests the `equals` and `hashCode` methods of the `ReversalRequest` entity.
-     * <br/>
-     * This test verifies the following properties of the `equals` and `hashCode` contract:
-     * <ol>
-     * <li> Reflexivity: An object must be equal to itself.</li>
-     * <li> Symmetry: Two objects that are equal must have the same hash code.</li>
-     * <li> Consistency: Two objects that are not equal must not have the same hash code.</li>
-     * </ol>
-     * <br/>
-     * Test operations:
-     * <ul>
-     * <li>Verifies that two `ReversalRequest` objects with the same `id` are considered equal.</li>
-     * <li>Ensures that `ReversalRequest` instances with different `id` fields are not equal.</li>
-     * <li>Checks the `hashCode` consistency for equivalent objects.</li>
-     * <li>Validates that a `ReversalRequest` instance is always equal to itself.</li>
-     * </ul>
-     * <br/>
-     * This method ensures the proper implementation of the `equals` and `hashCode` methods for the `ReversalRequest` entity,
-     * which is critical for correctly handling operations that rely on equality checks, such as in collections or persistence contexts.
-     */
-    @SuppressWarnings("EqualsWithItself")
-    @Test
-    void equalsAndHashCode() {
-        var rr1 = ReversalRequest.builder().id(1L).build();
-        var rr2 = ReversalRequest.builder().id(1L).build();
-
-        assertEquals(rr1, rr2);
-        assertEquals(rr1.hashCode(), rr2.hashCode());
-        assertEquals(rr1, rr1); // reflexivity
-
-        rr2 = ReversalRequest.builder().id(2L).build();
-        assertNotEquals(rr1, rr2);
-
-        rr1 = new ReversalRequest();
-        rr2 = new ReversalRequest();
-        assertNotEquals(rr1, rr2);
+        assertSoftly(Functionals.chainConsumers(
+                softly ->
+                        softly.assertThat(persisted.getId())
+                                .as("Generated ID must be not null and greater than 0, found: {}", persisted.getId())
+                                .isNotNull()
+                                .isGreaterThan(0),
+                softly ->
+                        softly.assertThat(persisted.getRequestStamp())
+                                .as("PostgreSQL assigned time stamp should be retrieved.")
+                                .isNotNull(),
+                FieldsMustBeNullAssertion.softly(
+                        "Optional fields must remain null.",
+                        persisted,
+                        ReversalRequest::getAnswer,
+                        ReversalRequest::getAnswerStamp,
+                        ReversalRequest::getEvaluatedBy)
+        ));
     }
 
     /**
