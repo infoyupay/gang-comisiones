@@ -22,9 +22,6 @@ package com.yupay.gangcomisiones.model;
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.Functionals;
 import com.yupay.gangcomisiones.assertions.FieldsMustBeNullAssertion;
-import org.assertj.core.api.AbstractObjectAssert;
-import org.assertj.core.api.Assertions;
-import org.assertj.core.api.ObjectAssert;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,13 +31,13 @@ import org.junit.jupiter.params.provider.EnumSource;
 import java.sql.SQLException;
 
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * Integration test for {@link ReversalRequest} entity.
  * <br/>
- * dvidal executed and passed 8 tests in 1.83 ms
+ * <div>
+ *     <strong>Execution Note: </strong> tested by dvidal@infoyupay.com passed 7 in 3.400s at 2025-09-28 02:35 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
