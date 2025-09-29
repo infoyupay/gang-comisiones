@@ -22,27 +22,75 @@ package com.yupay.gangcomisiones.services;
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.exceptions.AppSecurityException;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
-import com.yupay.gangcomisiones.model.Bank;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.sql.SQLException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.yupay.gangcomisiones.assertions.CauseAssertions.assertExpectedCause;
+import static com.yupay.gangcomisiones.services.UserSessionHelpers.createAndLogAdminUser;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchException;
 
 /**
- * Integration tests for {@link BankService} operations.
+ * Integration tests for the {@code BankService} functionality.
+ * <br/>
+ * These tests verify the behavior of the service in a system-integrated environment
+ * with a real database and application context. They ensure correct persistence, data integrity,
+ * and user-privilege conditions in various scenarios related to bank creation and updates.
+ * <br/>
+ * The following core functionalities are tested:
+ * <ul>
+ *   <li>Creation of a bank with automatic ID assignment and default active status.</li>
+ *   <li>Privilege-based access control for bank creation and updates.</li>
+ *   <li>Validation of not-null constraints on input fields.</li>
+ * </ul>
  *
- * @author InfoYupay SACS
- * @version 1.0
+ * <br/>
+ * <b>Test List:</b>
+ * <ol>
+ *   <li>
+ *     <b>testCreateBank_AssignsIdAndActiveTrue:</b>
+ *     Verifies that a new bank is persisted with an auto-generated positive ID and has an active
+ *     status set to {@code true} by default. Additionally, ensures that the newly created bank
+ *     appears in the results of {@code listAllBanks} and {@code listAllActiveBanks}.
+ *   </li>
+ *   <li>
+ *     <b>testCreateBank_UnprivilegedUserFails:</b>
+ *     Ensures that attempting to create a bank without admin privileges fails with a
+ *     {@code PersistenceServicesException} caused by an {@code AppSecurityException}.
+ *   </li>
+ *   <li>
+ *     <b>testUpdateBank_UnprivilegedUserFails:</b>
+ *     Ensures that an unprivileged user attempting to update a bank also fails with the same
+ *     exception and cause as above.
+ *   </li>
+ *   <li>
+ *     <b>testCreateBank_NullNameFails:</b>
+ *     Validates that attempting to create a bank with a {@code null} name violates a not-null
+ *     constraint, resulting in a {@code PersistenceException}.
+ *   </li>
+ *   <li>
+ *     <b>testUpdateBank_NullFieldsFail:</b>
+ *     Ensures that updating a bank with {@code null} values for either the name or active flag
+ *     violates not-null constraints and throws an appropriate {@code SQLException}.
+ *   </li>
+ * </ol>
+ *
+ * <br/>
+ * <b>Test Setup:</b>
+ * <ul>
+ *   <li>Before each test, the environment is cleaned to remove persisted entities and reset the database state.</li>
+ *   <li>The {@code BankService} instance is initialized from the application context for use in the tests.</li>
+ * </ul>
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 5 tests in 1.482s at 2025-09-28 22:24 UTC-5.
+ * </div>
  */
 class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
-
-    private BankService bankService;
 
     /**
      * Sets up the test environment before each test method execution.
@@ -57,7 +105,7 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @BeforeEach
     void setUp() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
-        bankService = ctx.getBankService();
+        ctx.getUserSession().setCurrentUser(null);
     }
 
 
@@ -68,20 +116,34 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testCreateBank_AssignsIdAndActiveTrue() throws Exception {
-        // when
-        UserSessionHelpers.createAndLogAdminUser();
-        Bank bank = bankService.createBank("Interbank").get();
+        var bankService = ctx.getBankService();
+
+        runInTransaction(em
+                -> createAndLogAdminUser(ctx, em));
+
+        var bank = bankService.createBank("Interbank").get();
 
         // then
-        assertNotNull(bank.getId(), "Bank id must be assigned by DB sequence");
-        assertTrue(bank.getId() > 0, "Bank id must be positive");
-        assertEquals(Boolean.TRUE, bank.getActive(), "Bank must be active after creation");
+        assertThat(bank.getId())
+                .as("Bank id must be assigned by DB sequence")
+                .isNotNull()
+                .as("Bank id must be positive")
+                .isGreaterThan(0);
+        assertThat(bank.getActive())
+                .as("Bank must be active after creation")
+                .isTrue();
 
-        // and it should appear in listAll and listAllActive
-        List<Bank> all = bankService.listAllBanks().get();
-        assertTrue(all.stream().anyMatch(b -> b.getId().equals(bank.getId())));
-        List<Bank> active = bankService.listAllActiveBanks().get();
-        assertTrue(active.stream().anyMatch(b -> b.getId().equals(bank.getId())));
+        // and it should appear in listAll
+        var all = bankService.listAllBanks().get();
+        assertThat(all)
+                .as("Persisted bank with id %d should be listed in all banks.")
+                .anyMatch(b -> b.getId().equals(bank.getId()));
+
+        // and listAllActive
+        var active = bankService.listAllActiveBanks().get();
+        assertThat(active)
+                .as("Persisted bank with id %d should be listed in all active banks.")
+                .anyMatch(b -> b.getId().equals(bank.getId()));
     }
 
     /**
@@ -90,10 +152,12 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testCreateBank_UnprivilegedUserFails() {
-        UserSessionHelpers.createAndLogCashierUser();
+        runInTransaction(em -> UserSessionHelpers.createAndLogCashierUser(ctx, em));
 
-        var ex = assertThrows(ExecutionException.class, bankService.createBank("One Bank")::get);
-        assertInstanceOf(AppSecurityException.class, ex.getCause());
+        var ex = catchException(ctx.getBankService().createBank("One Bank")::get);
+
+        assertExpectedCause(AppSecurityException.class)
+                .assertCauseWithMessage(ex, "has not privileges to perform an operation");
     }
 
     /**
@@ -101,12 +165,14 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
      * not an admin fails with a {@link PersistenceServicesException}.
      */
     @Test
-    void testUpdateeBank_UnprivilegedUserFails() {
-        UserSessionHelpers.createAndLogCashierUser();
+    void testUpdateBank_UnprivilegedUserFails() {
+        runInTransaction(em -> UserSessionHelpers.createAndLogCashierUser(ctx, em));
 
-        var ex = assertThrows(ExecutionException.class,
-                bankService.updateBank(1, "One Bank", false)::get);
-        assertInstanceOf(AppSecurityException.class, ex.getCause());
+        var ex = catchException(ctx.getBankService()
+                .updateBank(1, "One Bank", false)::get);
+
+        assertExpectedCause(AppSecurityException.class)
+                .assertCauseWithMessage(ex, "has not privileges to perform an operation");
     }
 
     /**
@@ -115,9 +181,9 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testCreateBank_NullNameFails() {
-        ExecutionException ex = assertThrows(ExecutionException.class,
-                () -> bankService.createBank(null).get());
-        assertInstanceOf(PersistenceException.class, ex.getCause());
+        runInTransaction(em->createAndLogAdminUser(ctx, em));
+        var ex = catchException(ctx.getBankService().createBank(null)::get);
+        assertExpectedCause(SQLException.class).assertCauseWithMessage(ex, "null");
     }
 
     /**
@@ -128,17 +194,19 @@ class BankServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testUpdateBank_NullFieldsFail() throws Exception {
-        UserSessionHelpers.createAndLogAdminUser();
-        Bank bank = bankService.createBank("BCP").get();
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
+        var bankService = ctx.getBankService();
+        var bank = bankService.createBank("BCP").get();
 
+        var assertion = assertExpectedCause(SQLException.class);
         // null name
-        ExecutionException ex1 = assertThrows(ExecutionException.class,
+        var ex1 = catchException(
                 () -> bankService.updateBank(bank.getId(), null, true).get());
-        assertInstanceOf(PersistenceException.class, ex1.getCause());
+        assertion.assertCauseWithMessage(ex1, "null");
 
         // null active
-        ExecutionException ex2 = assertThrows(ExecutionException.class,
+        var ex2 = catchException(
                 () -> bankService.updateBank(bank.getId(), "BCP", null).get());
-        assertInstanceOf(PersistenceException.class, ex2.getCause());
+        assertion.assertCauseWithMessage(ex2, "null");
     }
 }
