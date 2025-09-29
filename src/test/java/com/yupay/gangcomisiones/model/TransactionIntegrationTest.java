@@ -41,7 +41,7 @@ import static org.assertj.core.api.SoftAssertions.assertSoftly;
  *     <li>Fails when commission is negative.</li>
  *     <li>Equals and hashcode works based on id.</li>
  * </ul>
- * <div>
+ * <div style="border: 1px solid black; padding: 2px">
  *     <strong>Execution Note:</strong> dvidal@infoyupay.com passed 9 tests in 3.416s at 2025-09-28 19:14 UTC-5.
  * </div>
  *
