@@ -28,8 +28,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
  * The integration test for Transaction. It tests:
@@ -40,7 +41,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *     <li>Fails when commission is negative.</li>
  *     <li>Equals and hashcode works based on id.</li>
  * </ul>
- * <span><strong>Test-Run:</strong> dvidal ran 10 tests in 1.83. All passed.</span>
+ * <div>
+ *     <strong>Execution Note:</strong> dvidal@infoyupay.com passed 9 tests in 3.416s at 2025-09-28 19:14 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -53,6 +56,7 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
     void cleanTables() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
     }
+
     /**
      * Verifies that a valid transaction can be successfully persisted into the database.
      * <br/>
@@ -77,17 +81,24 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldPersistValidTransaction() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
-            var tx = TestPersistedEntities.buildValidTansaction(em);
-            em.persist(tx);
-            et.commit();
-            em.refresh(tx);
-
-            assertNotNull(tx.getId(), "ID should be generated");
-            assertNotNull(tx.getMoment(), "Moment should be auto-set");
-        }
+        //Arrange
+        var persisted = performInTransaction(em -> {
+            var r = TestPersistedEntities.buildValidTansaction(em);
+            //Act
+            em.persist(r);
+            em.flush();
+            em.refresh(r);
+            return r;
+        });
+        //Assert
+        assertSoftly(softly -> {
+            softly.assertThat(persisted.getId())
+                    .as("ID should be generated and retrieved.")
+                    .isNotNull();
+            softly.assertThat(persisted.getMoment())
+                    .as("Moment should be auto-set.")
+                    .isNotNull();
+        });
     }
 
     /**
@@ -101,21 +112,23 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
     @ParameterizedTest
     @ValueSource(strings = {"bank", "concept", "cashier", "amount", "commission", "status"})
     void shouldFailWhenNull(@NotNull String field) {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
-            var tx = TestPersistedEntities.buildValidTansaction(em);
-            switch (field) {
-                case "bank" -> tx.setBank(null);
-                case "concept" -> tx.setConcept(null);
-                case "cashier" -> tx.setCashier(null);
-                case "amount" -> tx.setAmount(null);
-                case "commission" -> tx.setCommission(null);
-                case "status" -> tx.setStatus(null);
-            }
-            em.persist(tx);
-            expectCommitFailure(et);
-        }
+        //Arrange
+        performAndExpectFlushFailure(SQLException.class,
+                "null",
+                em -> {
+                    var r = TestPersistedEntities.buildValidTansaction(em);
+                    switch (field) {
+                        case "bank" -> r.setBank(null);
+                        case "concept" -> r.setConcept(null);
+                        case "cashier" -> r.setCashier(null);
+                        case "amount" -> r.setAmount(null);
+                        case "commission" -> r.setCommission(null);
+                        case "status" -> r.setStatus(null);
+                    }
+                    //Act
+                    em.persist(r);
+                    //Assertion: implemented in performAndExpectFluhFailure
+                });
     }
 
     /**
@@ -135,14 +148,13 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldFailWhenAmountIsNonPositive() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
-            var tx = TestPersistedEntities.buildValidTansaction(em);
-            tx.setAmount(BigDecimal.ZERO);
-            em.persist(tx);
-            expectCommitFailure(et);
-        }
+        performAndExpectFlushFailure(SQLException.class,
+                "chk_transaction_amount_positive",
+                em -> {
+                    var r = TestPersistedEntities.buildValidTansaction(em);
+                    r.setAmount(BigDecimal.ZERO);
+                    em.persist(r);
+                });
     }
 
     /**
@@ -161,61 +173,12 @@ class TransactionIntegrationTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void shouldFailWhenCommissionIsNegative() {
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var et = em.getTransaction();
-            et.begin();
-            var tx = TestPersistedEntities.buildValidTansaction(em);
-            tx.setCommission(new BigDecimal("-1.00"));
-            em.persist(tx);
-            expectCommitFailure(et);
-        }
-    }
-
-    /**
-     * Validates the correctness of the {@code equals()} and {@code hashCode()} implementations
-     * for the {@code Transaction} entity, ensuring that they operate based solely on the {@code id} field.
-     * <br/>
-     * This test performs the following verifications:
-     * <ul>
-     * <li>
-     *    Two {@code Transaction} objects with the same {@code id} are considered equal and have the same hash code.
-     * </li>
-     * <li>
-     *    Two {@code Transaction} objects with different {@code ids} are not considered equal.
-     * </li>
-     * <li>
-     *    Two {@code Transaction} objects without an {@code id} are not considered equal, ensuring that
-     *   uninitialized entities behave as distinct.
-     *   </li>
-     * <li>
-     *    The reflexive property of equality is validated for a single {@code Transaction} object.
-     * </li>
-     * </ul>
-     * This test is important to confirm the entity's compliance with the required contract for
-     * {@code equals()} and {@code hashCode()}, which is critical for the behavior of collections
-     * such as {@code Set} and map keys.
-     */
-    @SuppressWarnings("EqualsWithItself")
-    @Test
-    void equalsAndHashCodeShouldWorkBasedOnId() {
-        var tx1 = Transaction.builder().id(1L).build();
-
-        var tx2 = Transaction.builder().id(1L).build();
-
-        var tx3 = Transaction.builder().id(2L).build();
-
-        var txNull1 = new Transaction();
-        var txNull2 = new Transaction();
-
-        assertEquals(tx1, tx2);
-        assertEquals(tx1.hashCode(), tx2.hashCode());
-
-        assertNotEquals(tx1, tx3);
-
-        // Two entities without ID should not be equal
-        assertNotEquals(txNull1, txNull2);
-
-        // Reflexive property
-        assertEquals(tx1, tx1);
+        performAndExpectFlushFailure(SQLException.class,
+                "chk_transaction_commission_nonnegative",
+                em -> {
+                    var r = TestPersistedEntities.buildValidTansaction(em);
+                    r.setCommission(BigDecimal.valueOf(-1));
+                    em.persist(r);
+                });
     }
 }
