@@ -87,8 +87,8 @@ public final class ServiceAssertions {
      * @param listName       an {@link Object} representing the name of the list being validated.
      * @param <T>            type of item to list.
      */
-    public static <T> void assertListed(
-            @NotNull Supplier<CompletableFuture<Iterable<T>>> futureSupplier,
+    public static <T, C extends Iterable<T>> void assertListed(
+            @NotNull Supplier<CompletableFuture<C>> futureSupplier,
             T value,
             String listName) {
         var list = futureSupplier.get().join();
