@@ -19,7 +19,7 @@
 
 package com.yupay.gangcomisiones.assertions;
 
-import org.assertj.core.api.AbstractStringAssert;
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -118,12 +118,35 @@ public record CauseAssertions<C extends Throwable>(Class<C> expected) {
      *                Throws a {@link NullPointerException} if the provided {@code Throwable} is {@code null}.
      * @param message A {@link String} that should be present, case-insensitively, in the message
      *                of the identified cause. Must not be {@code null} or empty.
-     * @return An {@link AbstractStringAssert} object to further customize the assertion on the identified cause's message.
      */
-    public AbstractStringAssert<?> assertCauseWithMessage(Throwable t, String message) {
-        return assertCause(t)
+    public void assertCauseWithMessage(Throwable t, String message) {
+        assertCause(t)
                 .message()
                 .containsIgnoringCase(message);
+    }
+
+    /**
+     * Asserts that each of the provided {@link Throwable} instances contains a cause of the expected type
+     * and that the cause's message contains the specified text, ignoring case.
+     * <br/>
+     * This method is a bulk operation that applies the message assertion to all provided {@link Throwable} instances.
+     * <br/>
+     * The process involves:
+     * <ol>
+     *   <li>Iterating over the provided array of {@link Throwable} instances.</li>
+     *   <li>For each {@link Throwable}, calling the {@code assertCauseWithMessage} method
+     *       to verify the presence of a cause with the specified message.</li>
+     * </ol>
+     *
+     * @param message A {@link String} that should be present, case-insensitively, in the message
+     *                of the identified causes. Must not be {@code null} or empty.
+     * @param t       An array of {@link Throwable} instances to assert. Must not be {@code null}.
+     *                Throws a {@link NullPointerException} if the array or any element within is {@code null}.
+     */
+    public void assertCausesWithMessage(String message, Throwable @NotNull ... t){
+        for (var throwable : t) {
+            assertCauseWithMessage(throwable, message);
+        }
     }
 
     /**
