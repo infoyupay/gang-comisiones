@@ -25,7 +25,6 @@ import com.yupay.gangcomisiones.usecase.registry.DefaultViewRegistry;
 import com.yupay.gangcomisiones.usecase.registry.ViewRegistry;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.PersistenceException;
 import org.assertj.core.api.AbstractStringAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.jetbrains.annotations.NotNull;
@@ -42,8 +41,6 @@ import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Base class for integration tests using local real PostgreSQL.
@@ -187,22 +184,6 @@ public abstract class AbstractPostgreIntegrationTest {
         } finally {
             if (et != null && et.isActive()) et.rollback();
         }
-    }
-
-    /**
-     * Expect a commit failure, asserts that an EntityTransaction
-     * throws an exception on commit, then rollsback transaction
-     * and asserts that thrown exception is IllegalState or Persistence.
-     *
-     * @param et the entity transaction to test.
-     */
-    @Deprecated
-    public void expectCommitFailure(@NotNull EntityTransaction et) {
-        var ex = assertThrows(RuntimeException.class, et::commit);
-        if (et.isActive()) et.rollback();
-        assertTrue(ex instanceof IllegalStateException
-                        || ex instanceof PersistenceException,
-                "Expected a persistence-related failure but got: " + ex);
     }
 
     /**
