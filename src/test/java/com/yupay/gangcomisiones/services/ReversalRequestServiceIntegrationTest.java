@@ -21,20 +21,30 @@ package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
 import com.yupay.gangcomisiones.exceptions.AppSecurityException;
-import com.yupay.gangcomisiones.model.*;
+import com.yupay.gangcomisiones.model.ConceptType;
+import com.yupay.gangcomisiones.model.TestPersistedEntities;
+import com.yupay.gangcomisiones.model.TransactionStatus;
+import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.concurrent.ExecutionException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.yupay.gangcomisiones.assertions.CauseAssertions.assertExpectedCause;
+import static com.yupay.gangcomisiones.services.UserSessionHelpers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchException;
 
 /**
  * Integration tests for ReversalRequestService operations.
  * Covers creation and resolution flows, including role-based authorization
  * and expected transaction state transitions.
+ * <br/>
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 2 tests in 1.664s at 2025-09-29 12:47 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -60,6 +70,36 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
         userService = ctx.getUserService();
     }
 
+    /**
+     * Cleans up resources and resets the state of services and user context after each test execution.
+     * <br/>
+     * This method ensures proper isolation between test cases by:
+     * <ul>
+     *   <li>Releasing references to the following service objects, setting them to {@code null}:
+     *   <ul>
+     *     <li>{@code reversalRequestService}</li>
+     *     <li>{@code transactionService}</li>
+     *     <li>{@code bankService}</li>
+     *     <li>{@code conceptService}</li>
+     *     <li>{@code userService}</li>
+     *   </ul>
+     *   </li>
+     *   <li>Resetting the currently logged-in user in the application context to {@code null}, effectively logging out any user.</li>
+     * </ul>
+     * <br/>
+     * Invoked automatically as part of the test lifecycle by the {@code @AfterEach} annotation,
+     * ensuring the consistent cleanup of test-related resources.
+     */
+    @AfterEach
+    void cleanUp() {
+        reversalRequestService = null;
+        transactionService = null;
+        bankService = null;
+        conceptService = null;
+        userService = null;
+        ctx.getUserSession().setCurrentUser(null);
+    }
+
     /// Validates that creating a reversal request:
     /// - Persists the request and assigns an id.
     /// - Updates the associated transaction status to REVERSION_REQUESTED.
@@ -68,36 +108,41 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
     @Test
     void testCreateReversalRequest_SetsStatusAndPersists() throws Exception {
         // given: admin creates prerequisites; cashier creates transaction and request
-        UserSessionHelpers.createAndLogAdminUser();
-        Bank bank = bankService.createBank("Bank RR").get();
-        Concept concept = conceptService.createConcept("Electricity", ConceptType.FIXED, new BigDecimal("1.2500")).get();
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
+        var bank = bankService.createBank("Bank RR").get();
+        var concept = conceptService
+                .createConcept("Electricity", ConceptType.FIXED, new BigDecimal("1.2500")).get();
 
-        User cashier = userService.createUser("cashier.rev.create", UserRole.CASHIER, "password").get();
-        ctx.getUserSession().setCurrentUser(cashier);
+        runInTransaction(em -> UserSessionHelpers.createAndLogCashierUser(ctx, em));
 
         var request = CreateTransactionRequest
                 .builder()
                 .amount(new BigDecimal("20.00"))
                 .bankId(bank.getId())
-                .cashierId(cashier.getId())
+                .cashierId(ctx.getUserSession().getCurrentUser().getId())
                 .conceptCommissionValue(concept.getValue())
                 .conceptId(concept.getId())
                 .conceptType(concept.getType())
                 .build();
-        Transaction tx = transactionService.createTransaction(request).get();
+        var tx = transactionService.createTransaction(request).get();
 
         // when: create reversal request
-        ReversalRequest req = reversalRequestService
-                .createReversalRequest(tx.getId(), cashier.getId(), "mistyped amount")
+        var req = reversalRequestService
+                .createReversalRequest(tx.getId(), ctx.getUserSession().getCurrentUser().getId(), "mistyped amount")
                 .get();
 
         // then: id assigned and transaction moved to REVERSION_REQUESTED
-        assertNotNull(req.getId(), "ReversalRequest id must be assigned by DB sequence");
-        assertTrue(req.getId() > 0, "ReversalRequest id must be positive");
+        assertThat(req.getId())
+                .as("Reversal request Assigned ID must be non-null, and positive.")
+                .isNotNull()
+                .isPositive();
 
-        Transaction refreshed = transactionService.findTransactionById(tx.getId()).get().orElseThrow();
-        assertEquals(TransactionStatus.REVERSION_REQUESTED, refreshed.getStatus(),
-                "Transaction must move to REVERSION_REQUESTED after creating a reversal request");
+        var refreshed = transactionService.findTransactionById(tx.getId()).get();
+        assertThat(refreshed)
+                .as("Transaction must move to REVERSION_REQUESTED after creating a reversal request.")
+                .hasValueSatisfying(x ->
+                        assertThat(x.getStatus())
+                                .isEqualTo(TransactionStatus.REVERSION_REQUESTED));
     }
 
     /// Ensures that resolving a reversal request:
@@ -108,43 +153,52 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
     /// @throws Exception when test catstrophically fails.
     @Test
     void testResolveRequest_RoleEnforcedAndStatusTransitions() throws Exception {
-        // given: prerequisites and a PENDING request created by cashier
-        UserSessionHelpers.createAndLogAdminUser();
-        Bank bank = bankService.createBank("Bank Resolve").get();
-        Concept concept = conceptService.createConcept("Water", ConceptType.FIXED, new BigDecimal("0.5000")).get();
+        // Arrange: prerequisites and a PENDING request created by cashier
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
+        var bank = bankService.createBank("Bank Resolve").get();
+        var concept = conceptService
+                .createConcept("Water", ConceptType.FIXED, new BigDecimal("0.5000")).get();
 
-        User cashier = userService.createUser("cashier.rev.resolve", UserRole.CASHIER, "password").get();
-        ctx.getUserSession().setCurrentUser(cashier);
+        runInTransaction(em -> createAndLogCashierUser(ctx, em));
 
         var request = CreateTransactionRequest.builder()
                 .amount(new BigDecimal("15.00"))
                 .bankId(bank.getId())
                 .conceptId(concept.getId())
                 .conceptCommissionValue(concept.getValue())
-                .cashierId(cashier.getId())
+                .cashierId(ctx.getUserSession().getCurrentUser().getId())
                 .conceptType(concept.getType())
                 .build();
 
         var tx = transactionService.createTransaction(request).get();
-        ReversalRequest req = reversalRequestService
-                .createReversalRequest(tx.getId(), cashier.getId(), "client cancel")
-                .get();
 
-        // when/then: resolving as CASHIER should fail
-        ExecutionException ex = assertThrows(ExecutionException.class, () ->
-                reversalRequestService.resolveRequest(req.getId(), cashier.getId(), "cannot", ReversalRequestService.Resolution.DENIED).get());
-        assertInstanceOf(AppSecurityException.class, ex.getCause(), "Expected PersistenceServicesException due to unprivileged role");
+        var req = reversalRequestService
+                .createReversalRequest(tx.getId(), tx.getCashier().getId(), "client cancel")
+                .get();
+        var cashier = TestPersistedEntities.USER.get(UserRole.CASHIER);
+        ctx.getUserSession().setCurrentUser(cashier);
+
+        // Act: resolving as CASHIER should fail
+        var ex = catchException(() ->
+                reversalRequestService.resolveRequest(
+                        req.getId(),
+                        tx.getCashier().getId(),
+                        "cannot",
+                        ReversalRequestService.Resolution.DENIED).get());
+        assertExpectedCause(AppSecurityException.class)
+                .assertCauseWithMessage(ex, "as not privileges to perform an operation");
 
         // and: resolving as ADMIN APPROVED should set transaction to REVERSED
-        User admin = userService.createUser("admin.resolver", UserRole.ADMIN, "password").get();
+        var admin = TestPersistedEntities.USER.get(UserRole.ADMIN);
         ctx.getUserSession().setCurrentUser(admin);
         reversalRequestService.resolveRequest(req.getId(), admin.getId(), "ok", ReversalRequestService.Resolution.APPROVED).get();
-        Transaction afterApproved = transactionService.findTransactionById(tx.getId()).get().orElseThrow();
-        assertEquals(TransactionStatus.REVERSED, afterApproved.getStatus(),
-                "Transaction must move to REVERSED after approval");
+
+        assertThat(transactionService.findTransactionById(tx.getId()).get())
+                .as("Transaction must move to REVERSED after approval.")
+                .hasValueSatisfying(t -> assertThat(t.getStatus()).isEqualTo(TransactionStatus.REVERSED));
 
         // and: for a new request, resolving as ROOT DENIED should set transaction to REGISTERED
-        User root = userService.createUser("root.resolver", UserRole.ROOT, "password").get();
+        runInTransaction(em -> createAndLogRootUser(ctx, em));
         // create another tx and request by cashier
         ctx.getUserSession().setCurrentUser(cashier);
         var request2 = CreateTransactionRequest.builder()
@@ -156,15 +210,17 @@ class ReversalRequestServiceIntegrationTest extends AbstractPostgreIntegrationTe
                 .conceptType(concept.getType())
                 .build();
 
-        Transaction tx2 = transactionService.createTransaction(request2).get();
-        ReversalRequest req2 = reversalRequestService
+        var tx2 = transactionService.createTransaction(request2).get();
+        var req2 = reversalRequestService
                 .createReversalRequest(tx2.getId(), cashier.getId(), "other reason")
                 .get();
 
+        var root = TestPersistedEntities.USER.get(UserRole.ROOT);
         ctx.getUserSession().setCurrentUser(root);
         reversalRequestService.resolveRequest(req2.getId(), root.getId(), "no", ReversalRequestService.Resolution.DENIED).get();
-        Transaction afterDenied = transactionService.findTransactionById(tx2.getId()).get().orElseThrow();
-        assertEquals(TransactionStatus.REGISTERED, afterDenied.getStatus(),
-                "Transaction must return to REGISTERED after denial");
+        var afterDenied = transactionService.findTransactionById(tx2.getId()).get();
+        assertThat(afterDenied)
+                .as("Transaction must return to REGISTERED after denial.")
+                .hasValueSatisfying(t -> assertThat(t.getStatus()).isEqualTo(TransactionStatus.REGISTERED));
     }
 }
