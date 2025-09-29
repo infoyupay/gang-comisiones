@@ -75,10 +75,6 @@ public class UserSessionHelpers {
         ctx.getUserSession().setCurrentUser(persistCashierUser(em));
     }
 
-    @Deprecated
-    public static void createAndLogCashierUser() {
-    }
-
     /**
      * Creates a root user with default settings, persists them into the database, and logs them into the current session.
      * <br/>
