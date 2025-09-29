@@ -21,7 +21,6 @@ package com.yupay.gangcomisiones.assertions;
 
 import com.yupay.gangcomisiones.AppContext;
 import jakarta.persistence.EntityManager;
-import org.assertj.core.api.AbstractLongAssert;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -63,7 +62,7 @@ public record AuditLogAssertion(AppContext ctx) {
      *
      * @param ctx The {@link AppContext} representing the application's context. Must not be null.
      *            This context defines the boundaries within which audit log queries are executed.
-     * <br/>
+     *            <br/>
      * @return A new {@link AuditLogAssertion} instance initialized with the provided application context.
      */
     @Contract("_ -> new")
@@ -92,16 +91,13 @@ public record AuditLogAssertion(AppContext ctx) {
      *               <br/>
      * @param id     A {@link Function} to extract the identifier from the entity.
      *               The extracted identifier must not be null.
-     *               <br/>
-     * @return An {@link AbstractLongAssert} object to facilitate further
-     * assertions regarding the result.
      */
-    public <T> AbstractLongAssert<?> assertHasLog(T entity, @NotNull Function<T, ? extends Number> id) {
+    public <T> void assertHasLog(T entity, @NotNull Function<T, ? extends Number> id) {
         assertThat(entity).as("Entity to look for audit log should not be null").isNotNull();
         var entityId = id.apply(entity);
         assertThat(entityId).as("Entity id to look for audit log should not be null").isNotNull();
         try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            return assertLogExists(em, entityId);
+            assertLogExists(em, entityId);
         }
     }
 
@@ -116,13 +112,12 @@ public record AuditLogAssertion(AppContext ctx) {
      * @param id The identifier of the entity for which the logs are being checked.
      *           Must not be null.
      *           <br/>
-     * @return An {@link AbstractLongAssert} object to allow method chaining for further assertions.
      */
-    public AbstractLongAssert<?> assertLogExists(@NotNull EntityManager em, Number id) {
+    public void assertLogExists(@NotNull EntityManager em, Number id) {
         var r = em.createQuery("SELECT COUNT(L) FROM  AuditLog L WHERE L.entityId =:id", Long.class)
                 .setParameter("id", id)
                 .getSingleResult();
-        return assertThat(r)
+        assertThat(r)
                 .as("Expected at least 1 AuditLog for entity id = %s", id)
                 .isGreaterThanOrEqualTo(1L);
     }
