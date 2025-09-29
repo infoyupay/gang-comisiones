@@ -20,43 +20,52 @@
 package com.yupay.gangcomisiones.logging;
 
 import com.yupay.gangcomisiones.LocalFiles;
+import com.yupay.gangcomisiones.TestBootstrap;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test unit for uncaught exception logger.
+ * Test class for validating the functionality of {@link UncaughtExceptionLogger}.
+ * <br/>
+ * Specifically, it ensures that uncaught exceptions are appropriately logged
+ * when the logger is used as the uncaught exception handler for threads.
+ * <br/>
+ * This test suite comprises setup operations and behavior validation through test cases.
+ * <br/>
+ * <div style="border: 1px solid black; padding: 2px;">
+ *     <strong>Execution Note:</strong> dvidal@infoyupay.com passed 1 test in 1.104 at 2025-09-28 19:55 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
 class UncaughtExceptionLoggerTest {
 
-    private static final Path LOG_DIR = LocalFiles.logs();
-    private static final Path LOG_FILE = LOG_DIR.resolve("gang-comisiones.log");
-
     /**
-     * Sets up the test, creating LOG_DIR directories and
-     * cleaning log file. Then, will init logging sub-system.
+     * Sets up the test environment prior to the execution of all test cases.
+     * This method initializes application-specific paths and configurations
+     * required for the test mode.
+     * <br/>
+     * Invokes {@link TestBootstrap#bootstrap(Path)} to perform directory creation,
+     * file setup, and logging configuration.
      *
-     * @throws IOException if cannot perform files writing.
+     * @param tmp A temporary directory provided by the {@link TempDir} annotation.
+     *            <ul>
+     *                <li>Must not be {@code null}.</li>
+     *                <li>Acts as a base directory for creating application-specific paths during tests.</li>
+     *            </ul>
+     * @throws IOException If an I/O error occurs during the setup process.
      */
     @BeforeAll
-    static void setup() throws IOException {
-        // Ensure log directory exists
-        Files.createDirectories(LOG_DIR);
-
-        // Clean old log file
-        Files.deleteIfExists(LOG_FILE);
-
-        LogConfig.initLogging();
+    static void setup(@TempDir Path tmp) throws IOException {
+        TestBootstrap.bootstrap(tmp);
     }
 
     /**
@@ -68,7 +77,10 @@ class UncaughtExceptionLoggerTest {
      */
     @Test
     void testUncaughtExceptionIsLogged() throws IOException, InterruptedException {
-        Thread thread = new Thread(() -> {
+        var LOG_DIR = LocalFiles.logs();
+        var LOG_FILE = LOG_DIR.resolve("gang-comisiones.log");
+
+        var thread = new Thread(() -> {
             throw new RuntimeException("Test uncaught exception");
         });
 
@@ -76,9 +88,9 @@ class UncaughtExceptionLoggerTest {
         thread.start();
         thread.join();
 
-        boolean exists = false;
-        int retries = 5;
-        for (int i = 0; i < retries; i++) {
+        var exists = false;
+        var retries = 5;
+        for (var i = 0; i < retries; i++) {
             if (Files.exists(LOG_FILE) && Files.size(LOG_FILE) > 0) {
                 exists = true;
                 break;
@@ -86,17 +98,18 @@ class UncaughtExceptionLoggerTest {
             Thread.sleep(200);
         }
 
-        if (!exists) {
-            fail("Log file should exist after uncaught exception, but it was not found at: " + LOG_FILE.toAbsolutePath());
-        }
+        assertThat(exists)
+                .as("Log file should exist after uncaught exception, but it was not found at: "
+                        + LOG_FILE.toAbsolutePath())
+                .isTrue();
 
 
         // Read log content
-        List<String> lines = Files.readAllLines(LOG_FILE);
+        var lines = Files.readAllLines(LOG_FILE);
 
         // Assert exception message is present
-        boolean containsMessage = lines.stream()
+        assertThat(lines)
+                .as("Log file should contain the test exception message.")
                 .anyMatch(line -> line.contains("Test uncaught exception"));
-        assertTrue(containsMessage, "Log file should contain the exception message");
     }
 }
