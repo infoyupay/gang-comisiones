@@ -47,10 +47,6 @@ public class UserSessionHelpers {
         ctx.getUserSession().setCurrentUser(persistAdminUser(em));
     }
 
-    @Deprecated
-    public static void createAndLogAdminUser() {
-    }
-
     /**
      * Creates a cashier user, persistently saves them to the database, and logs them into the current session.
      * <br/>
