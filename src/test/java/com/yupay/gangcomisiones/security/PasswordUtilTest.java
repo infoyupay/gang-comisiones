@@ -22,16 +22,19 @@ package com.yupay.gangcomisiones.security;
 import com.yupay.gangcomisiones.exceptions.AppSecurityException;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.yupay.gangcomisiones.assertions.CauseAssertions.assertExpectedCause;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+//import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit test for password utility class.
  * <br/>
- * Tested by dvidal, 6 tests 1.281s passed at 2025-08-01 23:06:00 UTC-5.
+ * <div style="border: 1px solid black; padding: 2px">
+ *     <strong>Execution Note:</strong> dvidal@infoyupay.com passed 6 tests in 1.138s at 2025-09-28 21:27 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -50,10 +53,11 @@ class PasswordUtilTest {
      */
     @Test
     void testGenerateSaltLength() {
-        String salt = PasswordUtil.generateSalt();
-        assertNotNull(salt);
-        byte[] saltBytes = java.util.Base64.getDecoder().decode(salt);
-        assertEquals(16, saltBytes.length, "Salt must be 16 bytes long");
+        assertThat(PasswordUtil.generateSalt())
+                .isNotNull()
+                .asBase64Decoded()
+                .as("Salt must be 16 bytes long.")
+                .hasSize(16);
     }
 
     /**
@@ -73,12 +77,14 @@ class PasswordUtilTest {
      */
     @Test
     void testHashConsistency() {
-        String salt = PasswordUtil.generateSalt();
-        String password = "SuperSecret123!";
-        String hash1 = PasswordUtil.hashPassword(password, salt);
-        String hash2 = PasswordUtil.hashPassword(password, salt);
+        var salt = PasswordUtil.generateSalt();
+        var password = "SuperSecret123!";
+        var hash1 = PasswordUtil.hashPassword(password, salt);
+        var hash2 = PasswordUtil.hashPassword(password, salt);
 
-        assertEquals(hash1, hash2, "Hashing the same password+salt must be deterministic");
+        assertThat(hash1)
+                .as("Hashing the same password+sañt must be deterministic.")
+                .isEqualTo(hash2);
     }
 
     /**
@@ -100,14 +106,16 @@ class PasswordUtilTest {
      */
     @Test
     void testHashWithDifferentSalt() {
-        String password = "SuperSecret123!";
-        String salt1 = PasswordUtil.generateSalt();
-        String salt2 = PasswordUtil.generateSalt();
+        var password = "SuperSecret123!";
+        var salt1 = PasswordUtil.generateSalt();
+        var salt2 = PasswordUtil.generateSalt();
 
-        String hash1 = PasswordUtil.hashPassword(password, salt1);
-        String hash2 = PasswordUtil.hashPassword(password, salt2);
+        var hash1 = PasswordUtil.hashPassword(password, salt1);
+        var hash2 = PasswordUtil.hashPassword(password, salt2);
 
-        assertNotEquals(hash1, hash2, "Hashes with different salts must differ");
+        assertThat(hash1)
+                .as("Hashes with different salts must differ.")
+                .isNotEqualTo(hash2);
     }
 
     /**
@@ -116,11 +124,13 @@ class PasswordUtilTest {
      */
     @Test
     void testVerifyPasswordSuccess() {
-        String password = "SuperSecret123!";
-        String salt = PasswordUtil.generateSalt();
-        String hash = PasswordUtil.hashPassword(password, salt);
+        var password = "SuperSecret123!";
+        var salt = PasswordUtil.generateSalt();
+        var hash = PasswordUtil.hashPassword(password, salt);
 
-        assertTrue(PasswordUtil.verifyPassword(password, salt, hash), "Password must verify successfully");
+        assertThat(PasswordUtil.verifyPassword(password, salt, hash))
+                .as("Password must verify successfully.")
+                .isTrue();
     }
 
     /**
@@ -130,11 +140,12 @@ class PasswordUtilTest {
      */
     @Test
     void testVerifyPasswordFailure() {
-        String salt = PasswordUtil.generateSalt();
-        String correctHash = PasswordUtil.hashPassword("SuperSecret123!", salt);
+        var salt = PasswordUtil.generateSalt();
+        var correctHash = PasswordUtil.hashPassword("SuperSecret123!", salt);
 
-        assertFalse(PasswordUtil.verifyPassword("WrongPassword!", salt, correctHash),
-                "Verification must fail with incorrect password");
+        assertThat(PasswordUtil.verifyPassword("WrongPassword!", salt, correctHash))
+                .as("Verification must fail with incorrect password.")
+                .isFalse();
     }
 
     /**
@@ -146,17 +157,17 @@ class PasswordUtilTest {
      */
     @Test
     void constructorIsPrivateAndThrowsOnReflectiveUse() throws Exception {
-        Constructor<PasswordUtil> ctor = PasswordUtil.class.getDeclaredConstructor();
+        var ctor = PasswordUtil.class.getDeclaredConstructor();
 
-        assertTrue(Modifier.isPrivate(ctor.getModifiers()), "Constructor must be private");
+        assertThat(ctor.getModifiers())
+                .as("The constructor should be private")
+                .matches(Modifier::isPrivate);
 
         ctor.setAccessible(true);
-        InvocationTargetException ex =
-                assertThrows(InvocationTargetException.class, ctor::newInstance);
-
-        assertNotNull(ex.getCause(), "Expected wrapped cause");
-        assertInstanceOf(AppSecurityException.class, ex.getCause());
-        assertTrue(ex.getCause().getMessage().toLowerCase().contains("cannot be instantiated"));
+        var ex =
+                catchThrowable(ctor::newInstance);
+        assertExpectedCause(AppSecurityException.class)
+                .assertCauseWithMessage(ex, "cannot be instantiated");
     }
 }
 
