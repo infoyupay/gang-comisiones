@@ -20,31 +20,58 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import com.yupay.gangcomisiones.exceptions.GangComisionesException;
 import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
-import com.yupay.gangcomisiones.model.*;
+import com.yupay.gangcomisiones.model.ConceptType;
+import com.yupay.gangcomisiones.model.TestPersistedEntities;
+import com.yupay.gangcomisiones.model.Transaction;
+import com.yupay.gangcomisiones.model.UserRole;
 import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
+import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.sql.SQLException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.yupay.gangcomisiones.assertions.AuditLogAssertion.withContext;
+import static com.yupay.gangcomisiones.assertions.CauseAssertions.assertExpectedCause;
+import static com.yupay.gangcomisiones.model.TestPersistedEntities.persistCashierUser;
+import static com.yupay.gangcomisiones.services.UserSessionHelpers.createAndLogAdminUser;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchException;
 
-/// Integration tests for [TransactionService] operations.
-/// Tests cover:
-/// - Successful insert and AuditLog creation for the generated entity id.
-/// - Failure when no user is logged in (AppContext.getUserSession()).
-/// - Failure when persisting null values in required fields (bank, concept, cashier, amount, commission, status).
-///   Note: field `moment` is DB-managed (DEFAULT CURRENT_TIMESTAMP, insertable=false) and not settable, thus
-///   cannot be forced to null at insert time; it is validated indirectly by DB default (see model TransactionIntegrationTest).
-///
-/// @author InfoYupay SACS
-/// @version 1.0
+/**
+ * Integration test class for {@code TransactionService}, validating its behavior alongside related services
+ * {@code BankService}, {@code ConceptService}, and {@code UserService} in a PostgreSQL-based environment.
+ * <br/>
+ * <br/>
+ * This test class ensures the correctness of transaction-related operations, focusing on factors such as:
+ * <ul>
+ *   <li>Data persistence and integrity across services.</li>
+ *   <li>Audit log generation for transactional activities.</li>
+ *   <li>Enforcement of business rules, such as requiring valid input fields and user authentication.</li>
+ * </ul>
+ * <br/>
+ * Inherits functionality from {@link AbstractPostgreIntegrationTest}.
+ * <br/>
+ * <br/>
+ * Responsibilities of this test class include:
+ * <ul>
+ *   <li>Setting up and cleaning up the environment for each test.</li>
+ *   <li>Testing transaction creation scenarios, such as successful creation, user authentication checks, and input validation.</li>
+ *   <li>Validating interactions with associated entities like banks, concepts, and users.</li>
+ * </ul>
+ * <br/>
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 7 tests in 2.366s at 2025-09-29 13:46 UTC-5.
+ * </div>
+ *
+ * @author InfoYupay SACS
+ * @version 1.0
+ */
 class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
 
     private TransactionService transactionService;
@@ -70,35 +97,94 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         userService = ctx.getUserService();
     }
 
-    /// Validates the successful creation of a transaction and verifies that it is properly audited.
-    /// This test ensures that:
-    /// 1. A transaction is created successfully when the prerequisites are met.
-    /// 2. The created transaction is saved with a valid database-generated identifier.
-    /// 3. An associated audit log entry is created for the transaction.
-    /// Precondition:
-    /// - An administrator user is logged in to set up test prerequisites.
-    /// - A cashier user is logged in to perform the transaction creation.
-    /// - Required entities such as a bank and a concept are created.
-    /// Test Steps:
-    /// - Create an administrator user and log in.
-    /// - Set up the required entities: bank, concept, and cashier user.
-    /// - Log in as the cashier user and prepare a transaction with the necessary fields.
-    /// - Call the service to create the transaction.
-    /// - Verify that the transaction has been assigned a valid positive identifier.
-    /// - Query the audit log to confirm that an entry exists for the created transaction's identifier.
-    /// Expected Outcome:
-    /// - The transaction is persisted successfully with a valid identifier.
-    /// - At least one audit log entry exists associated with the created transaction's identifier.
-    ///
-    /// @throws Exception if an error occurs during the test execution
+    /**
+     * Cleans up resources and resets the application state after each test case execution.
+     * <br/>
+     * This method ensures that the test environment is properly restored to its initial state
+     * by resetting dependencies and clearing the user session.
+     * <br/>
+     * Responsibilities:
+     * <ul>
+     *   <li>Sets the {@code transactionService} field to {@code null}.</li>
+     *   <li>Sets the {@code bankService} field to {@code null}.</li>
+     *   <li>Sets the {@code conceptService} field to {@code null}.</li>
+     *   <li>Sets the {@code userService} field to {@code null}.</li>
+     *   <li>Clears the currently logged-in user in the user session by calling
+     *       {@code ctx.getUserSession().setCurrentUser(null)}.</li>
+     * </ul>
+     * <br/>
+     * This method is executed after each test to ensure no residual state affects subsequent tests.
+     */
+    @AfterEach
+    void cleanUp() {
+        transactionService = null;
+        bankService = null;
+        conceptService = null;
+        userService = null;
+        ctx.getUserSession().setCurrentUser(null);
+    }
+
+    /**
+     * Tests that a transaction is successfully created and a corresponding audit log is generated.
+     * <br/>
+     * This test ensures that the full flow of creating a transaction as a valid cashier user is executed successfully,
+     * and verifies that appropriate data is persisted and audited.
+     * <br/>
+     * <p>
+     * Test Steps:
+     * <ol>
+     *   <li>Set up the environment:
+     *       <ul>
+     *           <li>Create an administrator user and log in to set up prerequisites.</li>
+     *           <li>Create and persist a cashier user.</li>
+     *       </ul>
+     *   </li>
+     *   <li>Create the necessary entities:
+     *       <ul>
+     *           <li>A bank entity using the {@code bankService}.</li>
+     *           <li>A concept entity with type, name, and commission value using the {@code conceptService}.</li>
+     *       </ul>
+     *   </li>
+     *   <li>Log in as the created cashier user.</li>
+     *   <li>Prepare a {@code CreateTransactionRequest} with the following valid transaction data:
+     *       <ul>
+     *           <li>Transaction amount.</li>
+     *           <li>Bank ID and Concept ID for the transaction.</li>
+     *           <li>Concept type and commission value.</li>
+     *           <li>Cashier user ID.</li>
+     *       </ul>
+     *   </li>
+     *   <li>Invoke the {@code createTransaction} method in {@code transactionService} to create the transaction.</li>
+     *   <li>Verify the results:
+     *       <ul>
+     *           <li>Ensure the transaction ID is assigned (not null and positive).</li>
+     *           <li>Validate that the concept name in the transaction matches the original concept's name.</li>
+     *           <li>Confirm the existence of an audit log tied to the created transaction ID.</li>
+     *       </ul>
+     *   </li>
+     * </ol>
+     * <br/>
+     * <p>
+     * Expected Outcome:
+     * <ul>
+     *   <li>A transaction is successfully created with the specified details.</li>
+     *   <li>Audit log entry is generated with the correct transaction ID.</li>
+     * </ul>
+     *
+     * @throws Exception If any unexpected errors occur during the test execution.
+     */
     @Test
     void testCreateTransaction_SuccessAndAudited() throws Exception {
         // given: create prerequisites as admin, then login as cashier to create the transaction
-        UserSessionHelpers.createAndLogAdminUser();
-        Bank bank = bankService.createBank("Interbank").get();
-        Concept concept = conceptService.createConcept("Telephone", ConceptType.FIXED, new BigDecimal("1.0000")).get();
+        runInTransaction(em -> {
+            createAndLogAdminUser(ctx, em);
+            persistCashierUser(em);
+        });
+        var bank = bankService.createBank("Interbank").get();
+        var concept = conceptService
+                .createConcept("Telephone", ConceptType.FIXED, new BigDecimal("1.0000")).get();
 
-        User cashier = userService.createUser("cashier.tx", UserRole.CASHIER, "password").get();
+        var cashier = TestPersistedEntities.USER.get(UserRole.CASHIER);
         ctx.getUserSession().setCurrentUser(cashier);
 
         var request = CreateTransactionRequest.builder()
@@ -114,43 +200,67 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
         var tx = transactionService.createTransaction(request).get();
 
         // then: id assigned
-        assertNotNull(tx.getId(), "Transaction id must be assigned by DB sequence");
-        assertTrue(tx.getId() > 0, "Transaction id must be positive");
-        assertEquals(tx.getConceptName(), concept.getName());
+        assertThat(tx.getId())
+                .as("A positive Transaction ID must be assigned by DB sequence.")
+                .isNotNull()
+                .isPositive();
+        assertThat(tx.getConceptName())
+                .as("Concept name snapshot should be equals to concept name.")
+                .isEqualTo(concept.getName());
 
         // and an audit log with entityId must exist
-        try (EntityManager em = ctx.getEntityManagerFactory().createEntityManager()) {
-            List<AuditLog> logs = em.createQuery("SELECT a FROM AuditLog a WHERE a.entityId = :id", AuditLog.class)
-                    .setParameter("id", tx.getId())
-                    .getResultList();
-            assertFalse(logs.isEmpty(), "AuditLog should contain at least one entry for created transaction");
-        }
+        withContext(ctx).assertHasLog(tx, Transaction::getId);
     }
 
-    /// Tests that creating a transaction fails when no user is logged in.
-    /// Validates that the system prevents the creation of a transaction when
-    /// there is no currently logged-in user, resulting in a [PersistenceException].
-    /// Test Scenario:
-    /// 1. An administrator user is created and logged in to perform initial setups.
-    /// 2. Prerequisite entities, such as a bank, concept, and cashier, are created.
-    /// 3. The administrator user is logged out, ensuring no user is active in the session.
-    /// 4. A transaction object is built with valid data.
-    /// 5. The transaction creation is attempted using the service.
-    /// 6. The service fails with an exception due to the absence of a logged-in user.
-    /// Expected Outcome:
-    /// - The transaction creation fails with an [ExecutionException],
-    ///   whose cause is a [PersistenceException], indicating the requirement
-    ///   for an audit user in the system.
-    ///
-    /// @throws Exception if any unexpected errors occur during test execution.
+    /**
+     * Ensures that transaction creation fails when no user is logged in.
+     * <br/>
+     * This test verifies that the system enforces the requirement of having a valid logged-in user
+     * to perform transaction-related operations, such as creating a transaction.
+     * <br/>
+     * Test Steps:
+     * <ol>
+     *   <li>Set up prerequisite data, including:
+     *       <ul>
+     *           <li>Create and log in an administrator user to set up required entities.</li>
+     *           <li>Create entities such as a bank, concept, and cashier user.</li>
+     *           <li>Log out any currently logged-in user to simulate a non-authenticated scenario.</li>
+     *       </ul>
+     *   </li>
+     *   <li>Prepare a {@code CreateTransactionRequest} containing valid transaction details:
+     *       <ul>
+     *           <li>Bank information.</li>
+     *           <li>Concept details, including commission value and type.</li>
+     *           <li>Cashier user ID and transaction amount.</li>
+     *       </ul>
+     *   </li>
+     *   <li>Attempt to execute the transaction creation using the service.</li>
+     *   <li>Capture the exception thrown by the service and assert:
+     *       <ul>
+     *           <li>The exception is an {@link SQLException}.</li>
+     *           <li>The cause of the exception indicates a missing user session or null actor.</li>
+     *       </ul>
+     *   </li>
+     * </ol>
+     * <br/>
+     * Expected Outcome:
+     * <ul>
+     *   <li>Transaction creation fails when no user is logged in.</li>
+     *   <li>An appropriate exception is raised, matching the expected error type and message.</li>
+     * </ul>
+     *
+     * @throws Exception If an error occurs during the execution of the test.
+     */
     @Test
     void testCreateTransaction_FailsWhenNoUserLogged() throws Exception {
         // given: create prerequisites but ensure no user is logged at the moment of creation
-        UserSessionHelpers.createAndLogAdminUser();
-        Bank bank = bankService.createBank("ACME").get();
-        Concept concept = conceptService.createConcept("Internet", ConceptType.RATE, new BigDecimal("0.1000")).get();
-        User cashier = userService.createUser("cashier.no.session", UserRole.CASHIER, "password").get();
-
+        runInTransaction(em -> {
+            createAndLogAdminUser(ctx, em);
+            TestPersistedEntities.persistCashierUser(em);
+        });
+        var bank = bankService.createBank("ACME").get();
+        var concept = conceptService.createConcept("Internet", ConceptType.RATE, new BigDecimal("0.1000")).get();
+        var cashier = TestPersistedEntities.USER.get(UserRole.CASHIER);
         // logout so that AuditLogger has no actor
         ctx.getUserSession().logout();
 
@@ -164,111 +274,81 @@ class TransactionServiceIntegrationTest extends AbstractPostgreIntegrationTest {
                 .build();
 
         // when/then
-        ExecutionException ex = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(request).get());
-        assertInstanceOf(PersistenceException.class, ex.getCause(), "Expected PersistenceException due to null audit user");
+
+        var ex = catchException(() -> transactionService.createTransaction(request).get());
+        assertExpectedCause(SQLException.class)
+                .assertCauseWithMessage(ex, "null");
     }
 
-    /// Verifies that creating a transaction fails when any required field is null.
-    /// This test ensures that the system prevents creating invalid transactions by
-    /// raising a [PersistenceException] when any mandatory field in the
-    /// transaction object is null. The following fields are validated in this test:
-    /// - Bank
-    /// - Concept
-    /// - Cashier
-    /// - Amount
-    /// - Commission
-    /// - Status
-    /// Test Scenario:
-    /// 1. An administrator user is created and logged in to set up the required environment.
-    /// 2. Valid prerequisite entities are created, including a bank, a concept, and a cashier.
-    /// 3. A series of transactions are built with each essential field set to null, one at a time.
-    /// 4. Each transaction is passed to the `transactionService.createTransaction` method.
-    /// 5. The service is expected to throw an [ExecutionException] with a cause of
-    ///    [PersistenceException] due to the violation of null constraints.
-    /// Expected Outcome:
-    /// - The system should raise an exception for each transaction, indicating that the
-    ///   respective null field is not allowed.
-    /// Notes:
-    /// - The `moment` field is excluded from this test as it is managed by the database
-    ///   with a default value of `CURRENT_TIMESTAMP`, and cannot be explicitly set to null.
-    ///
-    /// @throws Exception if there are errors during test execution
-    @SuppressWarnings("DataFlowIssue")
-    @Test
-    void testCreateTransaction_NullFieldsFail() throws Exception {
+    /**
+     * Validates that transaction creation fails when one of the required fields in the request is null.
+     * <br/>
+     * This test ensures that:
+     * <ul>
+     *   <li>Each required field in the {@code CreateTransactionRequest} is tested for {@code null} values.</li>
+     *   <li>The service correctly throws an exception when a required field is null, preventing invalid transactions.</li>
+     * </ul>
+     * <br/>
+     * Test Steps:
+     * <ol>
+     *   <li>Create and log in an administrator user to set up entities (bank, concept, and cashier).</li>
+     *   <li>Log in as the cashier and attempt to create a transaction with one required field intentionally set to {@code null}.</li>
+     *   <li>Verify that the service throws a {@link SQLException} with an error message indicating a null value.</li>
+     * </ol>
+     * <br/>
+     * Expected Outcome:
+     * <ul>
+     *   <li>The service fails the transaction creation when any required field is null.</li>
+     *   <li>An appropriate exception is raised with the correct error message.</li>
+     * </ul>
+     *
+     * @param nullField The field in the {@code CreateTransactionRequest} that is set to null for this test iteration.
+     *                  <ul>
+     *                      <li>Corresponds to the {@link NullField} enumeration values:</li>
+     *                      <li>{@code BANK}: {@code bankId} is null.</li>
+     *                      <li>{@code CONCEPT}: {@code conceptId} is null.</li>
+     *                      <li>{@code CASHIER}: {@code cashierId} is null.</li>
+     *                      <li>{@code AMOUNT}: {@code amount} is null.</li>
+     *                      <li>{@code COMMISSION}: {@code conceptCommissionValue} is null.</li>
+     *                  </ul>
+     *                  The parameter is supplied automatically by the {@link ParameterizedTest} annotation.
+     * @throws Exception If an unexpected error occurs during the test execution.
+     */
+    @ParameterizedTest
+    @EnumSource(value = NullField.class)
+    void testCreateTransaction_NullFieldsFail(@NotNull NullField nullField) throws Exception {
         // given: valid prerequisites and logged-in cashier to avoid failing due to missing audit user
-        UserSessionHelpers.createAndLogAdminUser();
-        Bank bank = bankService.createBank("Nacional").get();
-        Concept concept = conceptService.createConcept("Water", ConceptType.FIXED, new BigDecimal("2.0000")).get();
-        User cashier = userService.createUser("cashier.nulls", UserRole.CASHIER, "password").get();
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
+        var bank = bankService.createBank("Nacional").get();
+        var concept = conceptService.createConcept("Water", ConceptType.FIXED, new BigDecimal("2.0000")).get();
+        var cashier = userService.createUser("cashier.nulls", UserRole.CASHIER, "password").get();
         ctx.getUserSession().setCurrentUser(cashier);
 
-        // bank null
-        var r1 = CreateTransactionRequest.builder()
-                .amount(new BigDecimal("15.00"))
-                .bankId(0)
-                .conceptId(concept.getId())
-                .conceptCommissionValue(concept.getValue())
-                .cashierId(cashier.getId())
-                .conceptType(concept.getType())
-                .build();
-
-        ExecutionException ex1 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r1).get());
-        assertInstanceOf(PersistenceServicesException.class, ex1.getCause());
-
-        // concept null
-        var r2 = CreateTransactionRequest.builder()
-                .amount(new BigDecimal("15.00"))
-                .bankId(bank.getId())
-                .conceptId(0)
-                .conceptCommissionValue(concept.getValue())
-                .cashierId(cashier.getId())
-                .conceptType(concept.getType())
-                .build();
-
-        ExecutionException ex2 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r2).get());
-        assertInstanceOf(PersistenceServicesException.class, ex2.getCause());
-
-        // cashier null
-        var r3 = CreateTransactionRequest.builder()
-                .amount(new BigDecimal("1.00"))
-                .bankId(bank.getId())
-                .conceptId(concept.getId())
-                .conceptCommissionValue(concept.getValue())
-                .cashierId(0)
-                .conceptType(concept.getType())
-                .build();
-
-        ExecutionException ex3 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r3).get());
-        assertInstanceOf(PersistenceServicesException.class, ex3.getCause());
-
-        //Ammount null
-        var r4 = CreateTransactionRequest.builder()
-                .amount(null)
-                .bankId(bank.getId())
-                .conceptId(concept.getId())
-                .conceptCommissionValue(concept.getValue())
-                .cashierId(cashier.getId())
-                .conceptType(concept.getType())
-                .build();
-
-        ExecutionException ex4 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r4).get());
-        assertInstanceOf(PersistenceServicesException.class, ex4.getCause());
-
-        // commission null
-        var r5 = CreateTransactionRequest.builder()
+        var builder = CreateTransactionRequest.builder()
                 .amount(new BigDecimal("15.00"))
                 .bankId(bank.getId())
                 .conceptId(concept.getId())
-                .conceptCommissionValue(null)
+                .conceptCommissionValue(concept.getValue())
                 .cashierId(cashier.getId())
-                .conceptType(concept.getType())
-                .build();
+                .conceptType(concept.getType());
+        var rq = (switch (nullField) {
+            case BANK -> builder.bankId(0);
+            case CONCEPT -> builder.conceptId(0);
+            case CASHIER -> builder.cashierId(0);
+            case AMOUNT -> builder.amount(null);
+            case COMMISSION -> builder.conceptCommissionValue(null);
+        }).build();
 
-        ExecutionException ex5 = assertThrows(ExecutionException.class, () -> transactionService.createTransaction(r5).get());
-        assertInstanceOf(PersistenceServicesException.class, ex5.getCause());
+        var ex = catchException(() -> transactionService.createTransaction(rq).get());
+        assertExpectedCause(PersistenceServicesException.class)
+                .assertCauseWithMessage(ex, "Request");
+    }
 
-        // NOTE: status is never null because it's automatically designated to REGISTERED
-        // NOTE: moment is DB-managed (DEFAULT CURRENT_TIMESTAMP), cannot be set to null for insertion.
+    public enum NullField {
+        BANK,
+        CONCEPT,
+        CASHIER,
+        AMOUNT,
+        COMMISSION
     }
 }
