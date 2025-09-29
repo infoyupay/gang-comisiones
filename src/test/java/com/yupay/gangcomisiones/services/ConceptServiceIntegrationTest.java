@@ -20,32 +20,119 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
+import com.yupay.gangcomisiones.assertions.AuditLogAssertion;
 import com.yupay.gangcomisiones.exceptions.AppSecurityException;
-import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.AuditLog;
 import com.yupay.gangcomisiones.model.Concept;
 import com.yupay.gangcomisiones.model.ConceptType;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+import java.sql.SQLException;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.yupay.gangcomisiones.assertions.CauseAssertions.assertExpectedCause;
+import static com.yupay.gangcomisiones.assertions.ServiceAssertions.assertListed;
+import static com.yupay.gangcomisiones.services.UserSessionHelpers.createAndLogAdminUser;
+import static com.yupay.gangcomisiones.services.UserSessionHelpers.createAndLogCashierUser;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
- * Integration tests for {@link ConceptService} operations.
+ * Integration test suite for validating the functionality, security, and data integrity
+ * of the {@code ConceptService} implementation within the application.
+ * <br/>
+ * This test class primarily ensures that the `ConceptService` operations perform as expected
+ * in a real PostgreSQL database environment, including enforcing role-based access controls,
+ * data constraints, and input validation.
+ * <br/>
+ * <b>Features tested:</b>
+ * <ul>
+ *     <li>Validation of entity creation and default field values.</li>
+ *     <li>Access control for operations based on user roles (e.g., admin vs cashier).</li>
+ *     <li>Validation and rejection of invalid inputs (e.g., null fields).</li>
+ *     <li>Enforcement of constraints for specific concept types and value ranges.</li>
+ * </ul>
+ * <br/>
+ * <b>Super Class:</b>
+ * <ul>
+ *     <li>{@code com.yupay.gangcomisiones.AbstractPostgreIntegrationTest} - Provides base setup and teardown methods for
+ *     PostgreSQL integration tests, ensuring a clean state for database operations during test execution.</li>
+ * </ul>
+ * <br/>
+ * <b>Test Methods:</b>
+ * <ol>
+ *     <li>
+ *         {@code setUp()}:
+ *         <ul>
+ *             <li>Cleans and truncates all database tables to ensure a consistent and clean test environment.</li>
+ *             <li>Initializes the {@code ConceptService} instance for use within test cases.</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         {@code testCreateConcept_AssignsIdActiveTrueAndAudited()}:
+ *         <ul>
+ *             <li>Ensures the `createConcept` method correctly assigns a unique positive ID, sets the `active` field to true,
+ *                 and generates an audit log entry.</li>
+ *             <li>Validates these behaviors for new concept creation using an admin user.</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         {@code testCreateConcept_UnprivilegedUserFails()}:
+ *         <ul>
+ *             <li>Confirms unauthorized users (e.g., cashier role) cannot create a new concept using the `createConcept` method.</li>
+ *             <li>Asserts that an `ExecutionException` is thrown with a root cause of `PersistenceServicesException`
+ *                 in such cases.</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         {@code testUpdateConcept_UnprivilegedUserFails()}:
+ *         <ul>
+ *             <li>Verifies that users with insufficient privileges (e.g., cashier role) cannot update an existing concept
+ *                 using the `updateConcept` method.</li>
+ *             <li>Ensures proper exception handling and root cause tracking for unauthorized update attempts.</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         {@code testCreateConcept_NullFieldsFail()}:
+ *         <ul>
+ *             <li>Tests that the `createConcept` method fails with null required fields (e.g., `name`, `type`, `value`).</li>
+ *             <li>Ensures an `ExecutionException` is thrown and validates the root cause as `PersistenceException`
+ *                 for each invalid input case.</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         {@code testUpdateConcept_NullFieldsFail()}:
+ *         <ul>
+ *             <li>Ensures attempts to update a concept with null fields (e.g., `name`, `type`, `value`, `active`)
+ *                 are rejected.</li>
+ *             <li>Asserts that an `ExecutionException` is raised with proper validation of the underlying
+ *                 `PersistenceException` cause.</li>
+ *         </ul>
+ *     </li>
+ *     <li>
+ *         {@code testCreateConcept_CheckConstraints()}:
+ *         <ul>
+ *             <li>Ensures the `createConcept` method enforces constraints for certain concept types.</li>
+ *             <li>Verifies that invalid data for `FIXED` and `RATE` types (e.g., exceeding precision/scale or thresholds)
+ *                 is rejected with meaningful exceptions.</li>
+ *         </ul>
+ *     </li>
+ * </ol>
+ * <br/>
+ * <b>Note:</b><br/>
+ * All test methods depend on specific user roles (e.g., admin or cashier) being correctly set up to simulate
+ * access control scenarios. Ensure preconditions are met for accurate test results.
+ * <br/>
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 6 tests in 2.118s at 2025-09-29 00:15 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
 class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
-
-    private ConceptService conceptService;
 
     /**
      * Sets up the test environment before each test execution.
@@ -57,7 +144,7 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @BeforeEach
     void setUp() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
-        conceptService = ctx.getConceptService();
+        ctx.getUserSession().setCurrentUser(null);
     }
 
     /// Verifies that the `createConcept` method in `ConceptService` correctly assigns an ID,
@@ -77,25 +164,31 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @Test
     void testCreateConcept_AssignsIdActiveTrueAndAudited() throws Exception {
         // given
-        UserSessionHelpers.createAndLogAdminUser();
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
 
         // when
-        Concept c = conceptService.createConcept("Telephone Bill", ConceptType.FIXED, new BigDecimal("10.0000")).get();
+        var conceptService = ctx.getConceptService();
+        var c = conceptService
+                .createConcept("Telephone Bill", ConceptType.FIXED, new BigDecimal("10.0000")).get();
 
         // then
-        assertNotNull(c.getId(), "Concept id must be assigned by DB sequence");
-        assertTrue(c.getId() > 0, "Concept id must be positive");
-        assertEquals(Boolean.TRUE, c.getActive(), "Concept must be active after creation");
+        assertThat(c.getId())
+                .as("Concept id must be assigned by DB sequence")
+                .isNotNull()
+                .as("Concept id must be positive")
+                .isPositive();
+        assertThat(c.getActive())
+                .as("Concept must be active after creation")
+                .isTrue();
 
         // and must be listed in all and active
-        List<Concept> all = conceptService.listAllConcepts().get();
-        assertTrue(all.stream().anyMatch(x -> x.getId().equals(c.getId())));
-        List<Concept> active = conceptService.listAllActiveConcepts().get();
-        assertTrue(active.stream().anyMatch(x -> x.getId().equals(c.getId())));
+        assertListed(conceptService::listAllConcepts, c, "listAll");
+        assertListed(conceptService::listAllActiveConcepts, c, "listAllActive");
 
         // and an audit log with entityId must exist
-        try (EntityManager em = ctx.getEntityManagerFactory().createEntityManager()) {
-            List<AuditLog> logs = em.createQuery("SELECT a FROM AuditLog a WHERE a.entityId = :id", AuditLog.class)
+        AuditLogAssertion.withContext(ctx).assertHasLog(c, Concept::getId);
+        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
+            var logs = em.createQuery("SELECT a FROM AuditLog a WHERE a.entityId = :id", AuditLog.class)
                     .setParameter("id", c.getId())
                     .getResultList();
             assertFalse(logs.isEmpty(), "AuditLog should contain at least one entry for created concept");
@@ -118,11 +211,12 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// and provides meaningful feedback when such actions are attempted.
     @Test
     void testCreateConcept_UnprivilegedUserFails() {
-        UserSessionHelpers.createAndLogCashierUser();
-
-        var ex = assertThrows(ExecutionException.class,
-                () -> conceptService.createConcept("Water Service", ConceptType.FIXED, new BigDecimal("2.0000")).get());
-        assertInstanceOf(AppSecurityException.class, ex.getCause());
+        runInTransaction(em -> createAndLogCashierUser(ctx, em));
+        var ex = catchThrowable(
+                ctx.getConceptService()
+                        .createConcept("Water Service", ConceptType.FIXED, new BigDecimal("2.0000"))::get);
+        assertExpectedCause(AppSecurityException.class)
+                .assertCauseWithMessage(ex, "has not privileges to perform an operation");
     }
 
     /// Tests that an unprivileged user, such as a user with the "cashier" role, is unable to update an existing concept
@@ -137,11 +231,16 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// This test helps verify role-based access control for the `updateConcept` operation.
     @Test
     void testUpdateConcept_UnprivilegedUserFails() {
-        UserSessionHelpers.createAndLogCashierUser();
-
-        var ex = assertThrows(ExecutionException.class,
-                () -> conceptService.updateConcept(1L, "Water Service", ConceptType.FIXED, new BigDecimal("2.0000"), true).get());
-        assertInstanceOf(AppSecurityException.class, ex.getCause());
+        runInTransaction(em -> createAndLogCashierUser(ctx, em));
+        var ex = catchThrowable(
+                ctx.getConceptService()
+                        .updateConcept(1L,
+                                "Water Service",
+                                ConceptType.FIXED,
+                                new BigDecimal("2.0000"),
+                                false)::get);
+        assertExpectedCause(AppSecurityException.class)
+                .assertCauseWithMessage(ex, "has not privileges to perform an operation");
     }
 
     /// Verifies that the `createConcept` method in `ConceptService` fails when any of the required fields are null.
@@ -158,22 +257,22 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testCreateConcept_NullFieldsFail() {
-        UserSessionHelpers.createAndLogAdminUser();
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
+        var conceptService = ctx.getConceptService();
 
         // null name
-        ExecutionException ex1 = assertThrows(ExecutionException.class,
-                () -> conceptService.createConcept(null, ConceptType.FIXED, new BigDecimal("1.0000")).get());
-        assertInstanceOf(PersistenceException.class, ex1.getCause());
+        var ex1 = catchThrowable(
+                conceptService.createConcept(null, ConceptType.FIXED, new BigDecimal("1.0000"))::get);
 
         // null type
-        ExecutionException ex2 = assertThrows(ExecutionException.class,
-                () -> conceptService.createConcept("X", null, new BigDecimal("1.0000")).get());
-        assertInstanceOf(PersistenceException.class, ex2.getCause());
+        var ex2 = catchThrowable(
+                conceptService.createConcept("X", null, new BigDecimal("1.0000"))::get);
 
         // null value
-        ExecutionException ex3 = assertThrows(ExecutionException.class,
-                () -> conceptService.createConcept("X", ConceptType.FIXED, null).get());
-        assertInstanceOf(PersistenceException.class, ex3.getCause());
+        var ex3 = catchThrowable(
+                conceptService.createConcept("X", ConceptType.FIXED, null)::get);
+
+        assertExpectedCause(SQLException.class).assertCausesWithMessage("null", ex1, ex2, ex3);
     }
 
     /// Verifies that the `updateConcept` method in `ConceptService` fails when
@@ -199,28 +298,48 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @SuppressWarnings("DataFlowIssue")
     @Test
     void testUpdateConcept_NullFieldsFail() throws Exception {
-        UserSessionHelpers.createAndLogAdminUser();
-        Concept c = conceptService.createConcept("Internet", ConceptType.RATE, new BigDecimal("0.1000")).get();
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
+        var conceptService = ctx.getConceptService();
+        var c = conceptService
+                .createConcept("Internet", ConceptType.RATE, new BigDecimal("0.1000")).get();
 
         // null name
-        ExecutionException ex1 = assertThrows(ExecutionException.class,
-                () -> conceptService.updateConcept(c.getId(), null, ConceptType.RATE, new BigDecimal("0.0500"), true).get());
-        assertInstanceOf(PersistenceException.class, ex1.getCause());
+        var ex1 = catchException(
+                conceptService
+                        .updateConcept(c.getId(),
+                                null,
+                                ConceptType.RATE,
+                                new BigDecimal("0.0500"),
+                                true)
+                        ::get);
 
         // null type
-        ExecutionException ex2 = assertThrows(ExecutionException.class,
-                () -> conceptService.updateConcept(c.getId(), "Internet", null, new BigDecimal("0.0500"), true).get());
-        assertInstanceOf(PersistenceException.class, ex2.getCause());
+        var ex2 = catchException(
+                conceptService
+                        .updateConcept(c.getId(),
+                                "Internet",
+                                null,
+                                new BigDecimal("0.0500"),
+                                true)
+                        ::get);
 
         // null value
-        ExecutionException ex3 = assertThrows(ExecutionException.class,
-                () -> conceptService.updateConcept(c.getId(), "Internet", ConceptType.RATE, null, true).get());
-        assertInstanceOf(PersistenceException.class, ex3.getCause());
+        var ex3 = catchException(
+                conceptService
+                        .updateConcept(c.getId(), "Internet", ConceptType.RATE, null, true)
+                        ::get);
 
         // null active
-        ExecutionException ex4 = assertThrows(ExecutionException.class,
-                () -> conceptService.updateConcept(c.getId(), "Internet", ConceptType.RATE, new BigDecimal("0.0500"), null).get());
-        assertInstanceOf(PersistenceException.class, ex4.getCause());
+        var ex4 = catchException(
+                conceptService
+                        .updateConcept(c.getId(),
+                                "Internet",
+                                ConceptType.RATE,
+                                new BigDecimal("0.0500"),
+                                null)
+                        ::get);
+
+        assertExpectedCause(SQLException.class).assertCausesWithMessage("null", ex1, ex2, ex3, ex4);
     }
 
     /// Verifies that the `createConcept` method in `ConceptService` correctly enforces
@@ -240,16 +359,18 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// enforced in the `ConceptService` implementation.
     @Test
     void testCreateConcept_CheckConstraints() {
-        UserSessionHelpers.createAndLogAdminUser();
+        runInTransaction(em -> createAndLogAdminUser(ctx, em));
+        var conceptService = ctx.getConceptService();
 
         // FIXED exceeding precision (should be max 99.9999)
-        ExecutionException ex1 = assertThrows(ExecutionException.class,
-                () -> conceptService.createConcept("FixedTooLarge", ConceptType.FIXED, new BigDecimal("100.0000")).get());
-        assertInstanceOf(PersistenceException.class, ex1.getCause());
+        var ex1 = catchException(
+                conceptService
+                        .createConcept("FixedTooLarge", ConceptType.FIXED, new BigDecimal("100.0000"))::get);
+        assertExpectedCause(SQLException.class).assertCauseWithMessage(ex1, "10^2");
 
         // RATE above 1.0000
-        ExecutionException ex2 = assertThrows(ExecutionException.class,
-                () -> conceptService.createConcept("RateTooHigh", ConceptType.RATE, new BigDecimal("1.0001")).get());
-        assertInstanceOf(PersistenceException.class, ex2.getCause());
+        var ex2 = catchException(
+                conceptService.createConcept("RateTooHigh", ConceptType.RATE, new BigDecimal("1.0001"))::get);
+        assertExpectedCause(SQLException.class).assertCauseWithMessage(ex2, "chk_concept_value_valid");
     }
 }
