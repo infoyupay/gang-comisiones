@@ -73,18 +73,18 @@ public final class LogConfig {
     @SuppressWarnings({"UseOfSystemOutOrSystemErr", "CallToPrintStackTrace"})
     public static void initLogging() {
         try {
-            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+            var context = (LoggerContext) LoggerFactory.getILoggerFactory();
             context.reset(); // Clear default config
 
-            String pattern = "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n";
+            var pattern = "%d{yyyy-MM-dd HH:mm:ss} %-5level [%thread] %logger{36} - %msg%n";
 
             // --- Encoders ---
-            PatternLayoutEncoder fileEncoder = new PatternLayoutEncoder();
+            var fileEncoder = new PatternLayoutEncoder();
             fileEncoder.setContext(context);
             fileEncoder.setPattern(pattern);
             fileEncoder.start();
 
-            PatternLayoutEncoder consoleEncoder = new PatternLayoutEncoder();
+            var consoleEncoder = new PatternLayoutEncoder();
             consoleEncoder.setContext(context);
             consoleEncoder.setPattern(pattern);
             consoleEncoder.start();
@@ -96,7 +96,7 @@ public final class LogConfig {
             rollingFileAppender.setFile(LocalFiles.logs().resolve("gang-comisiones.log").toString());
             rollingFileAppender.setEncoder(fileEncoder);
 
-            FixedWindowRollingPolicy rollingPolicy = new FixedWindowRollingPolicy();
+            var rollingPolicy = new FixedWindowRollingPolicy();
             rollingPolicy.setContext(context);
             rollingPolicy.setParent(rollingFileAppender);
             rollingPolicy.setFileNamePattern(LocalFiles.logs().resolve("gang-comisiones.%i.log").toString());
@@ -121,7 +121,7 @@ public final class LogConfig {
             consoleAppender.start();
 
             // --- Root logger ---
-            Logger rootLogger = context.getLogger("ROOT");
+            var rootLogger = context.getLogger("ROOT");
             rootLogger.setLevel(Level.DEBUG);
             rootLogger.addAppender(rollingFileAppender);
             rootLogger.addAppender(consoleAppender);

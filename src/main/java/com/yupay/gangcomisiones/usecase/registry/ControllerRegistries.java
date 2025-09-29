@@ -187,7 +187,7 @@ public final class ControllerRegistries {
          */
         private static @NotNull UseCaseControllerRegistry create() {
             UseCaseControllerRegistry registry = new DefaultUseCaseControllerRegistry();
-            Consumer<UseCaseControllerRegistry> init = INITIALIZER.getAndSet(null);
+            var init = INITIALIZER.getAndSet(null);
             if (init != null) {
                 init.accept(registry);
             }

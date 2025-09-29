@@ -125,7 +125,7 @@ public record ConceptServiceImpl(@NotNull EntityManagerFactory emf,
      * @throws PersistenceServicesException if the current user does not have at least ADMIN privileges.
      */
     private void ensureAdminUser(EntityManager em) {
-        User current = AppContext.getInstance().getUserSession().getCurrentUser();
+        var current = AppContext.getInstance().getUserSession().getCurrentUser();
         AppContext.getInstance().getUserService().checkPrivilegesOrException(em, current.getId(), UserRole.ADMIN);
     }
 }

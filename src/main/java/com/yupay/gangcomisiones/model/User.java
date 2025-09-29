@@ -165,8 +165,8 @@ public class User {
         if (plainPassword.length() < 8) {
             throw new IllegalArgumentException("Password must be at least 8 characters.");
         }
-        String salt = PasswordUtil.generateSalt();
-        String hash = PasswordUtil.hashPassword(plainPassword, salt);
+        var salt = PasswordUtil.generateSalt();
+        var hash = PasswordUtil.hashPassword(plainPassword, salt);
         this.passwordSalt = salt;
         this.passwordHash = hash;
     }
@@ -243,7 +243,7 @@ public class User {
          * if applicable, a securely hashed password and generated salt.
          */
         public User build() {
-            User user = new User();
+            var user = new User();
             user.username = this.username;
             user.role = this.role;
             user.active = this.active != null && this.active;

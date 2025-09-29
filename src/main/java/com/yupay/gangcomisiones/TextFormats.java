@@ -95,6 +95,7 @@ public final class TextFormats {
      */
     @Contract("-> new")
     public static @NotNull DecimalFormat getCurrencyFormat() {
+        var z = "";
         var r = DecimalFormat.getCurrencyInstance(PERUVIAN_LOCALE);
         if (r instanceof DecimalFormat df) {
             df.setParseBigDecimal(true);

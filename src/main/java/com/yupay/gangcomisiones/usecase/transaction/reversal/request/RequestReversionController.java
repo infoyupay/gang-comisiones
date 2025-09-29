@@ -103,7 +103,7 @@ public class RequestReversionController {
             }
 
             // Ask user for reason
-            Optional<String> reasonOpt = view.showReasonDialog();
+            var reasonOpt = view.showReasonDialog();
             if (reasonOpt.isEmpty()) {
                 view.showInfo("Operación cancelada.");
                 return Result.cancelCompleted();

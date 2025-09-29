@@ -126,7 +126,7 @@ public final class InstallKeysController implements ZipInstallProgressListener {
      * @return a future that completes with the final outcome of the installation
      */
     public CompletableFuture<InstallKeysResult> run() {
-        Path zipPath = view.showOpenDialogForZip();
+        var zipPath = view.showOpenDialogForZip();
         if (zipPath == null) {
             return CompletableFuture.completedFuture(InstallKeysResult.ABORT);
         }
@@ -146,7 +146,7 @@ public final class InstallKeysController implements ZipInstallProgressListener {
      * Intended to be invoked once the ZIP processing has completed successfully.
      */
     private void reloadAppContext() {
-        Path jpaProps = LocalFiles.jpaProperties();
+        var jpaProps = LocalFiles.jpaProperties();
         if (AppContext.isInitialized()) {
             AppContext.restart(jpaProps);
         } else {

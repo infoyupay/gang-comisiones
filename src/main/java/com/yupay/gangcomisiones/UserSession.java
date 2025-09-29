@@ -51,7 +51,7 @@ public class UserSession {
      * @param user the new user to set; can be null to indicate logout
      */
     public void setCurrentUser(User user) {
-        User oldUser = this.currentUser;
+        var oldUser = this.currentUser;
         this.currentUser = user;
         notifyListeners(oldUser, user);
     }

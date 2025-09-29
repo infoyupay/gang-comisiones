@@ -52,7 +52,7 @@ public record ZipInstallerServiceLocalImpl(@NotNull ExecutorService ioExecutor)
 
     @Override
     public void unpackZip(Path zipPath, @NotNull ZipInstallProgressListener listener) throws IOException {
-        int processed = 0;
+        var processed = 0;
         try (var is = Files.newInputStream(zipPath);
              var zis = new ZipInputStream(is)) {
 

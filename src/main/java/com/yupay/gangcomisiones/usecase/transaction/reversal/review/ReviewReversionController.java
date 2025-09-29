@@ -149,7 +149,7 @@ public class ReviewReversionController {
      * Loads the initial list of requests (defaults to PENDING) using the view's criteria.
      */
     public void loadInitialPending() {
-        ReversalRequestService.SearchCriteria criteria = Objects.requireNonNull(view.initialCriteria());
+        var criteria = Objects.requireNonNull(view.initialCriteria());
         context.getReversalRequestService()
                 .listRequestsBy(criteria)
                 .whenComplete((list, error) -> {

@@ -94,7 +94,7 @@ public final class TicketFormatter {
         lines.add("Hora : " + timeStr);
 
         // Concept
-        String conceptText = safe(conceptNameOf(tx));
+        var conceptText = safe(conceptNameOf(tx));
         if (!conceptText.isBlank()) {
             //Wrap: conceptNameOf is already safe.
             lines.addAll(wrap("Concepto: " + conceptNameOf(tx), WIDTH, false));
@@ -168,7 +168,7 @@ public final class TicketFormatter {
     private static @NotNull String labelRight(String label, String value) {
         label = label == null ? "" : label;
         value = value == null ? "" : value;
-        int spaces = Math.max(1, WIDTH - label.length() - value.length());
+        var spaces = Math.max(1, WIDTH - label.length() - value.length());
         if (spaces > WIDTH) spaces = 1; // fallback
         return label + " ".repeat(spaces) + value;
     }
@@ -262,14 +262,14 @@ public final class TicketFormatter {
     public static @NotNull List<String> wrap(String text, int max, boolean autoCenter) {
         List<String> out = new ArrayList<>();
         if (text == null) return out;
-        for (String paragraph : text.split("\r?\n")) {
-            String t = paragraph.trim();
+        for (var paragraph : text.split("\r?\n")) {
+            var t = paragraph.trim();
             while (!t.isEmpty()) {
                 if (t.length() <= max) {
                     out.add(t);
                     break;
                 }
-                int breakAt = t.lastIndexOf(' ', max);
+                var breakAt = t.lastIndexOf(' ', max);
                 if (breakAt <= 0) breakAt = max; // hard cut if needed
                 out.add(t.substring(0, breakAt).trim());
                 t = t.substring(breakAt).trim();
@@ -293,9 +293,9 @@ public final class TicketFormatter {
         var strLine = line.strip();
         if (strLine.length() >= WIDTH) return strLine.substring(0, WIDTH);
 
-        int total = WIDTH - strLine.length();
-        int left = total / 2;
-        int right = total - left;
+        var total = WIDTH - strLine.length();
+        var left = total / 2;
+        var right = total - left;
 
         return " ".repeat(left) + strLine + " ".repeat(right);
     }

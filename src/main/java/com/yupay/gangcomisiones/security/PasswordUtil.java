@@ -87,7 +87,7 @@ public class PasswordUtil {
      * @return A string representation of the generated cryptographic salt in Base64 format.
      */
     public static String generateSalt() {
-        byte[] salt = new byte[SALT_LENGTH];
+        var salt = new byte[SALT_LENGTH];
         getSecureRandom().nextBytes(salt);
         return Base64.getEncoder().encodeToString(salt);
     }
@@ -100,7 +100,7 @@ public class PasswordUtil {
      * @throws AppSecurityException if an error occurs during the password generation process.
      */
     public static @NotNull String generateRandomPassword() throws AppSecurityException {
-        byte[] password = new byte[16];
+        var password = new byte[16];
         getSecureRandom().nextBytes(password);
         var sb = new StringBuilder(password.length * 2);
         for (var b : password) {
@@ -140,7 +140,7 @@ public class PasswordUtil {
                     ITERATIONS,
                     KEY_LENGTH
             );
-            SecretKeyFactory skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            var skf = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
             return skf.generateSecret(spec).getEncoded();
         } catch (Exception e) {
             throw new AppSecurityException("Error hashing password", e);
