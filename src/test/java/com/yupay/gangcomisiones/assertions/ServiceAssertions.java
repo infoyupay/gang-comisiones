@@ -86,6 +86,7 @@ public final class ServiceAssertions {
      * @param value          the item to be checked.
      * @param listName       an {@link Object} representing the name of the list being validated.
      * @param <T>            type of item to list.
+     * @param <C>            type of list.
      */
     public static <T, C extends Iterable<T>> void assertListed(
             @NotNull Supplier<CompletableFuture<C>> futureSupplier,
