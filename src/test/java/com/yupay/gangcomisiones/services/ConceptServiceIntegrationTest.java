@@ -187,12 +187,6 @@ class ConceptServiceIntegrationTest extends AbstractPostgreIntegrationTest {
 
         // and an audit log with entityId must exist
         AuditLogAssertion.withContext(ctx).assertHasLog(c, Concept::getId);
-        try (var em = ctx.getEntityManagerFactory().createEntityManager()) {
-            var logs = em.createQuery("SELECT a FROM AuditLog a WHERE a.entityId = :id", AuditLog.class)
-                    .setParameter("id", c.getId())
-                    .getResultList();
-            assertFalse(logs.isEmpty(), "AuditLog should contain at least one entry for created concept");
-        }
     }
 
     /// Verifies that an unprivileged user, such as a user with the "cashier" role,
