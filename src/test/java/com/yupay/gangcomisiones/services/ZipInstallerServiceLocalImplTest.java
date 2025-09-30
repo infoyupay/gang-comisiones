@@ -20,24 +20,28 @@
 package com.yupay.gangcomisiones.services;
 
 import com.yupay.gangcomisiones.AbstractPostgreIntegrationTest;
-import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.DummyHelpers;
 import com.yupay.gangcomisiones.LocalFiles;
 import com.yupay.gangcomisiones.exceptions.AppInstalationException;
 import org.jetbrains.annotations.NotNull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for the local installation service behavior related to ZIP unpacking.
@@ -48,7 +52,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>ZIP Slip attempts are prevented (entries with path traversal are ignored).</li>
  *   <li>Asynchronous unpack operations complete successfully and produce the same results as the synchronous variant.</li>
  * </ul>
- * dvidal tested and passed 3 test in 68ms at 2025-09-05T12:34-05:00 (UTC-5).
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 4 tests in 0.150s at 2025-09-29 22:34 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -58,13 +64,62 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
     private ZipInstallerService zipInstallerService;
 
     /**
-     * Initializes the installation service from the application context prior to each test execution.
+     * Sets up the initial test environment for each test execution.
      * <br/>
-     * This ensures a fresh service instance and a consistent environment across test cases.
+     * This method performs the following actions:
+     * <ul>
+     *   <li>Retrieves and initializes the {@code ZipInstallerService} instance from the application context.</li>
+     *   <li>Ensures that the directory structure for logs is created by calling {@code Files.createDirectories(LocalFiles.logs())}.</li>
+     * </ul>
+     * <br/>
+     * These initializations are crucial to ensure the proper configuration of dependencies
+     * and test-related resources before executing each test case.
+     * <br/>
+     *
+     * @throws IOException if an error occurs during the creation of the directory structure for logs.
      */
     @BeforeEach
-    void setUp() {
-        zipInstallerService = AppContext.getInstance().getInstallationService();
+    void setUp() throws IOException {
+        zipInstallerService = ctx.getInstallationService();
+        Files.createDirectories(LocalFiles.logs());
+    }
+
+    /**
+     * Cleans up resources and temporary files after each test execution.
+     * <br/>
+     * This method ensures that the test environment is reset by:
+     * <ul>
+     *   <li>Setting the {@code zipInstallerService} to {@code null}.</li>
+     *   <li>Deleting the {@code project} directory and all its contents if it exists.</li>
+     * </ul>
+     * <p>
+     * The cleanup operation recursively deletes files and directories within the {@code project} path.
+     * <br/>
+     * If any exceptions occur during directory traversal or file deletion, they will be propagated as {@code IOException}.
+     *
+     * @throws IOException if an error occurs while traversing or deleting files and directories.
+     */
+    @AfterEach
+    void cleanUp() throws IOException {
+        zipInstallerService = null;
+        var project = LocalFiles.project();
+        if (Files.exists(project)) {
+            Files.walkFileTree(project, new SimpleFileVisitor<>() {
+                @Override
+                public @NotNull FileVisitResult visitFile(@NotNull Path file, @NotNull BasicFileAttributes attrs)
+                        throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public @NotNull FileVisitResult postVisitDirectory(@NotNull Path dir, IOException exc)
+                        throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
     }
 
     /**
@@ -84,24 +139,15 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUnpackZip_createsDirectoriesAndFiles(@TempDir @NotNull Path tempDir) throws IOException {
-        var originalUserHome = System.getProperty("user.home");
-        try {
-            // Redirect LocalFiles to use tempDir
-            System.setProperty("user.home", tempDir.toString());
+        var zip = createTestZip(tempDir);
 
+        // Act
+        zipInstallerService.unpackZip(zip);
 
-            var zip = createTestZip(tempDir);
-
-            // Act
-            zipInstallerService.unpackZip(zip);
-
-            // Assert
-            var projectDir = LocalFiles.project();
-            assertTrue(Files.exists(projectDir.resolve("subdir")));
-            assertTrue(Files.exists(projectDir.resolve("subdir/file.txt")));
-        } finally {
-            System.setProperty("user.home", originalUserHome);
-        }
+        // Assert
+        var projectDir = LocalFiles.project();
+        assertThat(projectDir.resolve("subdir")).exists();
+        assertThat(projectDir.resolve("subdir", "file.txt")).exists();
     }
 
     /**
@@ -119,26 +165,20 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUnpackZip_preventsZipSlip(@TempDir @NotNull Path tempDir) throws IOException {
-        var originalUserHome = System.getProperty("user.home");
-        try {
-            // Redirect LocalFiles to use tempDir
-            System.setProperty("user.home", tempDir.toString());
+        var maliciousZip = createMaliciousZip(tempDir);
 
+        // Act
+        assertThatThrownBy(() -> zipInstallerService.unpackZip(maliciousZip))
+                .as("Malicious entry should fail.")
+                .isInstanceOf(AppInstalationException.class);
 
-            var maliciousZip = createMaliciousZip(tempDir);
+        // Assert: file outside project not created
+        assertThat(LocalFiles.project().resolveSibling("outside.txt"))
+                .as("Malicious entry should be skipped")
+                .doesNotExist();
 
-            // Act
-            assertThrows(AppInstalationException.class, () -> zipInstallerService.unpackZip(maliciousZip));
-
-            // Assert: file outside project not created
-            var outsideFile = LocalFiles.project().getParent().resolve("outside.txt");
-            assertFalse(Files.exists(outsideFile), "Malicious entry should be skipped");
-
-            // Also, check PROJECT folder is still intact
-            assertTrue(Files.exists(LocalFiles.project()));
-        } finally {
-            System.setProperty("user.home", originalUserHome);
-        }
+        // Also, check PROJECT folder is still intact
+        assertThat(LocalFiles.project()).exists();
     }
 
     /**
@@ -158,70 +198,53 @@ class ZipInstallerServiceLocalImplTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void testUnpackZipAsync_completesSuccessfully(@TempDir @NotNull Path tempDir) throws Exception {
-        var originalUserHome = System.getProperty("user.home");
-        try {
-            System.setProperty("user.home", tempDir.toString());
+        var zip = createTestZip(tempDir);
 
+        // Act
+        var future = zipInstallerService.unpackZipAsync(zip);
+        future.join(); // wait for task to end
 
-            var zip = createTestZip(tempDir);
-
-            // Act
-            var future = zipInstallerService.unpackZipAsync(zip);
-            future.join(); // wait for task to end
-
-            // Assert
-            var projectDir = LocalFiles.project();
-            assertTrue(Files.exists(projectDir.resolve("subdir")));
-            assertTrue(Files.exists(projectDir.resolve("subdir/file.txt")));
-        } finally {
-            System.setProperty("user.home", originalUserHome);
-        }
+        // Assert
+        assertThat(future).isCompleted();
+        var projectDir = LocalFiles.project();
+        assertThat(projectDir.resolve("subdir")).exists();
+        assertThat(projectDir.resolve("subdir", "file.txt")).exists();
     }
 
     /**
      * Verifies that the asynchronous ZIP unpacking operation completes successfully, creating the expected
      * files and directory structure within the project folder.
      *
-     * @param tempDir a JUnit-managed temporary directory used to manage and isolate filesystem side effects during the test.
      * @throws Exception if an unexpected error occurs while waiting for the asynchronous operation or accessing the filesystem.
      */
     @Test
-    void testUnpackDummyZipAsync_completesSuccessfully(@TempDir @NotNull Path tempDir) throws Exception {
-        var originalUserHome = System.getProperty("user.home");
-        try {
-            System.setProperty("user.home", tempDir.toString());
+    void testUnpackDummyZipAsync_completesSuccessfully() throws Exception {
+        var zip = DummyHelpers.getDummyPropertiesZip();
+        var tempProject = LocalFiles.project();
+        var pathDummy = tempProject.resolve("dummyprop.properties");
+        var pathDummyChild = tempProject.resolve("dummydir", "childdummyprop.properties");
 
 
-            var zip = DummyHelpers.getDummyPropertiesZip();
-            var tempProject = LocalFiles.project();
-            var pathDummy = tempProject.resolve("dummyprop.properties");
-            var pathDummyChild = tempProject.resolve("dummydir", "childdummyprop.properties");
+        // Act
+        var future = zipInstallerService.unpackZipAsync(zip);
+        future.join(); // wait for task to end
 
+        // Assert
+        assertThat(future).isCompleted();
+        assertThat(pathDummy).exists();
+        assertThat(pathDummyChild).exists();
 
-            // Act
-            var future = zipInstallerService.unpackZipAsync(zip);
-            future.join(); // wait for task to end
-
-            // Assert
-            assertTrue(Files.exists(pathDummy));
-            assertTrue(Files.exists(pathDummyChild));
-
-            //Load properties from unpacked files
-            var propDummy = new Properties();
-            var propDummyChild = new Properties();
-            try (var isDummy = Files.newInputStream(pathDummy);
-                 var isDummyChild = Files.newInputStream(pathDummyChild)) {
-                propDummy.load(isDummy);
-                propDummyChild.load(isDummyChild);
-            }
-
-            assertTrue(propDummy.containsKey("title"));
-            assertTrue(propDummyChild.containsKey("title"));
-            assertEquals("dummy", propDummy.get("title"));
-            assertEquals("dummychild", propDummyChild.get("title"));
-        } finally {
-            System.setProperty("user.home", originalUserHome);
+        //Load properties from unpacked files
+        var propDummy = new Properties();
+        var propDummyChild = new Properties();
+        try (var isDummy = Files.newInputStream(pathDummy);
+             var isDummyChild = Files.newInputStream(pathDummyChild)) {
+            propDummy.load(isDummy);
+            propDummyChild.load(isDummyChild);
         }
+
+        assertThat(propDummy).containsEntry("title", "dummy");
+        assertThat(propDummyChild).containsEntry("title", "dummychild");
     }
 
     /* --------------------- Helpers --------------------- */
