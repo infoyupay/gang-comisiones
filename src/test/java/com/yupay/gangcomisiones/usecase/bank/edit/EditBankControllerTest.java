@@ -155,7 +155,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank bank) {
         }
-        Entities persisted = performInTransaction(em -> {
+        var persisted = performInTransaction(em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var bank = TestPersistedEntities.persistBank(em);
             return new Entities(admin, bank);
@@ -313,7 +313,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
         @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank a, Bank b) {
         }
-        Entities persisted = performInTransaction(em -> {
+        var persisted = performInTransaction(em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var a = TestPersistedEntities.persistBank(em);
             var b = Bank.builder()
@@ -328,7 +328,7 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
 
         // Mock the view to modify bank A to have bank B's name (duplicate)
         bankRef.set(persisted.b().toBuilder().name(persisted.a().getName()).build());
-        BankView view = TestViews.bankView(FormMode.EDIT, bankRef);
+        var view = TestViews.bankView(FormMode.EDIT, bankRef);
         viewRegistry.registerInstance(BankView.class, view);
 
         var controller = new EditBankController(ctx);

@@ -75,7 +75,7 @@ public class DummyHelpers {
      */
     @Contract(pure = true, value = "_->new")
     public static @NotNull Properties readPropertiesFromDummyPath(Path dummyPath) {
-        Properties properties = new Properties();
+        var properties = new Properties();
         try (var inputStream = Files.newInputStream(dummyPath)) {
             properties.load(inputStream);
         } catch (IOException e) {

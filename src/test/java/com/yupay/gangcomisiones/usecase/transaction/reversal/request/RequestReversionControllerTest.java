@@ -194,7 +194,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndCancel_whenStartUseCase_thenCancelled() {
         // given
-        User cashier = performInTransaction(TestPersistedEntities::persistCashierUser);
+        var cashier = performInTransaction(TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         when(view.showReasonDialog()).thenReturn(Optional.empty());
         var controller = new RequestReversionController(ctx);
@@ -238,7 +238,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndBlankReason_whenStartUseCase_thenCancelled() {
         // given
-        User cashier = performInTransaction(TestPersistedEntities::persistCashierUser);
+        var cashier = performInTransaction(TestPersistedEntities::persistCashierUser);
         ctx.getUserSession().setCurrentUser(cashier);
         when(view.showReasonDialog()).thenReturn(Optional.of("   \t   "));
         var controller = new RequestReversionController(ctx);
@@ -316,7 +316,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
         verify(view).showError(contains("no le pertenece"));
 
         // and: status remains REGISTERED
-        Transaction refreshed = transactionService.findTransactionById(objects.trx.getId()).join().orElseThrow();
+        var refreshed = transactionService.findTransactionById(objects.trx.getId()).join().orElseThrow();
         assertThat(refreshed.getStatus()).isEqualTo(TransactionStatus.REGISTERED);
     }
 
@@ -348,7 +348,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndNonRegisteredTransaction_whenStartUseCase_thenStatusError() {
         // given
-        Transaction tx = performInTransaction(em -> {
+        var tx = performInTransaction(em -> {
             var r = TestPersistedEntities.buildValidTansaction(em);
             // force different status
             r.setStatus(TransactionStatus.REVERSED);
@@ -369,7 +369,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
         verify(view).showReasonDialog();
         verify(view).showError(contains("estado válido"));
         // and: keep status
-        Transaction refreshed = transactionService.findTransactionById(tx.getId()).join().orElseThrow();
+        var refreshed = transactionService.findTransactionById(tx.getId()).join().orElseThrow();
         assertThat(refreshed.getStatus()).isEqualTo(TransactionStatus.REVERSED);
     }
 
@@ -412,8 +412,8 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenCashierUserAndValidReason_whenStartUseCase_thenDelegatesAndShowsSuccess() {
         // given
-        Transaction tx = performInTransaction(TestPersistedEntities::persistTransaction);
-        User cashier = tx.getCashier();
+        var tx = performInTransaction(TestPersistedEntities::persistTransaction);
+        var cashier = tx.getCashier();
         ctx.getUserSession().setCurrentUser(cashier);
         when(view.showReasonDialog()).thenReturn(Optional.of("mistyped amount"));
         var controller = new RequestReversionController(ctx);
@@ -428,7 +428,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
         verify(view, atLeastOnce()).showSuccess(contains("Solicitud de reversión registrada"));
 
         // and: tx status updated and request exists
-        Transaction refreshed = transactionService.findTransactionById(tx.getId()).join().orElseThrow();
+        var refreshed = transactionService.findTransactionById(tx.getId()).join().orElseThrow();
         assertThat(refreshed.getStatus()).isEqualTo(TransactionStatus.REVERSION_REQUESTED);
 
         var createdReq = reversalRequestService.findRequestByTransaction(tx.getId()).join().orElseThrow();
@@ -466,7 +466,7 @@ class RequestReversionControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenPersistenceError_whenStartUseCase_thenErrorShown() throws Exception {
         // given
-        User cashier = userService.createUser("cashier.err", UserRole.CASHIER, "1234password").get();
+        var cashier = userService.createUser("cashier.err", UserRole.CASHIER, "1234password").get();
         ctx.getUserSession().setCurrentUser(cashier);
         when(view.showReasonDialog()).thenReturn(Optional.of("anything"));
         var controller = new RequestReversionController(ctx);

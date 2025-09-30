@@ -312,7 +312,7 @@ class CreateConceptControllerTest extends AbstractPostgreIntegrationTest {
         //noinspection MissingJavadoc
         record Entities(User admin, Concept concept) {
         }
-        Entities persisted = performInTransaction(em -> {
+        var persisted = performInTransaction(em -> {
             var user = TestPersistedEntities.persistAdminUser(em);
             var concept = TestPersistedEntities.persistConcept(em);
             return new Entities(user, concept);

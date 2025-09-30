@@ -75,7 +75,7 @@ public final class AsciiBanners {
      */
     @Contract(pure = true)
     public static @NotNull String box(String message) {
-        String line = "+------------------------------------------------------------+";
+        var line = "+------------------------------------------------------------+";
         return """
                 %s
                 | %-58s |

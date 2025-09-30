@@ -72,7 +72,7 @@ public class CompactSameThreadExecutorService implements ExecutorService {
         try {
             return CompletableFuture.completedFuture(task.call());
         } catch (Exception e) {
-            CompletableFuture<T> future = new CompletableFuture<>();
+            var future = new CompletableFuture<T>();
             future.completeExceptionally(e);
             return future;
         }
@@ -130,7 +130,7 @@ public class CompactSameThreadExecutorService implements ExecutorService {
 
     @Override
     public <T> @NotNull T invokeAny(@NotNull Collection<? extends Callable<T>> tasks) throws ExecutionException {
-        for (Callable<T> task : tasks) {
+        for (var task : tasks) {
             try {
                 return task.call();
             } catch (Exception ignored) {

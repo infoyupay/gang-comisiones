@@ -109,7 +109,7 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange persisted admin and concept
         //noinspection MissingJavadoc
         record Entities(User admin, Concept concept) {}
-        Entities persisted = performInTransaction(em -> {
+        var persisted = performInTransaction(em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var concept = TestPersistedEntities.persistConcept(em);
             return new Entities(admin, concept);
@@ -233,7 +233,7 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange admin and two concepts with different names
         //noinspection MissingJavadoc
         record Entities(User admin, Concept c1, Concept c2) {}
-        Entities persisted = performInTransaction(em -> {
+        var persisted = performInTransaction(em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var c1 = TestPersistedEntities.persistConcept(em);
             // create a second different concept

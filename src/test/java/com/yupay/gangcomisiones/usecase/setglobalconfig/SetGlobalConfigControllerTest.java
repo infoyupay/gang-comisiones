@@ -86,7 +86,7 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void bootstrap_success() {
         // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
-        User currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
+        var currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var edited = GlobalConfig.builder()
@@ -134,7 +134,7 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
         // Arrange
         // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
         // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
-        User currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
+        var currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var view = TestViews.setGlobalConfigView(null);
@@ -169,7 +169,7 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     void normal_rootUser_canUpdate() {
         // Arrange a ROOT user in session
         // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
-        User currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
+        var currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var edited = GlobalConfig.builder()
@@ -215,7 +215,7 @@ class SetGlobalConfigControllerTest extends AbstractPostgreIntegrationTest {
     void normal_nonRootUser_cannotUpdate() {
         // Arrange an ADMIN user (non-ROOT)
         // Arrange: create and login a ROOT user (bootstrap requires logged root per prereqs)
-        User currentUser = performInTransaction(TestPersistedEntities::persistAdminUser);
+        var currentUser = performInTransaction(TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var view = TestViews.setGlobalConfigView(null);

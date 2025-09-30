@@ -281,7 +281,7 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
         @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank bank) {
         }
-        Entities persisted = performInTransaction(em -> {
+        var persisted = performInTransaction(em -> {
             var user = TestPersistedEntities.persistAdminUser(em);
             var bank = TestPersistedEntities.persistBank(em);
             return new Entities(user, bank);

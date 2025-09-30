@@ -159,7 +159,7 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_rootUser_canCreate() {
-        User currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
+        var currentUser = performInTransaction(TestPersistedEntities::persistRootUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var dto = new CreateUserDTO("cashier", "12345678", UserRole.CASHIER);
@@ -196,7 +196,7 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @Test
     void normal_nonRootUser_cannotCreate() {
-        User currentUser = performInTransaction(TestPersistedEntities::persistAdminUser);
+        var currentUser = performInTransaction(TestPersistedEntities::persistAdminUser);
         ctx.getUserSession().setCurrentUser(currentUser);
 
         var controller = new CreateUserController(view, ctx.getUserService(), false);

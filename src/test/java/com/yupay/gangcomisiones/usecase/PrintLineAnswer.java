@@ -52,7 +52,7 @@ public class PrintLineAnswer<T> implements Answer<T> {
     @Override
     public T answer(@NotNull InvocationOnMock invocation) {
         var args = invocation.getArguments();
-        for (int i = 0; i < args.length; i++) {
+        for (var i = 0; i < args.length; i++) {
             System.out.printf("args[%d] (%s): %s%n", i,
                     args[i] == null
                             ? "null"
