@@ -95,8 +95,5 @@ public class UserSessionHelpers {
         ctx.getUserSession().setCurrentUser(persistRootUser(em));
     }
 
-    @Deprecated
-    public static void createAndLogRootUser() {
-    }
 
 }
