@@ -24,17 +24,25 @@ import com.yupay.gangcomisiones.exceptions.PersistenceServicesException;
 import com.yupay.gangcomisiones.model.TestPersistedEntities;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.model.UserRole;
-import jakarta.persistence.PersistenceException;
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Optional;
-import java.util.concurrent.ExecutionException;
+import java.sql.SQLException;
+import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.yupay.gangcomisiones.assertions.CauseAssertions.assertExpectedCause;
+import static com.yupay.gangcomisiones.services.UserSessionHelpers.createAndLogCashierUser;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
- * Integration tests for UserService basic operations (create, findById, findByUsername).
+ * Integration tests for UserService basic operations (create, findById, findByUsername).<br/>
+ * <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 12 tests in 4.354s at 2025-09-29 21:54 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -61,6 +69,23 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     void setUp() {
         TestPersistedEntities.clean(ctx.getEntityManagerFactory());
         userService = ctx.getUserService();
+    }
+
+    /**
+     * Cleans up resources and resets the state after each test execution.
+     * <br/>
+     * This method is annotated with {@code @AfterEach}, ensuring that it runs after each test method in the current test class.
+     * <br/><br/>
+     * The method performs the following operations:
+     * <ul>
+     *   <li>Resets the {@code userService} reference to {@code null}.</li>
+     *   <li>Logs out the current user session by invoking {@code logout()} on {@code ctx.getUserSession()}.</li>
+     * </ul>
+     */
+    @AfterEach
+    void cleanUp() {
+        userService = null;
+        ctx.getUserSession().logout();
     }
 
     /**
@@ -92,19 +117,50 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @Test
     void testCreateUserAndFindById() throws Exception {
         // given
-        User created = userService.createUser(
-                "john.doe",
-                UserRole.ADMIN,
-                "superSecret1").get();
+        var created = performInTransaction(TestPersistedEntities::persistAdminUser);
 
         // when
-        Optional<User> found = userService.findById(created.getId()).get();
+        var found = userService.findById(created.getId()).get();
 
         // then
-        assertTrue(found.isPresent(), "User should be found by ID");
-        assertEquals("john.doe", found.get().getUsername());
-        assertEquals(UserRole.ADMIN, found.get().getRole());
-        assertTrue(found.get().getActive(), "User must be active after creation");
+        assertThat(found).hasValueSatisfying(f -> assertSoftly(assertUserDeeplyEquals(f, created)));
+    }
+
+    /**
+     * A method that generates a {@link Consumer} to perform deep equality checks between two {@link User} objects
+     * using soft assertions. It compares several attributes of the {@code actual} and {@code expected} {@link User}
+     * instances to ensure consistency, while ensuring the assertion process does not stop at the first mismatch.
+     * <br/><br/>
+     * The following attributes are verified:
+     * <ol>
+     *   <li><strong>Username:</strong> Verifies that the username of both users matches.</li>
+     *   <li><strong>Role:</strong> Verifies that the role of both users matches.</li>
+     *   <li><strong>Active Status:</strong> Ensures that the actual user is marked as active.</li>
+     *   <li><strong>ID:</strong> Verifies that the IDs of both users match.</li>
+     * </ol>
+     *
+     * @param actual   the {@link User} instance that represents the actual user to be validated.
+     * @param expected the {@link User} instance that serves as the expected reference user for validation.
+     * @return a {@link Consumer} of {@link SoftAssertions} that performs the deep equality checks between the provided users.
+     */
+    Consumer<SoftAssertions> assertUserDeeplyEquals(User actual, User expected) {
+        return softly -> {
+            softly.assertThat(actual.getUsername())
+                    .as("username must match")
+                    .isEqualTo(expected.getUsername());
+
+            softly.assertThat(actual.getRole())
+                    .as("role must match")
+                    .isEqualTo(expected.getRole());
+
+            softly.assertThat(actual.getActive())
+                    .as("user must be active")
+                    .isTrue();
+
+            softly.assertThat(actual.getId())
+                    .as("id must match")
+                    .isEqualTo(expected.getId());
+        };
     }
 
     /**
@@ -136,19 +192,14 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @Test
     void testFindByUsername() throws Exception {
         // given
-        User created = userService.createUser(
-                "alice",
-                UserRole.CASHIER,
-                "password123"
-        ).get();
+        var created = performInTransaction(TestPersistedEntities::persistAdminUser);
 
         // when
-        Optional<User> found = userService.findByUsername("alice").get();
+        var found = userService.findByUsername(created.getUsername()).get();
 
         // then
-        assertTrue(found.isPresent(), "User should be found by username");
-        assertEquals(created.getId(), found.get().getId(), "IDs must match");
-        assertEquals(UserRole.CASHIER, found.get().getRole());
+        assertThat(found)
+                .hasValueSatisfying(v -> assertSoftly(assertUserDeeplyEquals(v, created)));
     }
 
     /// Tests the successful authentication of a user with valid credentials.
@@ -171,14 +222,14 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @Test
     void testAuthenticateUser_Success() throws Exception {
         // given
-        userService.createUser("bob", UserRole.CASHIER, "password123").join();
+        userService.createUser("bob", UserRole.CASHIER, "password123").get();
 
         // when
-        Optional<User> authenticated = userService.validateUser("bob", "password123", null).get();
+        var authenticated = userService.validateUser("bob", "password123", null).get();
 
         // then
-        assertTrue(authenticated.isPresent(), "Authentication should succeed");
-        assertEquals("bob", authenticated.get().getUsername());
+        assertThat(authenticated)
+                .hasValueSatisfying(u -> assertThat(u.getUsername()).isEqualTo("bob"));
     }
 
     /// Tests the successful change of a user's password.
@@ -197,16 +248,16 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// @throws Exception if any errors occur during execution
     @Test
     void testChangePassword_Success() throws Exception {
-        UserSessionHelpers.createAndLogRootUser();
+        runInTransaction(em -> createAndLogCashierUser(ctx, em));
         // given
-        User created = userService.createUser("carol", UserRole.CASHIER, "oldPass1").get();
+        var created = userService.createUser("carol", UserRole.CASHIER, "oldPass1").get();
 
         // when
         userService.changePassword(created.getId(), "oldPass1", "newPass1").get();
 
         // and authenticate with new password
-        Optional<User> authenticated = userService.validateUser("carol", "newPass1", null).get();
-        assertTrue(authenticated.isPresent(), "Authentication should work with new password");
+        var authenticated = userService.validateUser("carol", "newPass1", null).get();
+        assertThat(authenticated).isPresent();
     }
 
     /// Tests the successful reset of a user's password by an authorized user with root privileges.
@@ -225,24 +276,24 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// @throws Exception if any step of the test encounters an error during execution
     @Test
     void testResetPassword_Success() throws Exception {
-        UserSessionHelpers.createAndLogRootUser();
         var rootPassword = "password";
         var oldPassword = "resetMe!";
         var newPassword = "newPass0rd";
         // given
-        User created = userService.createUser("dave", UserRole.CASHIER, oldPassword).get();
-        User root = userService.createUser("god", UserRole.ROOT, rootPassword).get();
+        var root = userService.createUser("god", UserRole.ROOT, rootPassword).get();
+        ctx.getUserSession().setCurrentUser(root);
+        var created = userService.createUser("dave", UserRole.CASHIER, oldPassword).get();
 
         // when
         userService.resetPassword(root.getUsername(), rootPassword, created.getUsername(), newPassword).get();
 
         // old password should fail
-        Optional<User> oldAuth = userService.validateUser(created.getUsername(), oldPassword, null).get();
-        assertTrue(oldAuth.isEmpty(), "Old password should no longer work");
+        var oldAuth = userService.validateUser(created.getUsername(), oldPassword, null).get();
+        assertThat(oldAuth).as("Old password should no longer work.").isEmpty();
 
         // new password should work
-        Optional<User> newAuth = userService.validateUser(created.getUsername(), newPassword, null).get();
-        assertTrue(newAuth.isPresent(), "New password should work after reset");
+        var newAuth = userService.validateUser(created.getUsername(), newPassword, null).get();
+        assertThat(newAuth).as("New password should work after reset.").isPresent();
     }
 
     // -------------------------------------------------------------------------
@@ -260,8 +311,8 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// @throws Exception if any errors occur during the test execution
     @Test
     void testFindById_NotFound() throws Exception {
-        Optional<User> result = userService.findById(-9999L).get();
-        assertTrue(result.isEmpty(), "No user should be found for a non-existing ID");
+        var result = userService.findById(-9999L).get();
+        assertThat(result).as("No user should be found for a non-existing ID").isEmpty();
     }
 
     /// Tests the scenario where a user cannot be found by a non-existing username.
@@ -276,8 +327,8 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// @throws Exception if any errors occur during the test execution
     @Test
     void testFindByUsername_NotFound() throws Exception {
-        Optional<User> result = userService.findByUsername("ghost").get();
-        assertTrue(result.isEmpty(), "No user should be found for a non-existing username");
+        var result = userService.findByUsername("ghost").get();
+        assertThat(result).as("No user should be found for a non-existing username").isEmpty();
     }
 
     /// Tests the behavior of the `createUser` method when attempting to create a user
@@ -298,12 +349,10 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     void testCreateUser_DuplicateUsername() {
         userService.createUser("eve", UserRole.CASHIER, "pwassword01").join();
 
-        ExecutionException ex = assertThrows(
-                ExecutionException.class,
+        var ex = catchThrowable(
                 () -> userService.createUser("eve", UserRole.ADMIN, "password02").get()
         );
-        assertInstanceOf(PersistenceException.class, ex.getCause(),
-                "Should throw PersistenceException due to duplicate username");
+        assertExpectedCause(SQLException.class).assertCauseWithMessage(ex, "uq_user_username");
     }
 
     /// Tests the scenario where authentication fails due to an unknown username.
@@ -321,8 +370,8 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// @throws Exception if any errors occur during test execution
     @Test
     void testAuthenticateUser_UnknownUsername() throws Exception {
-        Optional<User> result = userService.validateUser("nobody", "pw", null).get();
-        assertTrue(result.isEmpty(), "Authentication should fail for unknown username");
+        var result = userService.validateUser("nobody", "pw", null).get();
+        assertThat(result).as("Authentication should fail for unknown username").isEmpty();
     }
 
     /// Tests the authentication behavior when the provided password is incorrect.
@@ -335,8 +384,8 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     void testAuthenticateUser_WrongPassword() throws Exception {
         userService.createUser("frank", UserRole.CASHIER, "secret00").join();
 
-        Optional<User> result = userService.validateUser("frank", "wrong", null).get();
-        assertTrue(result.isEmpty(), "Authentication should fail for wrong password");
+        var result = userService.validateUser("frank", "wrong", null).get();
+        assertThat(result).as("Authentication should fail for unknown username").isEmpty();
     }
 
     /// Tests the changePassword method of the UserService when attempting to change
@@ -350,11 +399,10 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     /// - Confirms that the cause of the exception is a PersistenceServicesException.
     @Test
     void testChangePassword_UserNotFound() {
-        var ex = assertThrows(
-                ExecutionException.class,
+        var ex = catchThrowable(
                 () -> userService.changePassword(9999L, "pw", "newPw123").get());
-        assertInstanceOf(PersistenceServicesException.class, ex.getCause(),
-                "Changing password on non-existing user should fail");
+        assertExpectedCause(PersistenceServicesException.class)
+                .assertCauseWithMessage(ex, "User not found by ID");
     }
 
     /// Tests the resetPassword functionality of the `UserService` when the specified user does not exist.
@@ -370,13 +418,12 @@ class UserServiceIntegrationTest extends AbstractPostgreIntegrationTest {
     @Test
     void testResetPassword_UserNotFound() {
         var root = userService.createUser("god", UserRole.ROOT, "secret01").join();
-        ExecutionException ex = assertThrows(
-                ExecutionException.class,
+        var ex = catchThrowable(
                 () -> userService.resetPassword(root.getUsername(), "secret01",
                         "r3roiuh", "f08e3h0pqh0pigh0peihgo").get()
         );
-        assertInstanceOf(PersistenceServicesException.class, ex.getCause(),
-                "Should throw PersistenceServicesException for reset on non-existing user");
+        assertExpectedCause(PersistenceServicesException.class)
+                .assertCauseWithMessage(ex, "User not found by username");
     }
 }
 
