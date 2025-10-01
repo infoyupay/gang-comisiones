@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 import static com.yupay.gangcomisiones.LocalFiles.*;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Performs mandatory bootstrap tasks before launching the application.
@@ -77,10 +78,11 @@ public final class Bootstrapper {
      *             </ul>
      *             <br/>
      *             Providing {@code null} or an unsupported mode will result in an exception.
-     * @throws IOException If an I/O error occurs while preparing the directories.
+     * @throws IOException             If an I/O error occurs while preparing the directories.
      * @throws GangComisionesException If the provided {@code mode} is {@code null} or unsupported.
      */
     public static void bootstrap(AppMode mode) throws IOException {
+        requireNonNull(mode, "Unexpected mode in bootstrap: null.");
         LocalFiles.init(mode);
         switch (mode) {
             case WORK, TOY -> prepareStandardDirectories();
@@ -101,7 +103,7 @@ public final class Bootstrapper {
     /// create each directory if it does not exist.
     ///
     /// @throws IOException if an I/O error occurs while attempting to create the required
-    ///                                                                                 directories.
+    ///                                                                                                     directories.
     private static void prepareStandardDirectories() throws IOException {
         createDirIfMissing(yupay());
         createDirIfMissing(project());
@@ -125,8 +127,8 @@ public final class Bootstrapper {
      * </ol>
      * This ensures no residual data or logs are retained between execution sessions in "ghost" mode.
      * <br/><br/>
-     *
-     *
+     * <p>
+     * <p>
      * Operational Notes:
      * <ul>
      *     <li>
@@ -137,20 +139,22 @@ public final class Bootstrapper {
      *     <li>Non-critical I/O errors during deletion are ignored to minimize impact on overall
      *         directory preparation.</li>
      * </ul>
+     *
      * @throws IOException if an error occurs during file traversal, deletion or directory creation ops.
      */
     private static void prepareGhostDirectories() throws IOException {
         var ghostRoot = project();
         if (Files.exists(ghostRoot)) {
-            try(var walk = Files.walk(ghostRoot)){
+            try (var walk = Files.walk(ghostRoot)) {
                 walk.sorted(Comparator.reverseOrder())
-                        .forEach(p->{
-                            try{
+                        .forEach(p -> {
+                            try {
                                 Files.delete(p);
-                            }catch (IOException _){}
+                            } catch (IOException _) {
+                            }
                         });
             }
-        }else{
+        } else {
             Files.createDirectories(ghostRoot);
         }
         createDirIfMissing(logs());
@@ -176,7 +180,6 @@ public final class Bootstrapper {
      *                 <li>Must not be {@code null}. A {@link NullPointerException} will be thrown if {@code null} is passed.</li>
      *                 <li>Should specify a valid file system path. Relative paths are resolved based on the working directory.</li>
      *             </ul>
-     *
      * @throws IOException If an I/O error occurs while checking or creating the directory.
      */
     private static void createDirIfMissing(@NotNull Path path) throws IOException {
