@@ -23,6 +23,7 @@ import com.yupay.gangcomisiones.AppContext;
 import com.yupay.gangcomisiones.SuitableFor;
 import com.yupay.gangcomisiones.export.ExportableTransaction;
 import com.yupay.gangcomisiones.export.OutputType;
+import com.yupay.gangcomisiones.export.impl.TicketExporterImpl;
 import com.yupay.gangcomisiones.model.User;
 import com.yupay.gangcomisiones.services.dto.CreateTransactionRequest;
 import com.yupay.gangcomisiones.usecase.commons.FormMode;
@@ -234,7 +235,7 @@ public class CreateTransactionController {
                     try {
                         //1. Create HTML preview
                         var cfg = context.getGlobalConfigCache().getOrFetchGlobalConfig();
-                        var exporter = new com.yupay.gangcomisiones.export.impl.TicketExporterImpl(context.getTaskExecutor());
+                        var exporter = new TicketExporterImpl(context.getTaskExecutor());
 
                         return exporter.export(transaction, OutputType.PREVIEW_HTML, cfg)
                                 .thenCompose(htmlBytes -> {

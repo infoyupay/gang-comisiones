@@ -42,19 +42,25 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface GlobalConfigService {
     /**
-     * Asynchronously fetches the current global configuration from the persistence layer.
+     * Synchronously fetches the current global configuration from the persistence layer.
      * <br/>
-     * The returned future completes with:
-     * <ul>
-     *   <li>{@code Optional.of(GlobalConfig)} when a configuration exists.</li>
-     *   <li>{@code Optional.empty()} when no configuration is found.</li>
-     * </ul>
-     * If an error occurs during the fetch, the returned future completes exceptionally.
+     * The method retrieves the global configuration record if it exists. The result is returned synchronously,
+     * meaning the caller is blocked until the operation completes.
+     * <br/>
+     * <p>
+     * If no global configuration is present, the result will be an empty {@link Optional}.
+     * <br/>
      *
-     * @return a {@link CompletableFuture} that yields an {@link Optional} containing the current {@link GlobalConfig},
-     *         or empty if none exists.
+     * <ul>
+     *   <li><strong>Success:</strong> Returns an {@link Optional} containing the {@link GlobalConfig} when it exists.</li>
+     *   <li><strong>Empty result:</strong> Returns an empty {@link Optional} when no configuration is found.</li>
+     *   <li><strong>Error:</strong> Throws an {@link Exception} if an error occurs.</li>
+     * </ul>
+     *
+     * @return an {@link Optional} containing the {@link GlobalConfig}, or empty if no configuration exists.
+     * @throws Exception if an error occurs while fetching the global configuration.
      */
-    CompletableFuture<Optional<GlobalConfig>> fetchGlobalConfig();
+    Optional<GlobalConfig> fetchGlobalConfigSync() throws Exception;
 
     /**
      * Asynchronously persists the provided global configuration.

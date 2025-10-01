@@ -75,8 +75,7 @@ public class GlobalConfigCache {
     public synchronized GlobalConfig fetchGlobalConfig() {
         try {
             var config = context.getGlobalConfigService()
-                    .fetchGlobalConfig()
-                    .join()
+                    .fetchGlobalConfigSync()
                     .orElseGet(() -> GlobalConfig.builder().build());
 
             globalConfig = config;
