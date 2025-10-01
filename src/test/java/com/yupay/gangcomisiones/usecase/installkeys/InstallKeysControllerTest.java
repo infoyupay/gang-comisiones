@@ -60,16 +60,14 @@ import static org.mockito.Mockito.*;
  *   <li>Initializes logging and validates JPA properties on success.</li>
  * </ul>
  * <br/>
- * <div style="border: 1px solid black; padding: 1px;">
- * <b>Execution note:</b> dvidal@infoyupay.com passed 3 tests in 2.199s at 2025-09-11 11:01 UTC-5.
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 3 tests in 1.577s at 2025-09-29 22:47 UTC-5.
  * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
 class InstallKeysControllerTest {
-
-    String originalHome;
     ZipInstallerService zipInstallerService;
     ExecutorService mockExecutor;
 
@@ -87,10 +85,7 @@ class InstallKeysControllerTest {
      */
     @BeforeEach
     void takeoff(@TempDir @NotNull Path target) throws IOException {
-        //Modify user home
-        originalHome = System.getProperty("user.home");
-        System.setProperty("user.home", target.toString());
-
+        LocalFiles.init(AppMode.TEST, target);
         //Setup services
         mockExecutor = spy(new CompactSameThreadExecutorService());
         zipInstallerService = new ZipInstallerServiceLocalImpl(mockExecutor);
@@ -110,9 +105,6 @@ class InstallKeysControllerTest {
      */
     @AfterEach
     void landing() {
-        //Restore user home
-        System.setProperty("user.home", originalHome);
-
         //Shutdown services
         zipInstallerService = null;
         mockExecutor.shutdownNow();

@@ -55,20 +55,20 @@ import static org.mockito.Mockito.*;
  *   <li>Error handling when an authenticated non-{@code ADMIN} user attempts creation.</li>
  *   <li>Error propagation on duplicate bank names returned by the persistence layer.</li>
  * </ul>
- * <div style="border: 1px solid black; padding: 1px;">
- *   <b>Execution note:</b> dvidal@infoyupay.com passed 5 tests in 2.037s at 2025-09-11 15:04 UTC-5.
- *   </div>
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 5 tests in 2.254s at 2025-09-29 22:37 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
  */
 class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
+    static final AtomicReference<Bank> bankRef = new AtomicReference<>(null);
     /**
      * Mocked {@link BankView} to observe interactions from {@link CreateBankController}
      * without invoking UI side effects.
      */
     BankView view;
-    static final AtomicReference<Bank> bankRef = new AtomicReference<>(null);
 
     /**
      * Initializes the test fixture before each test execution.
@@ -278,7 +278,6 @@ class CreateBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenDuplicatedBankName_whenRun_thenError() {
         // Arrange
-        @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank bank) {
         }
         var persisted = performInTransaction(em -> {

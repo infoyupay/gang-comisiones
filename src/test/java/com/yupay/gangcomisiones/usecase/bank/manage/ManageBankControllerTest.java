@@ -51,8 +51,8 @@ import static org.mockito.Mockito.*;
 ///
 /// @author InfoYupay SACS
 /// @version 1.0
-/// <div style="border: 1px solid black; padding: 1px;">
-///     <strong>Execution note:</strong> dvidal@infoyupay.com passed 1 tests in 7.412s at 2025-09-12 00:25 UTC-5
+/// <div style="border: 1px solid black; padding: 2px;">
+///     <strong>Execution note:</strong> dvidal@infoyupay.com passed 1 tests in 7.461s at 2025-09-29 22:38 UTC-5
 /// </div>
 /// @implNote although the time seems excesive, pauses are expected due to the nature of the tests. In order
 /// to simulate human user interactions, a pause between the usage of one or another option has been made.

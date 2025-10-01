@@ -76,8 +76,9 @@ import static org.mockito.Mockito.*;
  *       with a user-visible error message.
  *   </li>
  * </ul>
- * <div style="border: 1px solid black; padding: 1px;">
- *     <b>Execution note:</b> dvidal@infoyupay.com passed 5 tests in 2.177s at 2025-09-09 10:57 UTC-5</div>
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 5 tests in 2.235s at 2025-09-29 22:38 UTC-5.
+ * </div>
  *
  * @author InfoYupay SACS
  * @version 1.0
@@ -152,7 +153,6 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminAndValidUpdate_whenRun_thenBankUpdated() {
         // Arrange: persist an admin and an initial bank
-        @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank bank) {
         }
         var persisted = performInTransaction(em -> {
@@ -310,7 +310,6 @@ class EditBankControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenDuplicatedBankName_whenRun_thenError() {
         // Arrange: persist admin and two banks
-        @SuppressWarnings("MissingJavadoc")
         record Entities(User admin, Bank a, Bank b) {
         }
         var persisted = performInTransaction(em -> {

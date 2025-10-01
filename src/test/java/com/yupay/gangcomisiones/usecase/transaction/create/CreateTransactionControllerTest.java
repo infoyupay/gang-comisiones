@@ -34,6 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -52,8 +53,8 @@ import static org.mockito.Mockito.*;
  *   <li>Error handling when no user is authenticated.</li>
  *   <li>Error propagation from the persistence layer.</li>
  * </ul>
- * <div style="border: 1px solid black; padding: 1px;">
- *   <b>Execution note:</b> dvidal@infoyupay.com passed 4 tests in 1.972s at 2025-09-15 00:05 UTC-5.
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 4 tests in 2.233s at 2025-09-30 22:58 UTC-5.
  * </div>
  *
  * @author InfoYupay
@@ -157,7 +158,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
      * </ul>
      */
     @Test
-    void givenLoggedInUserAndValidRequest_whenStartUseCase_thenTransactionCreated() {
+    void givenLoggedInUserAndValidRequest_whenStartUseCase_thenTransactionCreated() throws ExecutionException, InterruptedException {
         // Arrange
         var transaction = performInTransaction(TestPersistedEntities::buildValidTansaction);
 
@@ -179,7 +180,7 @@ class CreateTransactionControllerTest extends AbstractPostgreIntegrationTest {
         var controller = new CreateTransactionController(ctx);
 
         // Act
-        var result = controller.startUseCase().join();
+        var result = controller.startUseCase().get();
 
         // Assert
         verify(view).showUserForm(FormMode.CREATE);

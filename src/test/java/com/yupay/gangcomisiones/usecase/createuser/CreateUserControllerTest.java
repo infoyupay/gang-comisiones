@@ -48,8 +48,8 @@ import static org.mockito.Mockito.*;
  *   <li>Permission denial for non-ROOT users attempting creation.</li>
  *   <li>Error propagation on duplicate usernames.</li>
  * </ul>
- * <div style="border: 1px solid black; padding: 1px;">
- * <b>Execution note:</b> dvidal@infoyupay.com passed 5 tests in 2.471s at 2025-09-11 11:35 UTC-5
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 5 tests in 2.206s at 2025-09-29 22:42 UTC-5.
  * </div>
  *
  * @author InfoYupay SACS
@@ -69,7 +69,7 @@ class CreateUserControllerTest extends AbstractPostgreIntegrationTest {
      */
     @BeforeEach
     void setUp() {
-        TestPersistedEntities.clean(AppContext.getInstance().getEntityManagerFactory());
+        TestPersistedEntities.clean(ctx.getEntityManagerFactory());
         view = mock(CreateUserView.class);
         viewRegistry.registerInstance(CreateUserView.class, view);
     }

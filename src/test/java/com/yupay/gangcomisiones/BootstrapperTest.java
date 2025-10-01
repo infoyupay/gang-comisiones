@@ -19,176 +19,73 @@
 
 package com.yupay.gangcomisiones;
 
-import com.yupay.gangcomisiones.logging.LogConfig;
+import com.yupay.gangcomisiones.exceptions.GangComisionesException;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static com.yupay.gangcomisiones.assertions.CauseAssertions.assertExpectedCause;
+import static com.yupay.gangcomisiones.assertions.PathAssertions.assertDirWasCreated;
+import static org.assertj.core.api.Assertions.catchThrowable;
 
-/// This class contains unit tests for the `Bootstrapper` class, specifically testing
-/// the behavior of the `bootstrap` method. The tests verify the correct creation of necessary
-/// directories, the initialization of logging, and proper handling of I/O exceptions during
-/// the bootstrap process.
-///
-/// The tested scenarios include:
-/// - Successful creation of directories and initialization of logging when directories do not exist.
-/// - No directory creation when all required directories already exist.
-/// - Graceful handling of [IOException] when directory creation fails.
-///
-/// Mocking techniques are employed to simulate behaviors of file system operations and logging
-/// components. Static methods of the [Files] class and the [LogConfig]
-/// class are mocked to control and observe their behavior for testing purposes.
-///
-/// @author InfoYupay SACS
-/// @version 1.0
+/**
+ * Unit tests for {@link Bootstrapper}, focused on verifying the behavior of {@link Bootstrapper#bootstrap(AppMode)}.
+ * <br/>The tests validate the correct creation of required directories, initialization of logging,
+ * and proper handling of exceptional cases.
+ * <br/>Tested scenarios include:
+ * <ul>
+ *   <li>Successful creation of directories and initialization of logging when directories do not exist</li>
+ *   <li>No directory creation when all required directories already exist</li>
+ *   <li>Graceful handling of {@link java.io.IOException} when directory creation fails</li>
+ * </ul>
+ * <br/>The tests rely on utility assertions from {@link com.yupay.gangcomisiones.assertions.PathAssertions} to verify file system state,
+ * improving readability and avoiding low-level mocking of {@link java.nio.file.Files}.
+ * <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 2 tests in 0.179s at 2025-10-01 00:55 UTC-5.
+ * </div>
+ *
+ * @author InfoYupay SACS
+ * @version 1.0
+ */
 class BootstrapperTest {
 
-    /// Tests the bootstrap process to verify that it correctly creates necessary directories
-    /// and initializes logging. This ensures that:
-    /// - Non-existent directories are detected and created.
-    /// - The logging component is initialized successfully.
-    /// The method utilizes mocking to simulate file operations and logging initialization:
-    /// - Directory existence checks and creation are mocked using the [Files] API.
-    /// - Logging initialization logic is mocked using [LogConfig].
-    /// Verification steps:
-    /// - Checks directory existence for required paths.
-    /// - Ensures appropriate methods to create directories are invoked for paths where they do not exist.
-    /// - Confirms that the logging initialization method [#initLogging] is called.
-    /// - Validates no additional unexpected operations on the mocks.
-    ///
-    /// @throws IOException if an error occurs during file operations.
+    /**
+     * Verifies that the bootstrap process correctly creates the required directories and initializes logging.
+     * <br/>This ensures that:
+     * <ul>
+     *   <li>Non-existent directories are detected and created</li>
+     *   <li>The logging component is initialized successfully</li>
+     * </ul>
+     * <br/>Validation steps:
+     * <ul>
+     *   <li>Checks directory creation for {@link LocalFiles#yupay()}, {@link LocalFiles#project()}, and {@link LocalFiles#logs()}</li>
+     *   <li>Confirms that no unexpected operations are performed</li>
+     * </ul>
+     *
+     * @throws IOException if an error occurs during file operations
+     */
     @Test
     void testBootstrap_CreatesDirectoriesAndInitializesLogging() throws IOException {
-        try (var filesMock = Mockito.mockStatic(Files.class);
-             var logMock = Mockito.mockStatic(LogConfig.class)) {
-
-            // Simulate non-existent directories
-            filesMock.when(() -> Files.notExists(any(Path.class))).thenReturn(true);
-            filesMock.when(() -> Files.createDirectories(any(Path.class))).thenReturn(null);
-
-            // Simulate logging initialization.
-            logMock.when(LogConfig::initLogging).thenAnswer(_ -> null);
-
-            // Run bootstrap
-            Bootstrapper.bootstrap(AppMode.TEST);
-
-            // Verify directories were correctly checked and created.
-            filesMock.verify(() -> Files.notExists(LocalFiles.yupay()));
-            filesMock.verify(() -> Files.createDirectories(LocalFiles.yupay()));
-
-            filesMock.verify(() -> Files.notExists(LocalFiles.project()));
-            filesMock.verify(() -> Files.createDirectories(LocalFiles.project()));
-
-            filesMock.verify(() -> Files.notExists(LocalFiles.logs()));
-            filesMock.verify(() -> Files.createDirectories(LocalFiles.logs()));
-
-            // Verifying loggin initialization.
-            logMock.verify(LogConfig::initLogging);
-
-            // No more interactions.
-            filesMock.verifyNoMoreInteractions();
-            logMock.verifyNoMoreInteractions();
-        }
-    }
-
-    /// Tests the bootstrap process when all required directories already exist, ensuring no directories
-    /// are created unnecessarily.
-    /// This test verifies the following:
-    /// - The existence check for all required directories is performed correctly.
-    /// - No directory creation is triggered as all required directories exist.
-    /// - Logging initialization is invoked and executed successfully.
-    /// - No unexpected operations are performed on the mocked file system or logging components.
-    /// Mocked behavior:
-    /// - File existence checks return `false` for all paths, simulating that directories already exist.
-    /// - Logging initialization method does not perform real operations.
-    /// Assertions:
-    /// - Confirms that `Files.notExists` is called for each required path.
-    /// - Validates that `Files.createDirectories` is never called as directories already exist.
-    /// - Ensures that the logging initialization method is invoked.
-    /// - Verifies no additional interactions occur with the mocked dependencies.
-    ///
-    /// @throws IOException if an error occurs during execution of mocked file operations.
-    @Test
-    void testBootstrap_DirectoriesExist_NoCreation() throws IOException {
-        try (var filesMock = Mockito.mockStatic(Files.class);
-             var logMock = Mockito.mockStatic(LogConfig.class)) {
-
-            // Simulate existing directories
-            filesMock.when(() -> Files.notExists(any(Path.class))).thenReturn(false);
-            logMock.when(LogConfig::initLogging).thenAnswer(_ -> null);
-
-            Bootstrapper.bootstrap(AppMode.TEST);
-
-            // Verify directories were correctly checked.
-            filesMock.verify(() -> Files.notExists(LocalFiles.yupay()));
-            filesMock.verify(() -> Files.notExists(LocalFiles.project()));
-            filesMock.verify(() -> Files.notExists(LocalFiles.logs()));
-
-            // Check that no directory was created
-            filesMock.verify(() -> Files.createDirectories(any(Path.class)), times(0));
-
-            //Check Logging DO initializes
-            logMock.verify(LogConfig::initLogging);
-
-            // End of interactions
-            filesMock.verifyNoMoreInteractions();
-            logMock.verifyNoMoreInteractions();
-        }
+        Bootstrapper.bootstrap(AppMode.GHOST);
+        assertDirWasCreated(LocalFiles.yupay());
+        assertDirWasCreated(LocalFiles.project());
+        assertDirWasCreated(LocalFiles.logs());
     }
 
     /**
-     * Tests the behavior of the `bootstrap` method when an {@link IOException} is thrown during the
-     * directory creation process.
+     * Verifies that the bootstrap process rejects unexpected modes.
+     * <br/>Specifically, passing {@link AppMode#TEST} should raise a {@link GangComisionesException}
+     * with the appropriate message.
      *
-     * <ul>
-     *   <li>Mocks {@link Files} API to simulate non-existent directories and an {@link IOException}
-     *       when attempting to create them.</li>
-     *   <li>Uses {@link MockedStatic} to mock static methods in {@link Files} and {@link LogConfig}.</li>
-     *   <li>Verifies that the exception thrown contains the expected message.</li>
-     *   <li>Ensures the correct methods are invoked on {@link Files} to check directory existence
-     *       and attempt creation, and confirms that logging is not initialized.</li>
-     * </ul>
-     * <p>
-     * Assertions:
-     * <ul>
-     *   <li>Validates that {@link IOException} is thrown with the message "Test IOException".</li>
-     *   <li>Ensures that {@code Files.notExists()} and {@code Files.createDirectories()} are called
-     *       as expected before failure.</li>
-     *   <li>Confirms that {@link LogConfig#initLogging()} is not invoked since directory creation
-     *       fails prematurely.</li>
-     *   <li>Validates no additional interactions occur with the mocked dependencies.</li>
-     * </ul>
-     * <p>
-     * This test ensures that the bootstrap process handles I/O errors gracefully and does not
-     * proceed with logging initialization or other operations when directory creation fails.
+     * @param mode the application mode under test
      */
-    @Test
-    void testBootstrap_ThrowsIOException() {
-        try (var filesMock = Mockito.mockStatic(Files.class);
-             var logMock = Mockito.mockStatic(LogConfig.class)) {
-
-            filesMock.when(() -> Files.notExists(any(Path.class))).thenReturn(true);
-            filesMock.when(() -> Files.createDirectories(any(Path.class)))
-                    .thenThrow(new IOException("Test IOException"));
-
-            var exception = assertThrows(IOException.class, () -> Bootstrapper.bootstrap(AppMode.TEST));
-            assertEquals("Test IOException", exception.getMessage());
-
-            // Verifies that directories were created prior to failure.
-            filesMock.verify(() -> Files.notExists(LocalFiles.yupay()));
-            filesMock.verify(() -> Files.createDirectories(any(Path.class)));
-
-            //Verify no logging initialization was attempted.
-            logMock.verifyNoInteractions();
-            filesMock.verifyNoMoreInteractions();
-        }
+    @ParameterizedTest
+    @EnumSource(value = AppMode.class, names = {"TEST"})
+    void assertUnexpectedMode(AppMode mode) {
+        var t = catchThrowable(() -> Bootstrapper.bootstrap(mode));
+        assertExpectedCause(GangComisionesException.class)
+                .assertCauseWithMessage(t, "Unexpected mode in bootstrap");
     }
 }

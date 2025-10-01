@@ -45,8 +45,9 @@ import static org.mockito.Mockito.*;
  * Test class for validating the behavior of the {@link CreateConceptController}.
  * This class performs unit tests to ensure the correct functionality of the controller methods, using mocked
  * dependencies and verifying the results of various interactions with the {@link ConceptView} and persistence layer.
- * <div style="border: 1px solid black; padding: 2px;">
- * <strong>Execution note:</strong> Tested by: dvidal@infoyupay.com, passed 5 tests in 527ms at 2023-10-05 15:30 UTC-5
+ * <br/>
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 5 tests in 2.065s at 2025-09-29 22:40 UTC-5.
  * </div>
  *
  * @author InfoYupay SACS
@@ -291,7 +292,7 @@ class CreateConceptControllerTest extends AbstractPostgreIntegrationTest {
      *   <li>The logged-in user is an administrator.</li>
      *   <li>A {@link Concept} with a duplicate name already exists in the system.</li>
      * </ol>
-     *
+     * <p>
      * This test ensures the following outcomes:
      * <ul>
      *   <li>The user form is shown in {@link FormMode#CREATE} mode.</li>
@@ -309,7 +310,6 @@ class CreateConceptControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenDuplicatedConceptName_whenRun_thenError() {
         // Arrange persisted admin and concept
-        //noinspection MissingJavadoc
         record Entities(User admin, Concept concept) {
         }
         var persisted = performInTransaction(em -> {

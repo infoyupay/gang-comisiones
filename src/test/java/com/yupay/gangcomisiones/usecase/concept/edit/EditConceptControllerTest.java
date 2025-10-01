@@ -55,8 +55,8 @@ import static org.mockito.Mockito.*;
  *       and persistence through the service layer.
  *   </li>
  * </ul>
- * <div style="border: 1px solid black; padding: 2px;">
- * <strong>Execution note:</strong> Tested by: dvidal@infoyupay.com, passed 5 tests in 2.210s at 2025-09-13 20:45 UTC-5
+ *  <div style="border: 1px solid black; padding: 2px">
+ *    <strong>Execution Note:</strong> dvidal@infoyupay.com passed 5 tests in 2.241s at 2025-09-29 22:41 UTC-5.
  * </div>
  *
  * @author InfoYupay SACS
@@ -107,8 +107,8 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenAdminAndValidEdit_whenRun_thenUpdated() {
         // Arrange persisted admin and concept
-        //noinspection MissingJavadoc
-        record Entities(User admin, Concept concept) {}
+        record Entities(User admin, Concept concept) {
+        }
         var persisted = performInTransaction(em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var concept = TestPersistedEntities.persistConcept(em);
@@ -231,8 +231,8 @@ class EditConceptControllerTest extends AbstractPostgreIntegrationTest {
     @Test
     void givenDuplicatedConceptName_whenRun_thenError() {
         // Arrange admin and two concepts with different names
-        //noinspection MissingJavadoc
-        record Entities(User admin, Concept c1, Concept c2) {}
+        record Entities(User admin, Concept c1, Concept c2) {
+        }
         var persisted = performInTransaction(em -> {
             var admin = TestPersistedEntities.persistAdminUser(em);
             var c1 = TestPersistedEntities.persistConcept(em);
